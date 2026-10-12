@@ -7,87 +7,199 @@ type Oferta = {
   id: string
   titulo: string
   empresa_nombre: string
+  descripcion: string
   estado: string
   created_at: string
 }
 
 const ESTADO_COLOR: Record<string, string> = {
-  activa: 'bg-green-100 text-green-700',
-  cerrada: 'bg-gray-100 text-gray-500',
-  borrador: 'bg-yellow-100 text-yellow-700',
+  publicada: 'bg-green-100 text-green-700 border-green-200',
+  cerrada: 'bg-gray-100 text-gray-500 border-gray-200',
+  pendiente: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  rechazada: 'bg-red-100 text-red-600 border-red-200',
 }
 
 export default function OfertasPage() {
   const [ofertas, setOfertas] = useState<Oferta[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [modalidadFilter, setModalidadFilter] = useState('todas')
 
   useEffect(() => {
-    supabase
-      .from('ofertas')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setOfertas(data ?? [])
-        setLoading(false)
-      })
-  }, [])
+    async function fetchOfertas() {
+      setLoading(true)
+      setError(null)
 
-  async function eliminar(id: string) {
-    await supabase.from('ofertas').delete().eq('id', id)
-    setOfertas((prev) => prev.filter((o) => o.id !== id))
-  }
+      try {
+        let query = supabase
+          .from('ofertas')
+          .select('*')
+          .eq('estado', 'publicada')
+          .order('created_at', { ascending: false })
+
+        if (searchTerm.trim() !== '') {
+          const term = `%${searchTerm.trim()}%`
+          query = query.or(`titulo.ilike.${term},descripcion.ilike.${term},empresa_nombre.ilike.${term}`)
+        }
+
+        const { data, error: fetchError } = await query
+
+        if (fetchError) {
+          setError(fetchError.message || 'Error al consultar la base de datos de ofertas.')
+          setOfertas([])
+        } else {
+          setOfertas(data ?? [])
+        }
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : 'Error inesperado al conectar con Supabase.'
+        setError(errorMsg)
+        setOfertas([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOfertas()
+  }, [searchTerm])
+
+  const filteredOfertas = ofertas.filter((oferta) => {
+    if (modalidadFilter === 'todas') return true
+    const content = `${oferta.titulo} ${oferta.descripcion}`.toLowerCase()
+    return content.includes(modalidadFilter.toLowerCase())
+  })
 
   return (
     <main className="min-h-screen p-4 sm:p-8 bg-gray-50">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <h1 className="text-2xl font-semibold text-gray-800">Ofertas laborales</h1>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Portal de Ofertas Laborales</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Explora las oportunidades laborales activas publicadas por las empresas de la ciudad.
+            </p>
+          </div>
           <Link
-            href="/ofertas/nueva"
-            className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors"
+            href="/"
+            className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors"
           >
-            + Nueva oferta
+            ← Volver al inicio
           </Link>
         </div>
 
-        {loading && <p className="text-gray-400 text-sm">Cargando...</p>}
+        {/* Buscador y Filtros */}
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              placeholder="Buscar por palabra clave (título, descripción, empresa)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-gray-50/50"
+            />
+          </div>
 
-        {!loading && ofertas.length === 0 && (
-          <p className="text-gray-400 text-sm">No hay ofertas cargadas todavía.</p>
+          <div className="w-full sm:w-48">
+            <select
+              value={modalidadFilter}
+              onChange={(e) => setModalidadFilter(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-gray-50/50 text-gray-700"
+            >
+              <option value="todas">Todas las modalidades</option>
+              <option value="presencial">Presencial</option>
+              <option value="remoto">Remoto</option>
+              <option value="hibrido">Híbrido</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Estado de Error */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-red-800">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">⚠️</span>
+              <div>
+                <h3 className="font-semibold text-red-900">Error al consultar las ofertas</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+                <p className="text-xs text-red-600 mt-2 font-mono">
+                  Sugerencia: Revisa las variables `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` en `.env.local`.
+                </p>
+              </div>
+            </div>
+          </div>
         )}
 
-        <ul className="flex flex-col gap-3">
-          {ofertas.map((oferta) => (
-            <li
-              key={oferta.id}
-              className="bg-white rounded-xl shadow-sm p-5 flex justify-between items-start"
-            >
-              <div>
-                <p className="font-medium text-gray-800">{oferta.titulo}</p>
-                <p className="text-sm text-gray-500 mt-0.5">{oferta.empresa_nombre}</p>
-                <span
-                  className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full font-mono ${ESTADO_COLOR[oferta.estado]}`}
-                >
-                  {oferta.estado}
-                </span>
-              </div>
-              <div className="flex gap-4 items-center">
-                <Link
-                  href={`/ofertas/${oferta.id}/editar`}
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  Editar
-                </Link>
-                <button
-                  onClick={() => eliminar(oferta.id)}
-                  className="text-sm text-red-500 hover:underline"
-                >
-                  Eliminar
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        {/* Estado de Carga */}
+        {loading && !error && (
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center space-y-3">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-teal-600 border-t-transparent"></div>
+            <p className="text-gray-500 text-sm font-medium">Cargando ofertas de empleo...</p>
+          </div>
+        )}
+
+        {/* Ausencia de Resultados */}
+        {!loading && !error && filteredOfertas.length === 0 && (
+          <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 text-center space-y-2">
+            <span className="text-4xl block">🔍</span>
+            <h3 className="font-semibold text-gray-800 text-lg">No se encontraron ofertas</h3>
+            <p className="text-gray-500 text-sm max-w-md mx-auto">
+              {searchTerm || modalidadFilter !== 'todas'
+                ? 'No hay ofertas publicadas que coincidan con los filtros aplicados. Intenta modificar la búsqueda.'
+                : 'Actualmente no hay ofertas laborales activas disponibles.'}
+            </p>
+          </div>
+        )}
+
+        {/* Lista de Ofertas — solo lectura pública */}
+        {!loading && !error && filteredOfertas.length > 0 && (
+          <ul className="flex flex-col gap-4">
+            {filteredOfertas.map((oferta) => (
+              <li
+                key={oferta.id}
+                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow flex flex-col sm:flex-row justify-between gap-4"
+              >
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Link
+                      href={`/ofertas/${oferta.id}`}
+                      className="font-bold text-lg text-gray-900 hover:text-teal-700 transition-colors"
+                    >
+                      {oferta.titulo}
+                    </Link>
+                    <span
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${
+                        ESTADO_COLOR[oferta.estado] || 'bg-gray-100 text-gray-600 border-gray-200'
+                      }`}
+                    >
+                      {oferta.estado}
+                    </span>
+                  </div>
+
+                  <p className="text-sm font-medium text-teal-700">{oferta.empresa_nombre}</p>
+
+                  <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+                    {oferta.descripcion}
+                  </p>
+
+                  <p className="text-xs text-gray-400 pt-1 font-mono">
+                    Publicado el: {new Date(oferta.created_at).toLocaleDateString('es-AR')}
+                  </p>
+                </div>
+
+                {/* Solo el botón Ver detalle — sin editar ni eliminar */}
+                <div className="flex sm:flex-col justify-end items-end gap-2 border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
+                  <Link
+                    href={`/ofertas/${oferta.id}`}
+                    className="text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 px-3.5 py-1.5 rounded-lg transition-colors text-center w-full sm:w-auto"
+                  >
+                    Ver detalle
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </main>
   )

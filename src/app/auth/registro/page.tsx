@@ -1,12 +1,13 @@
 'use client'
 
 import { useTransition, useState, useRef, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { UserPlus } from 'lucide-react'
 import { RegistroPostulanteForm, type RegistroPostulanteValues } from '@/components/auth/registro-postulante-form'
 import { RegistroEmpresaForm, type RegistroEmpresaValues } from '@/components/auth/registro-empresa-form'
+import { RegistroAdminForm, type RegistroAdminValues } from '@/components/auth/registro-admin-form'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { registrarPostulante, registrarEmpresa } from '../actions'
+import { registrarPostulante, registrarEmpresa, registrarAdministrador } from '../actions'
 
 function AnimatedHeight({ children, className }: { children: React.ReactNode; className?: string }) {
   const outerRef = useRef<HTMLDivElement>(null)
@@ -39,6 +40,10 @@ function AnimatedHeight({ children, className }: { children: React.ReactNode; cl
 
 export default function RegistroPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const tipoParam = searchParams.get('tipo')
+  const initialTab = tipoParam === 'empresa' || tipoParam === 'administrador' ? tipoParam : 'postulante'
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
 
@@ -60,6 +65,15 @@ export default function RegistroPage() {
     })
   }
 
+  function handleAdmin(values: RegistroAdminValues) {
+    setError('')
+    startTransition(async () => {
+      const result = await registrarAdministrador(values)
+      if (!result.ok) setError(result.error ?? 'Error inesperado')
+      else router.push('/auth/verificar-email')
+    })
+  }
+
   return (
     <div className="relative w-full max-w-xl overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 shadow-elevated motion-safe:animate-enter-from-below motion-safe:[animation-delay:120ms]">
       <div className="p-6 sm:p-8">
@@ -74,16 +88,27 @@ export default function RegistroPage() {
         </div>
 
         <AnimatedHeight className="mt-6">
-          <Tabs defaultValue="postulante" className="flex-col" onValueChange={() => setError('')}>
-            <TabsList className="h-10 w-full">
-              <TabsTrigger value="postulante" className="flex-1">Soy postulante</TabsTrigger>
-              <TabsTrigger value="empresa" className="flex-1">Soy empresa</TabsTrigger>
+          <Tabs
+            value={activeTab}
+            onValueChange={(val) => {
+              setActiveTab(val)
+              setError('')
+            }}
+            className="flex-col"
+          >
+            <TabsList className="h-10 w-full grid grid-cols-3">
+              <TabsTrigger value="postulante">Soy postulante</TabsTrigger>
+              <TabsTrigger value="empresa">Soy empresa</TabsTrigger>
+              <TabsTrigger value="administrador">Administración</TabsTrigger>
             </TabsList>
             <TabsContent value="postulante">
               <RegistroPostulanteForm onSubmit={handlePostulante} pending={pending} error={error} />
             </TabsContent>
             <TabsContent value="empresa">
               <RegistroEmpresaForm onSubmit={handleEmpresa} pending={pending} error={error} />
+            </TabsContent>
+            <TabsContent value="administrador">
+              <RegistroAdminForm onSubmit={handleAdmin} pending={pending} error={error} />
             </TabsContent>
           </Tabs>
         </AnimatedHeight>

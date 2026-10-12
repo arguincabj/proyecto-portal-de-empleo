@@ -8,7 +8,6 @@ export default function NuevaOfertaPage() {
   const [titulo, setTitulo] = useState('')
   const [empresaNombre, setEmpresaNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
-  const [estado, setEstado] = useState('activa')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -21,7 +20,7 @@ export default function NuevaOfertaPage() {
       titulo,
       empresa_nombre: empresaNombre,
       descripcion,
-      estado,
+      estado: 'pendiente',
     })
 
     if (error) {
@@ -62,15 +61,9 @@ export default function NuevaOfertaPage() {
             required
             className="border border-gray-200 rounded-lg p-3 text-sm min-h-[140px] resize-y focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
-          <select
-            value={estado}
-            onChange={(e) => setEstado(e.target.value)}
-            className="border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-          >
-            <option value="activa">Activa</option>
-            <option value="borrador">Borrador</option>
-            <option value="cerrada">Cerrada</option>
-          </select>
+          <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800">
+            ℹ️ La oferta quedará en estado <strong>Pendiente de revisión</strong> hasta que sea aprobada y publicada por la administración municipal.
+          </div>
 
           <div className="flex gap-3 justify-end mt-2">
             <button

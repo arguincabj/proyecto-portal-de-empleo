@@ -32,8 +32,14 @@ export async function proxy(request: NextRequest) {
   // una respuesta JSON y una redirección HTTP causa "unexpected response" en el cliente.
   const isServerAction = request.method === 'POST' && request.headers.has('next-action')
 
-  // Sin sesión fuera de /auth → redirigir al login
-  if (!user && !isServerAction && !pathname.startsWith('/auth')) {
+  // Rutas públicas que no requieren autenticación: / (home), /ofertas y /auth/*
+  const isPublicRoute =
+    pathname === '/' ||
+    pathname.startsWith('/ofertas') ||
+    pathname.startsWith('/auth')
+
+  // Sin sesión fuera de rutas públicas → redirigir al login
+  if (!user && !isServerAction && !isPublicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     return NextResponse.redirect(url)

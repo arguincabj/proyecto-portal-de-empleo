@@ -18,6 +18,14 @@ export default async function InicioPage() {
     .eq('id', user.id)
     .single()
 
+  if (usuario?.rol === 'empresa') {
+    redirect('/empresa')
+  }
+
+  if (usuario?.rol === 'municipalidad') {
+    redirect('/admin')
+  }
+
   return (
     <div className="rounded-xl bg-surface p-6 shadow-card">
       <h1 className="text-2xl font-semibold text-foreground">

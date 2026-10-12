@@ -40,14 +40,14 @@ export async function registrarPostulante(data: {
 
     const { error: errorUsuario } = await supabaseAdmin
       .from('usuarios')
-      .insert({ id: userId, nombre: data.nombre, apellido: data.apellido, telefono: data.telefono, rol: 'postulante' })
+      .insert({ id: userId, nombre: data.nombre, apellido: data.apellido, email: data.email, telefono: data.telefono, rol: 'postulante' })
 
     if (errorUsuario) {
       await supabaseAdmin.auth.admin.deleteUser(userId)
       if (errorUsuario.code === '23505') {
-        return { ok: false, error: 'Ya existe una cuenta con ese email' }
+        return { ok: false, error: 'Ya existe una cuenta registrada con ese email' }
       }
-      return { ok: false, error: 'No se pudo crear el perfil' }
+      return { ok: false, error: `No se pudo crear el perfil: ${errorUsuario.message}` }
     }
 
     const { error: errorPostulante } = await supabaseAdmin
@@ -59,12 +59,13 @@ export async function registrarPostulante(data: {
       if (errorPostulante.code === '23505') {
         return { ok: false, error: 'Ya existe una cuenta con ese DNI' }
       }
-      return { ok: false, error: 'No se pudo crear el perfil' }
+      return { ok: false, error: `No se pudo crear el perfil: ${errorPostulante.message}` }
     }
 
     return { ok: true }
-  } catch {
-    return { ok: false, error: 'Error inesperado al crear la cuenta' }
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : 'Error inesperado al crear la cuenta'
+    return { ok: false, error: errorMsg }
   }
 }
 
@@ -94,14 +95,14 @@ export async function registrarEmpresa(data: {
 
     const { error: errorUsuario } = await supabaseAdmin
       .from('usuarios')
-      .insert({ id: userId, nombre: data.nombre, apellido: data.apellido, telefono: data.telefono, rol: 'empresa' })
+      .insert({ id: userId, nombre: data.nombre, apellido: data.apellido, email: data.email, telefono: data.telefono, rol: 'empresa' })
 
     if (errorUsuario) {
       await supabaseAdmin.auth.admin.deleteUser(userId)
       if (errorUsuario.code === '23505') {
-        return { ok: false, error: 'Ya existe una cuenta con ese email o DNI' }
+        return { ok: false, error: 'Ya existe una cuenta registrada con ese email' }
       }
-      return { ok: false, error: 'No se pudo crear el perfil' }
+      return { ok: false, error: `No se pudo crear el perfil: ${errorUsuario.message}` }
     }
 
     const { error: errorEmpresa } = await supabaseAdmin
@@ -113,12 +114,59 @@ export async function registrarEmpresa(data: {
       if (errorEmpresa.code === '23505') {
         return { ok: false, error: 'Ya existe una empresa registrada con ese CUIT' }
       }
-      return { ok: false, error: 'No se pudo crear el perfil de empresa' }
+      return { ok: false, error: `No se pudo crear el perfil de empresa: ${errorEmpresa.message}` }
     }
 
     return { ok: true }
   } catch {
     return { ok: false, error: 'Error inesperado al crear la cuenta' }
+  }
+}
+
+export async function registrarAdministrador(data: {
+  nombre: string
+  apellido: string
+  telefono: string
+  email: string
+  password: string
+}) {
+  try {
+    const supabase = await createSupabaseServerClient()
+
+    const { data: authData, error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+    })
+
+    if (error || !authData.user) {
+      return { ok: false, error: error?.message ?? 'No se pudo crear la cuenta de administrador' }
+    }
+
+    const userId = authData.user.id
+
+    const { error: errorUsuario } = await supabaseAdmin
+      .from('usuarios')
+      .insert({
+        id: userId,
+        nombre: data.nombre.trim(),
+        apellido: data.apellido.trim(),
+        email: data.email.trim().toLowerCase(),
+        telefono: data.telefono.trim(),
+        rol: 'municipalidad',
+      })
+
+    if (errorUsuario) {
+      await supabaseAdmin.auth.admin.deleteUser(userId)
+      if (errorUsuario.code === '23505') {
+        return { ok: false, error: 'Ya existe un usuario registrado con ese email' }
+      }
+      return { ok: false, error: `No se pudo crear el usuario municipal: ${errorUsuario.message}` }
+    }
+
+    return { ok: true }
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : 'Error inesperado al crear la cuenta'
+    return { ok: false, error: errorMsg }
   }
 }
 
