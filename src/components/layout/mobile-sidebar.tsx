@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Menu, X, LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield } from 'lucide-react'
+import { Menu, X, LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
@@ -31,6 +31,7 @@ export function MobileSidebar({ usuario }: Props) {
       : usuario?.rol === 'postulante'
       ? [
           { href: '/inicio', label: 'Inicio', icon: LayoutDashboard },
+          { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
           { href: '/perfil', label: 'Mi Perfil y CV', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
         ]

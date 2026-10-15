@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition, useState, useRef, useEffect, useCallback } from 'react'
+import { useTransition, useState, useRef, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { UserPlus } from 'lucide-react'
 import { RegistroPostulanteForm, type RegistroPostulanteValues } from '@/components/auth/registro-postulante-form'
@@ -38,7 +38,7 @@ function AnimatedHeight({ children, className }: { children: React.ReactNode; cl
   )
 }
 
-export default function RegistroPage() {
+function RegistroContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const tipoParam = searchParams.get('tipo')
@@ -114,5 +114,13 @@ export default function RegistroPage() {
         </AnimatedHeight>
       </div>
     </div>
+  )
+}
+
+export default function RegistroPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-muted-foreground">Cargando...</div>}>
+      <RegistroContent />
+    </Suspense>
   )
 }

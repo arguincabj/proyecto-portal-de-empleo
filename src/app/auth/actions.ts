@@ -40,7 +40,7 @@ export async function registrarPostulante(data: {
 
     const { error: errorUsuario } = await supabaseAdmin
       .from('usuarios')
-      .insert({ id: userId, nombre: data.nombre, apellido: data.apellido, email: data.email, telefono: data.telefono, rol: 'postulante' })
+      .insert({ id: userId, nombre: data.nombre, apellido: data.apellido, telefono: data.telefono, rol: 'postulante' })
 
     if (errorUsuario) {
       await supabaseAdmin.auth.admin.deleteUser(userId)
@@ -95,7 +95,7 @@ export async function registrarEmpresa(data: {
 
     const { error: errorUsuario } = await supabaseAdmin
       .from('usuarios')
-      .insert({ id: userId, nombre: data.nombre, apellido: data.apellido, email: data.email, telefono: data.telefono, rol: 'empresa' })
+      .insert({ id: userId, nombre: data.nombre, apellido: data.apellido, telefono: data.telefono, rol: 'empresa' })
 
     if (errorUsuario) {
       await supabaseAdmin.auth.admin.deleteUser(userId)
@@ -150,7 +150,6 @@ export async function registrarAdministrador(data: {
         id: userId,
         nombre: data.nombre.trim(),
         apellido: data.apellido.trim(),
-        email: data.email.trim().toLowerCase(),
         telefono: data.telefono.trim(),
         rol: 'municipalidad',
       })
