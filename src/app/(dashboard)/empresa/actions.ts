@@ -53,14 +53,14 @@ export async function crearOfertaEmpresa(data: {
       }
     }
 
-    // 2. Insertar la oferta
+    // 2. Insertar la oferta en estado pendiente (requiere aprobación del administrador)
     const { data: nuevaOferta, error: ofertaError } = await supabaseAdmin
       .from('ofertas')
       .insert({
         empresa_nombre: empresa.razon_social,
         titulo: data.titulo.trim(),
         descripcion: descripcionFinal,
-        estado: data.estado ?? 'publicada',
+        estado: 'pendiente',
       })
       .select('id')
       .single()
@@ -107,6 +107,11 @@ export async function cambiarEstadoOferta(ofertaId: string, nuevoEstado: 'public
 
     if (!empresa) {
       return { ok: false, error: 'No se encontró la empresa' }
+    }
+
+    // Las empresas solo pueden cerrar una oferta, no pueden activarla/publicarla directamente (eso lo hace el administrador)
+    if (nuevoEstado === 'publicada') {
+      return { ok: false, error: 'Solo la administración municipal puede activar o publicar ofertas.' }
     }
 
     // Actualizar estado de la oferta asegurando que pertenezca a la empresa

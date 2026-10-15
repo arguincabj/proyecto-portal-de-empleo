@@ -194,13 +194,21 @@ export default async function EmpresaDashboardPage() {
                         {oferta.titulo}
                       </Link>
                       <span
-                        className={`text-xs px-2.5 py-0.5 rounded-full font-medium border capitalize ${
-                          isPublicada
+                        className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${
+                          oferta.estado === 'publicada'
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : oferta.estado === 'pendiente'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200 font-semibold'
                             : 'bg-gray-100 text-gray-600 border-gray-200'
                         }`}
                       >
-                        {oferta.estado === 'publicada' ? 'Publicada' : oferta.estado}
+                        {oferta.estado === 'publicada'
+                          ? 'Publicada'
+                          : oferta.estado === 'pendiente'
+                          ? 'Pendiente de aprobación'
+                          : oferta.estado === 'cerrada'
+                          ? 'Cerrada'
+                          : oferta.estado}
                       </span>
                     </div>
 

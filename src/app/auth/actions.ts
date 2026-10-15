@@ -107,7 +107,14 @@ export async function registrarEmpresa(data: {
 
     const { error: errorEmpresa } = await supabaseAdmin
       .from('empresas')
-      .insert({ usuario_id: userId, razon_social: data.razon_social, cuit: data.cuit, rubro: data.rubro })
+      .insert({
+        usuario_id: userId,
+        razon_social: data.razon_social,
+        cuit: data.cuit,
+        rubro: data.rubro,
+        email: data.email,
+        estado_aprobacion: 'pendiente',
+      })
 
     if (errorEmpresa) {
       await supabaseAdmin.auth.admin.deleteUser(userId)

@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send } from 'lucide-react'
+import { LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings } from 'lucide-react'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
 import { logout } from '@/app/auth/actions'
 
@@ -19,6 +19,7 @@ export function Sidebar({ usuario }: Props) {
     usuario?.rol === 'empresa'
       ? [
           { href: '/empresa', label: 'Panel de Empresa', icon: Building2 },
+          { href: '/empresa/perfil', label: 'Perfil de Empresa', icon: Settings },
           { href: '/empresa/nueva-oferta', label: 'Publicar Oferta', icon: PlusCircle },
           { href: '/ofertas', label: 'Portal de Ofertas', icon: Briefcase },
         ]
@@ -32,6 +33,7 @@ export function Sidebar({ usuario }: Props) {
       : usuario?.rol === 'municipalidad'
       ? [
           { href: '/admin', label: 'Gestión Municipal', icon: Shield },
+          { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
         ]
       : [{ href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase }]
@@ -70,19 +72,19 @@ export function Sidebar({ usuario }: Props) {
 
       <div className="border-t border-white/10 p-4">
         {usuario && (
-          usuario.rol === 'postulante' ? (
-            <Link
-              href="/perfil"
-              title="Ver mi perfil"
-              className="mb-3 block min-h-11 rounded-md px-2 py-1.5 transition-colors hover:bg-sidebar-hover"
-            >
-              <UsuarioInfo usuario={usuario} />
-            </Link>
-          ) : (
-            <div className="mb-3 px-2">
-              <UsuarioInfo usuario={usuario} />
-            </div>
-          )
+          <Link
+            href={
+              usuario.rol === 'postulante'
+                ? '/perfil'
+                : usuario.rol === 'empresa'
+                ? '/empresa/perfil'
+                : '/admin/perfil'
+            }
+            title="Ver mis datos"
+            className="mb-3 block min-h-11 rounded-md px-2 py-1.5 transition-colors hover:bg-sidebar-hover"
+          >
+            <UsuarioInfo usuario={usuario} />
+          </Link>
         )}
         <form action={logout}>
           <button
