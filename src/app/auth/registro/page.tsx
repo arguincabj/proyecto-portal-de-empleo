@@ -1,79 +1,31 @@
-'use client'
+import Link from 'next/link'
+import { UserPlus, Briefcase, Shield } from 'lucide-react'
 
-import { useTransition, useState, useRef, useEffect, useCallback, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { UserPlus } from 'lucide-react'
-import { RegistroPostulanteForm, type RegistroPostulanteValues } from '@/components/auth/registro-postulante-form'
-import { RegistroEmpresaForm, type RegistroEmpresaValues } from '@/components/auth/registro-empresa-form'
-import { RegistroAdminForm, type RegistroAdminValues } from '@/components/auth/registro-admin-form'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { registrarPostulante, registrarEmpresa, registrarAdministrador } from '../actions'
+const tipos = [
+  {
+    href: '/auth/registro/postulante',
+    icon: UserPlus,
+    title: 'Soy postulante',
+    description: 'Buscás trabajo y querés postularte a ofertas laborales en el municipio.',
+    color: 'bg-primary-100 text-primary-600',
+  },
+  {
+    href: '/auth/registro/empresa',
+    icon: Briefcase,
+    title: 'Soy empresa',
+    description: 'Representás una empresa y querés publicar ofertas de empleo.',
+    color: 'bg-amber-100 text-amber-600',
+  },
+  {
+    href: '/auth/registro/administrador',
+    icon: Shield,
+    title: 'Administración',
+    description: 'Sos personal de la Municipalidad de Funes con acceso administrativo.',
+    color: 'bg-emerald-100 text-emerald-700',
+  },
+]
 
-function AnimatedHeight({ children, className }: { children: React.ReactNode; className?: string }) {
-  const outerRef = useRef<HTMLDivElement>(null)
-  const innerRef = useRef<HTMLDivElement>(null)
-
-  const sync = useCallback(() => {
-    if (outerRef.current && innerRef.current) {
-      outerRef.current.style.height = `${innerRef.current.scrollHeight}px`
-    }
-  }, [])
-
-  useEffect(() => {
-    const inner = innerRef.current
-    if (!inner) return
-    const ro = new ResizeObserver(sync)
-    ro.observe(inner)
-    sync()
-    return () => ro.disconnect()
-  }, [sync])
-
-  return (
-    <div
-      ref={outerRef}
-      className={`overflow-hidden motion-safe:transition-[height] motion-safe:duration-300 motion-safe:ease-in-out${className ? ` ${className}` : ''}`}
-    >
-      <div ref={innerRef}>{children}</div>
-    </div>
-  )
-}
-
-function RegistroContent() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const tipoParam = searchParams.get('tipo')
-  const initialTab = tipoParam === 'empresa' || tipoParam === 'administrador' ? tipoParam : 'postulante'
-  const [activeTab, setActiveTab] = useState(initialTab)
-  const [pending, startTransition] = useTransition()
-  const [error, setError] = useState('')
-
-  function handlePostulante(values: RegistroPostulanteValues) {
-    setError('')
-    startTransition(async () => {
-      const result = await registrarPostulante(values)
-      if (!result.ok) setError(result.error ?? 'Error inesperado')
-      else router.push('/auth/verificar-email')
-    })
-  }
-
-  function handleEmpresa(values: RegistroEmpresaValues) {
-    setError('')
-    startTransition(async () => {
-      const result = await registrarEmpresa(values)
-      if (!result.ok) setError(result.error ?? 'Error inesperado')
-      else router.push('/auth/verificar-email')
-    })
-  }
-
-  function handleAdmin(values: RegistroAdminValues) {
-    setError('')
-    startTransition(async () => {
-      const result = await registrarAdministrador(values)
-      if (!result.ok) setError(result.error ?? 'Error inesperado')
-      else router.push('/auth/verificar-email')
-    })
-  }
-
+export default function RegistroPage() {
   return (
     <div className="relative w-full max-w-xl overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 shadow-elevated motion-safe:animate-enter-from-below motion-safe:[animation-delay:120ms]">
       <div className="p-6 sm:p-8">
@@ -87,40 +39,49 @@ function RegistroContent() {
           </div>
         </div>
 
-        <AnimatedHeight className="mt-6">
-          <Tabs
-            value={activeTab}
-            onValueChange={(val) => {
-              setActiveTab(val)
-              setError('')
-            }}
-            className="flex-col"
+        <div className="mt-6 flex flex-col gap-3">
+          {tipos.map(({ href, icon: Icon, title, description, color }) => (
+            <Link
+              key={href}
+              href={href}
+              className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary-400 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            >
+              <span className={`flex size-11 shrink-0 items-center justify-center rounded-lg ${color}`}>
+                <Icon className="size-5" aria-hidden />
+              </span>
+              <div className="flex min-w-0 flex-col">
+                <span className="text-sm font-semibold text-foreground group-hover:text-primary-600 transition-colors">
+                  {title}
+                </span>
+                <span className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{description}</span>
+              </div>
+              <svg
+                className="ml-auto size-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </Link>
+          ))}
+        </div>
+
+        <p className="mt-6 text-center text-sm text-foreground-secondary">
+          ¿Ya tenés cuenta?{' '}
+          <Link
+            href="/auth/login"
+            className="font-semibold text-primary-600 hover:text-primary-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-sm"
           >
-            <TabsList className="h-10 w-full grid grid-cols-3">
-              <TabsTrigger value="postulante">Soy postulante</TabsTrigger>
-              <TabsTrigger value="empresa">Soy empresa</TabsTrigger>
-              <TabsTrigger value="administrador">Administración</TabsTrigger>
-            </TabsList>
-            <TabsContent value="postulante">
-              <RegistroPostulanteForm onSubmit={handlePostulante} pending={pending} error={error} />
-            </TabsContent>
-            <TabsContent value="empresa">
-              <RegistroEmpresaForm onSubmit={handleEmpresa} pending={pending} error={error} />
-            </TabsContent>
-            <TabsContent value="administrador">
-              <RegistroAdminForm onSubmit={handleAdmin} pending={pending} error={error} />
-            </TabsContent>
-          </Tabs>
-        </AnimatedHeight>
+            Iniciá sesión
+          </Link>
+        </p>
       </div>
     </div>
-  )
-}
-
-export default function RegistroPage() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center text-sm text-muted-foreground">Cargando...</div>}>
-      <RegistroContent />
-    </Suspense>
   )
 }

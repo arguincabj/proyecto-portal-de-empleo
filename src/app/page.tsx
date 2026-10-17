@@ -145,7 +145,7 @@ export default async function HomePage() {
 
             <div className="pt-6 mt-6 border-t border-gray-100">
               <Link
-                href="/auth/registro?tipo=postulante"
+                href="/auth/registro/postulante"
                 className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2.5 px-4 rounded-xl transition-colors shadow-sm"
               >
                 <span>Registrarme como postulante</span>
@@ -171,7 +171,7 @@ export default async function HomePage() {
 
             <div className="pt-6 mt-6 border-t border-gray-100">
               <Link
-                href="/auth/registro?tipo=empresa"
+                href="/auth/registro/empresa"
                 className="w-full inline-flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs py-2.5 px-4 rounded-xl transition-colors shadow-sm"
               >
                 <span>Registrar mi empresa</span>
@@ -197,7 +197,7 @@ export default async function HomePage() {
 
             <div className="pt-6 mt-6 border-t border-gray-100">
               <Link
-                href="/auth/registro?tipo=administrador"
+                href="/auth/registro/administrador"
                 className="w-full inline-flex items-center justify-center gap-2 bg-gray-900 hover:bg-black text-white font-semibold text-xs py-2.5 px-4 rounded-xl transition-colors shadow-sm"
               >
                 <span>Acceso administrativo</span>

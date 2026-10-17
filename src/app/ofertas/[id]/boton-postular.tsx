@@ -45,7 +45,7 @@ export function BotonPostular({
             Iniciar sesión
           </Link>
           <Link
-            href="/auth/registro"
+            href="/auth/registro/postulante"
             className="bg-white text-teal-700 font-medium text-sm px-6 py-2.5 rounded-xl border border-teal-300 hover:bg-teal-50 transition-colors"
           >
             Registrarme como postulante
