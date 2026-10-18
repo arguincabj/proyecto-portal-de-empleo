@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileSidebar } from '@/components/layout/mobile-sidebar'
 
@@ -8,11 +9,42 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: usuario } = await supabase
+  let { data: usuario } = await supabase
     .from('usuarios')
     .select('nombre, apellido, rol')
     .eq('id', user.id)
     .single()
+
+  if (!usuario) {
+    const { data: adminUsuario } = await supabaseAdmin
+      .from('usuarios')
+      .select('nombre, apellido, rol')
+      .eq('id', user.id)
+      .single()
+    usuario = adminUsuario
+  }
+
+  if (!usuario) {
+    const nombre = user.user_metadata?.nombre || user.email?.split('@')[0] || 'Postulante'
+    const apellido = user.user_metadata?.apellido || ''
+    const { data: nuevoUsuario } = await supabaseAdmin
+      .from('usuarios')
+      .insert({
+        id: user.id,
+        nombre,
+        apellido,
+        telefono: '',
+        rol: 'postulante',
+      })
+      .select('nombre, apellido, rol')
+      .single()
+
+    await supabaseAdmin
+      .from('postulantes')
+      .insert({ usuario_id: user.id })
+
+    usuario = nuevoUsuario
+  }
 
   return (
     <div className="flex h-dvh flex-col bg-page lg:flex-row">

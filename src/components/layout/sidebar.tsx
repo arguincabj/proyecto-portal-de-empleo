@@ -23,20 +23,18 @@ export function Sidebar({ usuario }: Props) {
           { href: '/empresa/nueva-oferta', label: 'Publicar Oferta', icon: PlusCircle },
           { href: '/ofertas', label: 'Portal de Ofertas', icon: Briefcase },
         ]
-      : usuario?.rol === 'postulante'
-      ? [
-          { href: '/inicio', label: 'Inicio', icon: LayoutDashboard },
-          { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
-          { href: '/perfil', label: 'Mi Perfil y CV', icon: UserRound },
-          { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
-        ]
       : usuario?.rol === 'municipalidad'
       ? [
           { href: '/admin', label: 'Gestión Municipal', icon: Shield },
           { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
         ]
-      : [{ href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase }]
+      : [
+          { href: '/inicio', label: 'Inicio', icon: LayoutDashboard },
+          { href: '/perfil', label: 'Mi Perfil', icon: UserRound },
+          { href: '/ofertas', label: 'Ofertas', icon: Briefcase },
+          { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
+        ]
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col bg-sidebar lg:flex">

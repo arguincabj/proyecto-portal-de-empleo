@@ -1,5 +1,8 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { UserRound, Briefcase, Send, ArrowRight } from 'lucide-react'
 
 const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
@@ -12,11 +15,20 @@ export default async function InicioPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: usuario } = await supabase
+  let { data: usuario } = await supabase
     .from('usuarios')
     .select('nombre, apellido, rol')
     .eq('id', user.id)
     .single()
+
+  if (!usuario) {
+    const { data: adminUsuario } = await supabaseAdmin
+      .from('usuarios')
+      .select('nombre, apellido, rol')
+      .eq('id', user.id)
+      .single()
+    usuario = adminUsuario
+  }
 
   if (usuario?.rol === 'empresa') {
     redirect('/empresa')
@@ -26,19 +38,81 @@ export default async function InicioPage() {
     redirect('/admin')
   }
 
+  const nombreCompleto = usuario?.nombre
+    ? `${usuario.nombre} ${usuario.apellido}`.trim()
+    : 'Postulante'
+
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-card">
-      <h1 className="text-2xl font-semibold text-foreground">
-        Bienvenido, {usuario?.nombre} {usuario?.apellido}
-      </h1>
-      <div className="mt-2">
-        <span className="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-600">
-          {ROL_LABEL[usuario?.rol ?? ''] ?? usuario?.rol}
-        </span>
+    <div className="space-y-6">
+      <div className="rounded-xl bg-surface p-6 shadow-card">
+        <h1 className="text-2xl font-semibold text-foreground">
+          Bienvenido, {nombreCompleto}
+        </h1>
+        <div className="mt-2">
+          <span className="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-600">
+            {ROL_LABEL[usuario?.rol ?? 'postulante'] ?? 'Postulante'}
+          </span>
+        </div>
+        <p className="mt-4 text-sm text-foreground-secondary">
+          Gestioná tu perfil laboral, postulate a ofertas y hacé seguimiento de tus postulaciones en el Portal de Empleo.
+        </p>
       </div>
-      <p className="mt-4 text-sm text-foreground-secondary">
-        Seleccioná una opción del menú para continuar.
-      </p>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Link
+          href="/perfil"
+          className="group rounded-xl bg-surface p-5 shadow-card transition-all hover:shadow-md hover:border-primary-500/30 border border-transparent flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 mb-3 group-hover:scale-105 transition-transform">
+              <UserRound className="size-5" />
+            </div>
+            <h2 className="text-base font-semibold text-foreground">Mi Perfil</h2>
+            <p className="mt-1 text-xs text-foreground-secondary leading-relaxed">
+              Cargá tus datos personales, tu perfil laboral (estudios, experiencia, cursos, idiomas, horarios) y tu CV.
+            </p>
+          </div>
+          <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary-600">
+            Completar perfil <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+
+        <Link
+          href="/ofertas"
+          className="group rounded-xl bg-surface p-5 shadow-card transition-all hover:shadow-md hover:border-primary-500/30 border border-transparent flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 mb-3 group-hover:scale-105 transition-transform">
+              <Briefcase className="size-5" />
+            </div>
+            <h2 className="text-base font-semibold text-foreground">Ofertas</h2>
+            <p className="mt-1 text-xs text-foreground-secondary leading-relaxed">
+              Explorá las vacantes de trabajo disponibles publicadas por empresas y comercios de Funes.
+            </p>
+          </div>
+          <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+            Ver ofertas <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+
+        <Link
+          href="/postulaciones"
+          className="group rounded-xl bg-surface p-5 shadow-card transition-all hover:shadow-md hover:border-primary-500/30 border border-transparent flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex size-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 mb-3 group-hover:scale-105 transition-transform">
+              <Send className="size-5" />
+            </div>
+            <h2 className="text-base font-semibold text-foreground">Mis Postulaciones</h2>
+            <p className="mt-1 text-xs text-foreground-secondary leading-relaxed">
+              Hacé seguimiento del estado de tus postulaciones y derivaciones en tiempo real.
+            </p>
+          </div>
+          <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-blue-600">
+            Ver postulaciones <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+      </div>
     </div>
   )
 }

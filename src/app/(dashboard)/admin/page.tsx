@@ -94,7 +94,7 @@ export default async function AdminDashboardPage() {
     `)
     .order('created_at', { ascending: false })
 
-  const empresas = (empresasRaw ?? []) as any[]
+  const empresas = empresasRaw ?? []
   const empresasPendientes = empresas.filter((e) => e.estado_aprobacion === 'pendiente').length
 
   return (
@@ -186,7 +186,7 @@ export default async function AdminDashboardPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {ofertas.map((oferta: any) => {
+            {ofertas.map((oferta) => {
               const cantPostulaciones = oferta.postulaciones?.[0]?.count ?? 0
               const badge = ESTADO_BADGE[oferta.estado] ?? { label: oferta.estado, class: 'bg-gray-100 text-gray-600 border-gray-200' }
               const isPendiente = oferta.estado === 'pendiente'
@@ -283,7 +283,7 @@ export default async function AdminDashboardPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {empresas.map((empresa: any) => {
+            {empresas.map((empresa) => {
               const isPendiente = empresa.estado_aprobacion === 'pendiente'
               const isRechazada = empresa.estado_aprobacion === 'rechazada'
               const responsable = empresa.usuario

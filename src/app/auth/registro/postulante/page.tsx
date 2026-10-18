@@ -16,8 +16,13 @@ export default function RegistroPostulantePage() {
     setError('')
     startTransition(async () => {
       const result = await registrarPostulante(values)
-      if (!result.ok) setError(result.error ?? 'Error inesperado')
-      else router.push('/auth/verificar-email')
+      if (!result.ok) {
+        setError(result.error ?? 'Error inesperado')
+      } else if (result.hasSession) {
+        router.push('/inicio')
+      } else {
+        router.push('/auth/verificar-email')
+      }
     })
   }
 

@@ -70,6 +70,50 @@ export async function actualizarPerfil(formData: FormData): Promise<ActionResult
   }
 }
 
+export async function actualizarPerfilLaboral(formData: FormData): Promise<ActionResult> {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'No autenticado' }
+
+    const { data: usuarioRol } = await supabase.from('usuarios').select('rol').eq('id', user.id).single()
+    if (usuarioRol?.rol !== 'postulante') return { ok: false, error: 'Acción no disponible para tu tipo de cuenta' }
+
+    const estudios = (formData.get('estudios') as string | null)?.trim() ?? ''
+    const cursos = (formData.get('cursos') as string | null)?.trim() ?? ''
+    const experiencia = (formData.get('experiencia') as string | null)?.trim() ?? ''
+    const idiomas = (formData.get('idiomas') as string | null)?.trim() ?? ''
+    const habilidades = (formData.get('habilidades') as string | null)?.trim() ?? ''
+    const horarios = (formData.get('horarios') as string | null)?.trim() ?? ''
+
+    const { error: errorPostulante } = await supabaseAdmin
+      .from('postulantes')
+      .update({
+        estudios,
+        cursos,
+        experiencia,
+        idiomas,
+        habilidades,
+        horarios,
+      })
+      .eq('usuario_id', user.id)
+
+    if (errorPostulante) {
+      return {
+        ok: false,
+        error: errorPostulante.message.includes('column')
+          ? 'Para guardar el perfil laboral, ejecutá la migración 010 en el Editor SQL de Supabase.'
+          : 'No se pudo actualizar el perfil laboral',
+      }
+    }
+
+    revalidatePath('/perfil')
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Error inesperado al actualizar el perfil laboral' }
+  }
+}
+
 export async function subirCv(formData: FormData): Promise<ActionResult> {
   try {
     const supabase = await createSupabaseServerClient()

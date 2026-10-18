@@ -57,6 +57,7 @@ export async function crearOfertaEmpresa(data: {
     const { data: nuevaOferta, error: ofertaError } = await supabaseAdmin
       .from('ofertas')
       .insert({
+        empresa_id: empresa.id,
         empresa_nombre: empresa.razon_social,
         titulo: data.titulo.trim(),
         descripcion: descripcionFinal,

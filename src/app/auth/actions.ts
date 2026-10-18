@@ -62,7 +62,8 @@ export async function registrarPostulante(data: {
       return { ok: false, error: `No se pudo crear el perfil: ${errorPostulante.message}` }
     }
 
-    return { ok: true }
+    const hasSession = !!authData.session
+    return { ok: true, hasSession }
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : 'Error inesperado al crear la cuenta'
     return { ok: false, error: errorMsg }
