@@ -50,7 +50,6 @@ export default async function EmpresaDashboardPage() {
   // 4. Calcular métricas
   const totalOfertas = ofertas.length
   const ofertasPublicadas = ofertas.filter((o) => o.estado === 'publicada').length
-  const ofertasCerradas = ofertas.filter((o) => o.estado === 'cerrada').length
 
   // 5. Obtener derivaciones enviadas por la municipalidad a esta empresa
   const { data: derivacionesData } = await supabase
@@ -178,7 +177,6 @@ export default async function EmpresaDashboardPage() {
           <div className="divide-y divide-gray-100">
             {ofertas.map((oferta) => {
               const cantPostulaciones = oferta.postulaciones?.[0]?.count ?? 0
-              const isPublicada = oferta.estado === 'publicada'
               return (
                 <div
                   key={oferta.id}
@@ -252,7 +250,7 @@ export default async function EmpresaDashboardPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {derivaciones.map((derivacion: any) => {
+            {derivaciones.map((derivacion) => {
               const postulacion = Array.isArray(derivacion.postulaciones)
                 ? derivacion.postulaciones[0]
                 : derivacion.postulaciones

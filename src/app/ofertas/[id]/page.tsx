@@ -28,8 +28,8 @@ export default async function OfertaDetallePage({ params }: PageProps) {
     .select('categoria:categorias(nombre)')
     .eq('oferta_id', id)
 
-  const categorias = ofertaCategorias
-    ?.map((item: any) => {
+  const categorias = (ofertaCategorias as Array<{ categoria: { nombre: string } | { nombre: string }[] | null }> | null)
+    ?.map((item) => {
       const cat = Array.isArray(item.categoria) ? item.categoria[0] : item.categoria
       return cat?.nombre
     })
