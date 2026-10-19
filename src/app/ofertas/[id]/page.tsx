@@ -29,8 +29,11 @@ export default async function OfertaDetallePage({ params }: PageProps) {
     .eq('oferta_id', id)
 
   const categorias = ofertaCategorias
-    ?.map((item: any) => item.categoria?.nombre)
-    .filter(Boolean) as string[] | undefined
+    ?.map((item: any) => {
+      const cat = Array.isArray(item.categoria) ? item.categoria[0] : item.categoria
+      return cat?.nombre
+    })
+    .filter((nombre): nombre is string => Boolean(nombre))
 
   // 3. Verificar estado de autenticación y postulación
   const {

@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { BotonModerarOferta } from './boton-moderar'
 import { BotonModerarEmpresa } from './boton-moderar-empresa'
-import { Shield, Briefcase, Clock, CheckCircle2, XCircle, AlertTriangle, ExternalLink, Building2 } from 'lucide-react'
+import { Shield, Briefcase, Clock, CheckCircle2, AlertTriangle, ExternalLink, Building2 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -312,22 +312,28 @@ export default async function AdminDashboardPage() {
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
-                      {empresa.cuit && <span className="font-mono">CUIT: {empresa.cuit}</span>}
-                      {empresa.rubro && <span>{empresa.rubro}</span>}
-                    </div>
+                    ```tsx
+<div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
+  {empresa.cuit && <span className="font-mono">CUIT: {empresa.cuit}</span>}
+  {empresa.rubro && <span>{empresa.rubro}</span>}
+</div>
 
-                    {(responsable || empresa.email) && (
-                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
-                        {responsable && (
-                          <span>
-                            👤 {responsable.nombre} {responsable.apellido}
-                          </span>
-                        )}
-                        {empresa.email && <span>📧 {empresa.email}</span>}
-                        {responsable?.telefono && <span>📞 {responsable.telefono}</span>}
-                      </div>
-                    )}
+{((responsable?.length ?? 0) > 0 || empresa.email) && (
+  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
+    {responsable?.map((r, index) => (
+      <span key={index}>
+        👤 {r.nombre} {r.apellido}
+      </span>
+    ))}
+    {empresa.email && <span>📧 {empresa.email}</span>}
+    {responsable?.map((r, index) =>
+      r.telefono ? (
+        <span key={`telefono-${index}`}>📞 {r.telefono}</span>
+      ) : null
+    )}
+  </div>
+)}
+```
 
                     {isRechazada && empresa.motivo_rechazo && (
                       <div className="bg-red-50/80 border border-red-200/80 rounded-xl p-3 text-xs text-red-900 mt-2">

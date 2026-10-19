@@ -83,8 +83,7 @@ export default async function EmpresaDashboardPage() {
     .eq('postulaciones.ofertas.empresa_nombre', razonSocial)
     .order('created_at', { ascending: false })
 
-  const derivaciones = (derivacionesData ?? []) as any[]
-
+  const derivaciones = derivacionesData ?? []
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Encabezado Principal */}
@@ -177,7 +176,7 @@ export default async function EmpresaDashboardPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {ofertas.map((oferta: any) => {
+            {ofertas.map((oferta) => {
               const cantPostulaciones = oferta.postulaciones?.[0]?.count ?? 0
               const isPublicada = oferta.estado === 'publicada'
               return (
@@ -254,9 +253,20 @@ export default async function EmpresaDashboardPage() {
         ) : (
           <div className="divide-y divide-gray-100">
             {derivaciones.map((derivacion: any) => {
-              const postulanteUser = derivacion.postulaciones?.postulante?.usuario
-              const cvUrl = derivacion.postulaciones?.postulante?.cv_url
-              const puesto = derivacion.postulaciones?.oferta?.titulo
+              const postulacion = Array.isArray(derivacion.postulaciones)
+                ? derivacion.postulaciones[0]
+                : derivacion.postulaciones
+              const postulante = Array.isArray(postulacion?.postulante)
+                ? postulacion.postulante[0]
+                : postulacion?.postulante
+              const postulanteUser = Array.isArray(postulante?.usuario)
+                ? postulante.usuario[0]
+                : postulante?.usuario
+              const cvUrl = postulante?.cv_url
+              const oferta = Array.isArray(postulacion?.oferta)
+                ? postulacion.oferta[0]
+                : postulacion?.oferta
+              const puesto = oferta?.titulo
 
               return (
                 <div key={derivacion.id} className="p-6 space-y-3">

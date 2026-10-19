@@ -5,7 +5,7 @@ import { FileText, Building2, Calendar, Clock, CheckCircle2, XCircle, ArrowUpRig
 
 export const dynamic = 'force-dynamic'
 
-const ESTADOS_INFO: Record<string, { label: string; badgeClass: string; icon: any; desc: string }> = {
+const ESTADOS_INFO: Record<string, { label: string; badgeClass: string; icon: typeof Clock; desc: string }> = {
   recibida: {
     label: 'Recibida',
     badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -115,7 +115,7 @@ export default async function MisPostulacionesPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {postulaciones.map((p: any) => {
+          {postulaciones.map((p) => {
             const oferta = Array.isArray(p.oferta) ? p.oferta[0] : p.oferta
             const estadoCfg = ESTADOS_INFO[p.estado] ?? {
               label: p.estado,
