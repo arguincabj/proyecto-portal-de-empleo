@@ -94,9 +94,6 @@ export default async function AdminDashboardPage() {
     `)
     .order('created_at', { ascending: false })
 
-<<<<<<< HEAD
-  const empresas = empresasRaw ?? []
-=======
   if (errorEmpresas && errorEmpresas.message?.includes('motivo_rechazo')) {
     const fallback = await supabaseAdmin
       .from('empresas')
@@ -119,7 +116,7 @@ export default async function AdminDashboardPage() {
   }
 
   const empresas = (empresasRaw ?? []) as any[]
->>>>>>> 70f5548 (arregle perfil de empresa)
+
   const empresasPendientes = empresas.filter((e) => e.estado_aprobacion === 'pendiente').length
 
   return (
@@ -337,7 +334,6 @@ export default async function AdminDashboardPage() {
                       </span>
                     </div>
 
-                    ```tsx
 <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
   {empresa.cuit && <span className="font-mono">CUIT: {empresa.cuit}</span>}
   {empresa.rubro && <span>{empresa.rubro}</span>}
@@ -358,7 +354,6 @@ export default async function AdminDashboardPage() {
     )}
   </div>
 )}
-```
 
                     {isRechazada && empresa.motivo_rechazo && (
                       <div className="bg-red-50/80 border border-red-200/80 rounded-xl p-3 text-xs text-red-900 mt-2">
