@@ -84,10 +84,18 @@ export async function moderarEmpresa(
       payload.motivo_rechazo = null
     }
 
-    const { error } = await supabaseAdmin
+    let { error } = await supabaseAdmin
       .from('empresas')
       .update(payload)
       .eq('id', empresaId)
+
+    if (error && error.message?.includes('motivo_rechazo')) {
+      const fallback = await supabaseAdmin
+        .from('empresas')
+        .update({ estado_aprobacion: nuevoEstado })
+        .eq('id', empresaId)
+      error = fallback.error
+    }
 
     if (error) {
       return { ok: false, error: `No se pudo actualizar el estado: ${error.message}` }

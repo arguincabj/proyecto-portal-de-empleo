@@ -75,7 +75,7 @@ export default async function AdminDashboardPage() {
   const cerradas = ofertas.filter((o) => o.estado === 'cerrada').length
 
   // Obtener todos los perfiles de empresa
-  const { data: empresasRaw } = await supabaseAdmin
+  let { data: empresasRaw, error: errorEmpresas } = await supabaseAdmin
     .from('empresas')
     .select(`
       id,
@@ -94,7 +94,32 @@ export default async function AdminDashboardPage() {
     `)
     .order('created_at', { ascending: false })
 
+<<<<<<< HEAD
   const empresas = empresasRaw ?? []
+=======
+  if (errorEmpresas && errorEmpresas.message?.includes('motivo_rechazo')) {
+    const fallback = await supabaseAdmin
+      .from('empresas')
+      .select(`
+        id,
+        razon_social,
+        cuit,
+        rubro,
+        email,
+        estado_aprobacion,
+        created_at,
+        usuario:usuarios!inner (
+          nombre,
+          apellido,
+          telefono
+        )
+      `)
+      .order('created_at', { ascending: false })
+    empresasRaw = (fallback.data ?? []).map((e) => ({ ...e, motivo_rechazo: null }))
+  }
+
+  const empresas = (empresasRaw ?? []) as any[]
+>>>>>>> 70f5548 (arregle perfil de empresa)
   const empresasPendientes = empresas.filter((e) => e.estado_aprobacion === 'pendiente').length
 
   return (
