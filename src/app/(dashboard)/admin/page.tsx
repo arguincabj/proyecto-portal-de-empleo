@@ -341,17 +341,17 @@ export default async function AdminDashboardPage() {
 
 {((responsable?.length ?? 0) > 0 || empresa.email) && (
   <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
-    {responsable?.map((r, index) => (
-      <span key={index}>
-        👤 {r.nombre} {r.apellido}
-      </span>
-    ))}
+    {responsable?.map((r: { nombre: string; apellido: string }, index: number) => (
+  <span key={index}>
+    👤 {r.nombre} {r.apellido}
+  </span>
+))}
     {empresa.email && <span>📧 {empresa.email}</span>}
-    {responsable?.map((r, index) =>
-      r.telefono ? (
-        <span key={`telefono-${index}`}>📞 {r.telefono}</span>
-      ) : null
-    )}
+    {responsable?.map((r: { nombre: string; apellido: string; telefono?: string | null }, index: number) =>
+  r.telefono ? (
+    <span key={`telefono-${index}`}>📞 {r.telefono}</span>
+  ) : null
+)}
   </div>
 )}
 
