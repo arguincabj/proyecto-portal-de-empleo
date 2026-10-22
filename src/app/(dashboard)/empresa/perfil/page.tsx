@@ -48,11 +48,13 @@ export default async function EmpresaPerfilPage() {
   if (usuario?.rol !== 'empresa') redirect('/inicio')
 
   // Obtener empresa (con select seguro por si la columna motivo_rechazo aún no fue migrada)
-  const { data: empresa, error: errorEmpresa } = await supabase
+  const { data: empresaInicial, error: errorEmpresa } = await supabase
     .from('empresas')
     .select('id, razon_social, cuit, rubro, descripcion, email, estado_aprobacion, motivo_rechazo, created_at')
     .eq('usuario_id', user.id)
     .maybeSingle()
+
+  let empresa = empresaInicial
 
   if (errorEmpresa && errorEmpresa.message?.includes('motivo_rechazo')) {
     const fallback = await supabase
