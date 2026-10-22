@@ -308,7 +308,7 @@ export default async function AdminDashboardPage() {
             {empresas.map((empresa) => {
               const isPendiente = empresa.estado_aprobacion === 'pendiente'
               const isRechazada = empresa.estado_aprobacion === 'rechazada'
-              const responsable = empresa.usuario
+              const responsable: any[] = empresa.usuario ? (Array.isArray(empresa.usuario) ? empresa.usuario : [empresa.usuario]) : []
 
               const badgeConfig: Record<string, { label: string; cls: string }> = {
                 pendiente: { label: 'Pendiente', cls: 'bg-amber-50 text-amber-700 border-amber-200 font-bold' },
@@ -341,13 +341,13 @@ export default async function AdminDashboardPage() {
 
 {((responsable?.length ?? 0) > 0 || empresa.email) && (
   <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
-    {responsable?.map((r, index) => (
+    {responsable?.map((r: any, index: number) => (
       <span key={index}>
         👤 {r.nombre} {r.apellido}
       </span>
     ))}
     {empresa.email && <span>📧 {empresa.email}</span>}
-    {responsable?.map((r, index) =>
+    {responsable?.map((r: any, index: number) =>
       r.telefono ? (
         <span key={`telefono-${index}`}>📞 {r.telefono}</span>
       ) : null
