@@ -125,7 +125,7 @@ export async function subirCv(formData: FormData): Promise<ActionResult> {
 
     const archivo = formData.get('cv') as File | null
     if (!archivo || archivo.size === 0) return { ok: false, error: 'Seleccioná un archivo' }
-    if (archivo.size > CV_MAX_BYTES) return { ok: false, error: 'El archivo no puede superar 5 MB' }
+    if (archivo.size > CV_MAX_BYTES) return { ok: false, error: 'El archivo no puede superar 20 MB' }
 
     const ext = archivo.name.split('.').pop()?.toLowerCase() ?? ''
     if (!CV_ALLOWED_TYPES.has(archivo.type) || !CV_ALLOWED_EXTS.has(ext)) {

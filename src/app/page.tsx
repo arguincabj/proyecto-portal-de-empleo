@@ -14,7 +14,7 @@ export default async function HomePage() {
     .select('id, titulo, empresa_nombre, descripcion, created_at')
     .eq('estado', 'publicada')
     .order('created_at', { ascending: false })
-    .limit(6)
+    .limit(10)
 
   const ofertas: OfertaSlide[] = ofertasRaw ?? []
 

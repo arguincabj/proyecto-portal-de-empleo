@@ -18,7 +18,7 @@ const CV_ACCEPT = {
 
 function mensajeRechazo(rechazos: FileRejection[]) {
   const codigo = rechazos[0]?.errors[0]?.code
-  if (codigo === 'file-too-large') return 'El archivo no puede superar 5 MB'
+  if (codigo === 'file-too-large') return 'El archivo no puede superar 20 MB'
   if (codigo === 'file-invalid-type') return 'Solo se aceptan archivos PDF, DOC o DOCX'
   if (codigo === 'too-many-files') return 'Subí un solo archivo'
   return 'No se pudo cargar el archivo'
@@ -48,7 +48,7 @@ export function CvUpload({ cvUrl, cv }: Props) {
         else toast.error(result.error)
       } catch {
         // Next.js rechaza el request antes de llegar a la acción si supera bodySizeLimit
-        toast.error('No se pudo subir el archivo. Verificá que no supere 5 MB.')
+        toast.error('No se pudo subir el archivo. Verificá que no supere 20 MB.')
       }
     })
   }
@@ -148,7 +148,7 @@ export function CvUpload({ cvUrl, cv }: Props) {
             <p className="text-xs text-foreground-secondary">
               Arrastrá el archivo acá o tocá para elegirlo
             </p>
-            <p className="text-xs text-foreground-muted">PDF, DOC o DOCX — máximo 5 MB</p>
+            <p className="text-xs text-foreground-muted">PDF, DOC o DOCX — máximo 20 MB</p>
           </div>
         </DropzoneEmptyState>
       </Dropzone>
