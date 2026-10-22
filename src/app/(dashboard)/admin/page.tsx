@@ -15,6 +15,18 @@ const ESTADO_BADGE: Record<string, { label: string; class: string }> = {
   rechazada: { label: 'Rechazada', class: 'bg-red-50 text-red-700 border-red-200' },
 }
 
+interface EmpresaAdmin {
+  id: string
+  razon_social: string | null
+  cuit: string | null
+  rubro: string | null
+  email: string | null
+  estado_aprobacion: string
+  motivo_rechazo: string | null
+  created_at: string
+  usuario?: Array<{ nombre: string; apellido: string; telefono?: string | null }> | null
+}
+
 export default async function AdminDashboardPage() {
   const supabase = await createSupabaseServerClient()
   const {
@@ -75,7 +87,7 @@ export default async function AdminDashboardPage() {
   const cerradas = ofertas.filter((o) => o.estado === 'cerrada').length
 
   // Obtener todos los perfiles de empresa
-  let { data: empresasRaw, error: errorEmpresas } = await supabaseAdmin
+  const { data: rawData, error: errorEmpresas } = await supabaseAdmin
     .from('empresas')
     .select(`
       id,
@@ -93,6 +105,8 @@ export default async function AdminDashboardPage() {
       )
     `)
     .order('created_at', { ascending: false })
+
+  let empresasRaw = rawData
 
   if (errorEmpresas && errorEmpresas.message?.includes('motivo_rechazo')) {
     const fallback = await supabaseAdmin
@@ -115,7 +129,7 @@ export default async function AdminDashboardPage() {
     empresasRaw = (fallback.data ?? []).map((e) => ({ ...e, motivo_rechazo: null }))
   }
 
-  const empresas = (empresasRaw ?? []) as any[]
+  const empresas = (empresasRaw ?? []) as unknown as EmpresaAdmin[]
 
   const empresasPendientes = empresas.filter((e) => e.estado_aprobacion === 'pendiente').length
 
@@ -341,15 +355,15 @@ export default async function AdminDashboardPage() {
 
 {((responsable?.length ?? 0) > 0 || empresa.email) && (
   <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
-    {responsable?.map((r: any, index: number) => (
+    {responsable?.map((r: { nombre: string; apellido: string; telefono?: string | null }, index: number) => (
       <span key={index}>
         👤 {r.nombre} {r.apellido}
       </span>
     ))}
     {empresa.email && <span>📧 {empresa.email}</span>}
-    {responsable?.map((r: any, index: number) =>
+    {responsable?.map((r: { nombre: string; apellido: string; telefono?: string | null }, index: number) =>
       r.telefono ? (
-        <span key={`telefono-${index}`}>📞 {r.telefono}</span>
+        <span key={"telefono-" + index}>📞 {r.telefono}</span>
       ) : null
     )}
   </div>
