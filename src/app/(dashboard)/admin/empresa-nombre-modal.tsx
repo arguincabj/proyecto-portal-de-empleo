@@ -4,15 +4,7 @@ import { useState } from 'react'
 import {
   Building2,
   X,
-  Mail,
-  Phone,
-  Calendar,
-  FileText,
   User,
-  CheckCircle2,
-  Clock,
-  XCircle,
-  Tag,
 } from 'lucide-react'
 
 export type EmpresaDetalleFicha = {

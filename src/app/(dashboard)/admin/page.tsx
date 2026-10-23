@@ -29,6 +29,41 @@ interface EmpresaAdmin {
   usuario?: Array<{ nombre: string; apellido: string; telefono?: string | null }> | null
 }
 
+type ResponsableItem = { nombre: string; apellido: string; telefono?: string | null }
+
+interface PostulacionItem {
+  id: string
+  estado: string | null
+  created_at: string
+  oferta: {
+    id: string
+    titulo: string
+    empresa_nombre: string | null
+  } | null
+  postulante: {
+    id: string
+    usuario_id: string | null
+    dni: string | null
+    cv_url: string | null
+    estudios: string | null
+    cursos: string | null
+    experiencia: string | null
+    idiomas: string | null
+    habilidades: string | null
+    horarios: string | null
+    usuario: {
+      id: string
+      nombre: string
+      apellido: string
+      telefono: string | null
+    } | null
+  } | null
+}
+
+function calcularEsReciente(createdAt: string): boolean {
+  return Date.now() - new Date(createdAt).getTime() < 48 * 60 * 60 * 1000
+}
+
 export default async function AdminDashboardPage() {
   const supabase = await createSupabaseServerClient()
   const {
@@ -86,7 +121,6 @@ export default async function AdminDashboardPage() {
   const totalOfertas = ofertas.length
   const pendientes = ofertas.filter((o) => o.estado === 'pendiente').length
   const publicadas = ofertas.filter((o) => o.estado === 'publicada').length
-  const cerradas = ofertas.filter((o) => o.estado === 'cerrada').length
 
   // 2. Obtener usuarios de auth para mapear emails de postulantes
   const { data: authUsersData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
@@ -128,14 +162,14 @@ export default async function AdminDashboardPage() {
     `)
     .order('created_at', { ascending: false })
 
-  const postulaciones = (postulacionesRaw ?? []) as any[]
+  const postulaciones = (postulacionesRaw ?? []) as unknown as PostulacionItem[]
 
   // Obtener IDs de derivaciones existentes
   const { data: derivacionesData } = await supabaseAdmin
     .from('derivaciones')
     .select('postulacion_id')
 
-  const derivacionesSet = new Set((derivacionesData ?? []).map((d: any) => d.postulacion_id))
+  const derivacionesSet = new Set((derivacionesData ?? []).map((d: { postulacion_id: string }) => d.postulacion_id))
 
   // Generar URLs firmadas y mapas de postulantes
   const postulantesPorOferta: Record<string, PostulanteDetalle[]> = {}
@@ -181,7 +215,7 @@ export default async function AdminDashboardPage() {
       minute: '2-digit',
     })
 
-    const esReciente = Date.now() - fechaObj.getTime() < 48 * 60 * 60 * 1000
+    const esReciente = calcularEsReciente(post.created_at)
     const esDerivada = post.estado === 'derivada' || derivacionesSet.has(post.id)
 
     const ficha: PostulanteFicha = {
@@ -191,7 +225,7 @@ export default async function AdminDashboardPage() {
       email,
       dni,
       telefono,
-      cv_url: cvUrl,
+      cv_url: cvUrl ?? null,
       cv_signed_url: cvSignedUrl,
       fecha_postulacion: fechaFormateada,
       estado: post.estado || 'recibida',
@@ -551,7 +585,7 @@ export default async function AdminDashboardPage() {
             {empresas.map((empresa) => {
               const isPendiente = empresa.estado_aprobacion === 'pendiente'
               const isRechazada = empresa.estado_aprobacion === 'rechazada'
-              const responsable: any[] = empresa.usuario ? (Array.isArray(empresa.usuario) ? empresa.usuario : [empresa.usuario]) : []
+              const responsable: ResponsableItem[] = empresa.usuario ? (Array.isArray(empresa.usuario) ? (empresa.usuario as ResponsableItem[]) : [empresa.usuario as ResponsableItem]) : []
 
               const badgeConfig: Record<string, { label: string; cls: string }> = {
                 pendiente: { label: 'Pendiente', cls: 'bg-amber-50 text-amber-700 border-amber-200 font-bold' },
