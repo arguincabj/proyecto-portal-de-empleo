@@ -4,9 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { BotonModerarOferta } from './boton-moderar'
 import { BotonModerarEmpresa } from './boton-moderar-empresa'
-import { ModalPostulantes, type PostulanteDetalle } from './modal-postulantes'
-import { PostulanteNombreModal, type PostulanteFicha } from './postulante-nombre-modal'
-import { Shield, Briefcase, Clock, CheckCircle2, AlertTriangle, ExternalLink, Building2, Bell, Users, FileText } from 'lucide-react'
+import { Shield, Briefcase, Clock, CheckCircle2, AlertTriangle, ExternalLink, Building2 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,53 +13,6 @@ const ESTADO_BADGE: Record<string, { label: string; class: string }> = {
   pendiente: { label: 'Pendiente de revisión', class: 'bg-amber-50 text-amber-700 border-amber-200 font-bold' },
   cerrada: { label: 'Cerrada', class: 'bg-gray-100 text-gray-600 border-gray-200' },
   rechazada: { label: 'Rechazada', class: 'bg-red-50 text-red-700 border-red-200' },
-}
-
-interface EmpresaAdmin {
-  id: string
-  razon_social: string | null
-  cuit: string | null
-  rubro: string | null
-  email: string | null
-  estado_aprobacion: string
-  motivo_rechazo: string | null
-  created_at: string
-  usuario?: Array<{ nombre: string; apellido: string; telefono?: string | null }> | null
-}
-
-type ResponsableItem = { nombre: string; apellido: string; telefono?: string | null }
-
-interface PostulacionItem {
-  id: string
-  estado: string | null
-  created_at: string
-  oferta: {
-    id: string
-    titulo: string
-    empresa_nombre: string | null
-  } | null
-  postulante: {
-    id: string
-    usuario_id: string | null
-    dni: string | null
-    cv_url: string | null
-    estudios: string | null
-    cursos: string | null
-    experiencia: string | null
-    idiomas: string | null
-    habilidades: string | null
-    horarios: string | null
-    usuario: {
-      id: string
-      nombre: string
-      apellido: string
-      telefono: string | null
-    } | null
-  } | null
-}
-
-function calcularEsReciente(createdAt: string): boolean {
-  return Date.now() - new Date(createdAt).getTime() < 48 * 60 * 60 * 1000
 }
 
 export default async function AdminDashboardPage() {
@@ -101,7 +52,7 @@ export default async function AdminDashboardPage() {
     )
   }
 
-  // 1. Obtener todas las ofertas creadas en el sistema usando admin client
+  // Obtener todas las ofertas creadas en el sistema usando admin client
   const { data: ofertasRaw, error: errorOfertas } = await supabaseAdmin
     .from('ofertas')
     .select(`
@@ -121,151 +72,10 @@ export default async function AdminDashboardPage() {
   const totalOfertas = ofertas.length
   const pendientes = ofertas.filter((o) => o.estado === 'pendiente').length
   const publicadas = ofertas.filter((o) => o.estado === 'publicada').length
+  const cerradas = ofertas.filter((o) => o.estado === 'cerrada').length
 
-  // 2. Obtener usuarios de auth para mapear emails de postulantes
-  const { data: authUsersData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
-  const emailsPorUsuarioId: Record<string, string> = {}
-  for (const u of authUsersData?.users ?? []) {
-    if (u.email) emailsPorUsuarioId[u.id] = u.email
-  }
-
-  // 3. Obtener postulaciones detalladas con perfil laboral completo
-  const { data: postulacionesRaw } = await supabaseAdmin
-    .from('postulaciones')
-    .select(`
-      id,
-      estado,
-      created_at,
-      oferta:ofertas (
-        id,
-        titulo,
-        empresa_nombre
-      ),
-      postulante:postulantes (
-        id,
-        usuario_id,
-        dni,
-        cv_url,
-        estudios,
-        cursos,
-        experiencia,
-        idiomas,
-        habilidades,
-        horarios,
-        usuario:usuarios (
-          id,
-          nombre,
-          apellido,
-          telefono
-        )
-      )
-    `)
-    .order('created_at', { ascending: false })
-
-  const postulaciones = (postulacionesRaw ?? []) as unknown as PostulacionItem[]
-
-  // Obtener IDs de derivaciones existentes
-  const { data: derivacionesData } = await supabaseAdmin
-    .from('derivaciones')
-    .select('postulacion_id')
-
-  const derivacionesSet = new Set((derivacionesData ?? []).map((d: { postulacion_id: string }) => d.postulacion_id))
-
-  // Generar URLs firmadas y mapas de postulantes
-  const postulantesPorOferta: Record<string, PostulanteDetalle[]> = {}
-  const ultimasNotificaciones: Array<{
-    id: string
-    nombrePostulante: string
-    telefono: string
-    tituloOferta: string
-    empresaNombre: string
-    cvSignedUrl: string | null
-    fechaFormateada: string
-    esReciente: boolean
-    ficha: PostulanteFicha
-  }> = []
-
-  // Preprocesar postulaciones
-  for (const post of postulaciones) {
-    const ofertaId = post.oferta?.id
-    const ofertaTitulo = post.oferta?.titulo || 'Oferta sin título'
-    const empresaNombre = post.oferta?.empresa_nombre || 'Empresa'
-    const postUser = post.postulante?.usuario
-    const usuarioId = post.postulante?.usuario_id || postUser?.id
-    const nombre = postUser?.nombre || 'Postulante'
-    const apellido = postUser?.apellido || ''
-    const telefono = postUser?.telefono || ''
-    const dni = post.postulante?.dni || null
-    const cvUrl = post.postulante?.cv_url
-    const email = (usuarioId && emailsPorUsuarioId[usuarioId]) ? emailsPorUsuarioId[usuarioId] : null
-
-    let cvSignedUrl: string | null = null
-    if (cvUrl) {
-      const { data: signed } = await supabaseAdmin.storage
-        .from('curricula')
-        .createSignedUrl(cvUrl, 3600)
-      cvSignedUrl = signed?.signedUrl ?? null
-    }
-
-    const fechaObj = new Date(post.created_at)
-    const fechaFormateada = fechaObj.toLocaleDateString('es-AR', {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-
-    const esReciente = calcularEsReciente(post.created_at)
-    const esDerivada = post.estado === 'derivada' || derivacionesSet.has(post.id)
-
-    const ficha: PostulanteFicha = {
-      id: post.id,
-      nombre,
-      apellido,
-      email,
-      dni,
-      telefono,
-      cv_url: cvUrl ?? null,
-      cv_signed_url: cvSignedUrl,
-      fecha_postulacion: fechaFormateada,
-      estado: post.estado || 'recibida',
-      tituloOferta: ofertaTitulo,
-      empresaNombre,
-      estudios: post.postulante?.estudios,
-      cursos: post.postulante?.cursos,
-      experiencia: post.postulante?.experiencia,
-      idiomas: post.postulante?.idiomas,
-      habilidades: post.postulante?.habilidades,
-      horarios: post.postulante?.horarios,
-      derivada: esDerivada,
-    }
-
-    const detalle: PostulanteDetalle = {
-      ...ficha,
-    }
-
-    if (ofertaId) {
-      if (!postulantesPorOferta[ofertaId]) postulantesPorOferta[ofertaId] = []
-      postulantesPorOferta[ofertaId].push(detalle)
-    }
-
-    if (ultimasNotificaciones.length < 5) {
-      ultimasNotificaciones.push({
-        id: post.id,
-        nombrePostulante: `${nombre} ${apellido}`.trim(),
-        telefono,
-        tituloOferta: ofertaTitulo,
-        empresaNombre,
-        cvSignedUrl,
-        fechaFormateada,
-        esReciente,
-        ficha,
-      })
-    }
-  }
-
-  // 4. Obtener todos los perfiles de empresa
-  const { data: rawData, error: errorEmpresas } = await supabaseAdmin
+  // Obtener todos los perfiles de empresa
+  let { data: empresasRaw, error: errorEmpresas } = await supabaseAdmin
     .from('empresas')
     .select(`
       id,
@@ -283,8 +93,6 @@ export default async function AdminDashboardPage() {
       )
     `)
     .order('created_at', { ascending: false })
-
-  let empresasRaw = rawData
 
   if (errorEmpresas && errorEmpresas.message?.includes('motivo_rechazo')) {
     const fallback = await supabaseAdmin
@@ -307,7 +115,8 @@ export default async function AdminDashboardPage() {
     empresasRaw = (fallback.data ?? []).map((e) => ({ ...e, motivo_rechazo: null }))
   }
 
-  const empresas = (empresasRaw ?? []) as unknown as EmpresaAdmin[]
+  const empresas = empresasRaw ?? []
+
   const empresasPendientes = empresas.filter((e) => e.estado_aprobacion === 'pendiente').length
 
   return (
@@ -323,7 +132,7 @@ export default async function AdminDashboardPage() {
             Panel de Administración
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Bienvenido, {usuario.nombre} {usuario.apellido}. Moderá ofertas y gestioná postulaciones y derivaciones.
+            Bienvenido, {usuario.nombre} {usuario.apellido}. Moderá y aprobá las ofertas laborales cargadas por las empresas.
           </p>
         </div>
 
@@ -356,13 +165,13 @@ export default async function AdminDashboardPage() {
           <p className="text-xs text-emerald-700 mt-1">Visibles en el portal</p>
         </div>
 
-        <div className="bg-teal-50 rounded-2xl border border-teal-200 p-5 shadow-sm">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-teal-800 uppercase tracking-wider">Total Postulaciones</p>
-            <Users className="size-4 text-teal-600" />
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cerradas / Pausadas</p>
+            <Briefcase className="size-4 text-gray-400" />
           </div>
-          <p className="text-3xl font-black text-teal-900 mt-3">{postulaciones.length}</p>
-          <p className="text-xs text-teal-700 mt-1">Recibidas en todas las ofertas</p>
+          <p className="text-3xl font-black text-gray-800 mt-3">{cerradas}</p>
+          <p className="text-xs text-gray-500 mt-1">Convocatoria finalizada</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
@@ -375,92 +184,12 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Alertas / Actividad Reciente de Postulaciones */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-teal-50/40">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-teal-100 text-teal-700">
-              <Bell className="size-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-gray-900">Nuevas Postulaciones Recibidas</h2>
-              <p className="text-xs text-gray-500">Tocá el nombre del postulante para ver sus datos de contacto (tel, mail, DNI) y derivarlo a la empresa.</p>
-            </div>
-          </div>
-          <span className="text-xs font-semibold text-teal-800 bg-teal-100/80 px-2.5 py-1 rounded-full">
-            {postulaciones.length} en total
-          </span>
-        </div>
-
-        {ultimasNotificaciones.length === 0 ? (
-          <div className="p-10 text-center text-gray-500">
-            <Users className="size-8 text-gray-300 mx-auto mb-2" />
-            <p className="font-semibold text-sm text-gray-700">Sin postulaciones registradas todavía</p>
-            <p className="text-xs text-gray-400 mt-1">Aquí verás en tiempo real las postulaciones a medida que los postulantes apliquen.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {ultimasNotificaciones.map((notif) => (
-              <div key={notif.id} className="p-4 sm:px-6 hover:bg-gray-50/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Al tocar el nombre, abre el modal con sus datos de contacto y derivación */}
-                    <PostulanteNombreModal postulante={notif.ficha} />
-
-                    <span className="text-xs text-gray-500">se postuló a</span>
-                    <span className="text-xs font-semibold text-teal-800 bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded-lg">
-                      {notif.tituloOferta}
-                    </span>
-                    {notif.esReciente && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                        Nueva
-                      </span>
-                    )}
-                    {notif.ficha.derivada && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
-                        Derivada
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-4 text-xs text-gray-400 font-mono">
-                    <span>🏢 {notif.empresaNombre}</span>
-                    {notif.telefono && <span>📞 {notif.telefono}</span>}
-                    <span>🕒 {notif.fechaFormateada}</span>
-                  </div>
-                </div>
-
-                {/* Botón de la derecha: vuelve a mostrar el CV como antes */}
-                <div>
-                  {notif.cvSignedUrl ? (
-                    <a
-                      href={notif.cvSignedUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors shadow-xs"
-                      title="Ver CV"
-                    >
-                      <FileText className="size-3.5" />
-                      <span>Ver CV</span>
-                      <ExternalLink className="size-3" />
-                    </a>
-                  ) : (
-                    <span className="text-xs text-gray-400 italic bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl">
-                      Sin CV adjunto
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Listado y Moderación de Ofertas con Acceso a Postulantes */}
+      {/* Listado y Moderación de Ofertas */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-gray-900">Listado de Ofertas Laborales</h2>
-            <p className="text-xs text-gray-500">Revisá las ofertas pendientes para aprobar su publicación y consultá los postulantes de cada una.</p>
+            <p className="text-xs text-gray-500">Revisá las ofertas pendientes para aprobar su publicación o cerrarlas.</p>
           </div>
           <span className="text-xs font-mono text-gray-400">
             {ofertas.length} {ofertas.length === 1 ? 'oferta' : 'ofertas'}
@@ -483,7 +212,6 @@ export default async function AdminDashboardPage() {
               const cantPostulaciones = oferta.postulaciones?.[0]?.count ?? 0
               const badge = ESTADO_BADGE[oferta.estado] ?? { label: oferta.estado, class: 'bg-gray-100 text-gray-600 border-gray-200' }
               const isPendiente = oferta.estado === 'pendiente'
-              const listaPostulantesOferta = postulantesPorOferta[oferta.id] ?? []
 
               return (
                 <div
@@ -519,13 +247,8 @@ export default async function AdminDashboardPage() {
                     </div>
                   </div>
 
-                  {/* Acciones de Moderación y Ver Postulantes */}
-                  <div className="flex flex-wrap items-center gap-2 shrink-0 self-end md:self-center">
-                    <ModalPostulantes
-                      ofertaTitulo={oferta.titulo}
-                      empresaNombre={oferta.empresa_nombre || 'Empresa'}
-                      postulantes={listaPostulantesOferta}
-                    />
+                  {/* Acciones de Moderación */}
+                  <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
                     <BotonModerarOferta ofertaId={oferta.id} estadoActual={oferta.estado} />
                   </div>
                 </div>
@@ -585,7 +308,7 @@ export default async function AdminDashboardPage() {
             {empresas.map((empresa) => {
               const isPendiente = empresa.estado_aprobacion === 'pendiente'
               const isRechazada = empresa.estado_aprobacion === 'rechazada'
-              const responsable: ResponsableItem[] = empresa.usuario ? (Array.isArray(empresa.usuario) ? (empresa.usuario as ResponsableItem[]) : [empresa.usuario as ResponsableItem]) : []
+              const responsable = empresa.usuario
 
               const badgeConfig: Record<string, { label: string; cls: string }> = {
                 pendiente: { label: 'Pendiente', cls: 'bg-amber-50 text-amber-700 border-amber-200 font-bold' },
@@ -611,26 +334,26 @@ export default async function AdminDashboardPage() {
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
-                      {empresa.cuit && <span className="font-mono">CUIT: {empresa.cuit}</span>}
-                      {empresa.rubro && <span>{empresa.rubro}</span>}
-                    </div>
+<div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
+  {empresa.cuit && <span className="font-mono">CUIT: {empresa.cuit}</span>}
+  {empresa.rubro && <span>{empresa.rubro}</span>}
+</div>
 
-                    {((responsable?.length ?? 0) > 0 || empresa.email) && (
-                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
-                        {responsable?.map((r: { nombre: string; apellido: string; telefono?: string | null }, index: number) => (
-                          <span key={index}>
-                            👤 {r.nombre} {r.apellido}
-                          </span>
-                        ))}
-                        {empresa.email && <span>📧 {empresa.email}</span>}
-                        {responsable?.map((r: { nombre: string; apellido: string; telefono?: string | null }, index: number) =>
-                          r.telefono ? (
-                            <span key={'telefono-' + index}>📞 {r.telefono}</span>
-                          ) : null
-                        )}
-                      </div>
-                    )}
+{((responsable?.length ?? 0) > 0 || empresa.email) && (
+  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
+    {responsable?.map((r: { nombre: string; apellido: string }, index: number) => (
+  <span key={index}>
+    👤 {r.nombre} {r.apellido}
+  </span>
+))}
+    {empresa.email && <span>📧 {empresa.email}</span>}
+    {responsable?.map((r: { nombre: string; apellido: string; telefono?: string | null }, index: number) =>
+  r.telefono ? (
+    <span key={`telefono-${index}`}>📞 {r.telefono}</span>
+  ) : null
+)}
+  </div>
+)}
 
                     {isRechazada && empresa.motivo_rechazo && (
                       <div className="bg-red-50/80 border border-red-200/80 rounded-xl p-3 text-xs text-red-900 mt-2">
@@ -660,3 +383,4 @@ export default async function AdminDashboardPage() {
     </div>
   )
 }
+
