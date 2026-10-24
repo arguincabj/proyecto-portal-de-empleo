@@ -45,8 +45,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Con sesión en la raíz, login o registro → ir al inicio
-  if (user && !isServerAction && (pathname === '/' || pathname === '/auth/login' || pathname === '/auth/registro')) {
+  // Usuario con sesión pero sin email confirmado tratando de acceder a rutas privadas
+  if (user && !user.email_confirmed_at && !isServerAction && !isPublicRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/verificar-email'
+    return NextResponse.redirect(url)
+  }
+
+  // Con sesión confirmada en la raíz, login o registro → ir al inicio
+  if (user && user.email_confirmed_at && !isServerAction && (pathname === '/' || pathname === '/auth/login' || pathname === '/auth/registro')) {
     const url = request.nextUrl.clone()
     url.pathname = '/inicio'
     return NextResponse.redirect(url)

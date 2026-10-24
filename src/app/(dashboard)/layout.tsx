@@ -8,6 +8,7 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
+  if (!user.email_confirmed_at) redirect('/auth/verificar-email')
 
   let { data: usuario } = await supabase
     .from('usuarios')

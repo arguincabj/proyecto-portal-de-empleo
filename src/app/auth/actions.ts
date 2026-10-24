@@ -8,8 +8,26 @@ import { headers } from 'next/headers'
 export async function login(email: string, password: string) {
   try {
     const supabase = await createSupabaseServerClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return { ok: false, error: 'Email o contraseña incorrectos' }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      if (error.message?.toLowerCase().includes('email not confirmed')) {
+        return {
+          ok: false,
+          error: 'Debés confirmar tu correo electrónico antes de ingresar. Por favor, revisá tu casilla de correo o spam.',
+        }
+      }
+      return { ok: false, error: 'Email o contraseña incorrectos' }
+    }
+
+    if (!data.user?.email_confirmed_at) {
+      await supabase.auth.signOut()
+      return {
+        ok: false,
+        error: 'Debés confirmar tu correo electrónico antes de ingresar. Por favor, revisá tu casilla de correo o spam.',
+      }
+    }
+
     return { ok: true }
   } catch {
     return { ok: false, error: 'Error inesperado al iniciar sesión' }
@@ -26,10 +44,14 @@ export async function registrarPostulante(data: {
 }) {
   try {
     const supabase = await createSupabaseServerClient()
+    const origin = (await headers()).get('origin') ?? ''
 
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback?next=/inicio`,
+      },
     })
 
     if (error || !authData.user) {
@@ -62,8 +84,12 @@ export async function registrarPostulante(data: {
       return { ok: false, error: `No se pudo crear el perfil: ${errorPostulante.message}` }
     }
 
-    const hasSession = !!authData.session
-    return { ok: true, hasSession }
+    // Si el usuario aún no confirmó su email, asegurar que no quede sesión iniciada en cookies
+    if (!authData.user.email_confirmed_at) {
+      await supabase.auth.signOut()
+    }
+
+    return { ok: true }
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : 'Error inesperado al crear la cuenta'
     return { ok: false, error: errorMsg }
@@ -82,10 +108,14 @@ export async function registrarEmpresa(data: {
 }) {
   try {
     const supabase = await createSupabaseServerClient()
+    const origin = (await headers()).get('origin') ?? ''
 
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback?next=/empresa`,
+      },
     })
 
     if (error || !authData.user) {
@@ -125,6 +155,11 @@ export async function registrarEmpresa(data: {
       return { ok: false, error: `No se pudo crear el perfil de empresa: ${errorEmpresa.message}` }
     }
 
+    // Si el usuario aún no confirmó su email, asegurar que no quede sesión iniciada en cookies
+    if (!authData.user.email_confirmed_at) {
+      await supabase.auth.signOut()
+    }
+
     return { ok: true }
   } catch {
     return { ok: false, error: 'Error inesperado al crear la cuenta' }
@@ -140,10 +175,14 @@ export async function registrarAdministrador(data: {
 }) {
   try {
     const supabase = await createSupabaseServerClient()
+    const origin = (await headers()).get('origin') ?? ''
 
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback?next=/admin`,
+      },
     })
 
     if (error || !authData.user) {
@@ -170,6 +209,11 @@ export async function registrarAdministrador(data: {
       return { ok: false, error: `No se pudo crear el usuario municipal: ${errorUsuario.message}` }
     }
 
+    // Si el usuario aún no confirmó su email, asegurar que no quede sesión iniciada en cookies
+    if (!authData.user.email_confirmed_at) {
+      await supabase.auth.signOut()
+    }
+
     return { ok: true }
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : 'Error inesperado al crear la cuenta'
@@ -182,12 +226,32 @@ export async function solicitarRecuperacion(email: string) {
     const supabase = await createSupabaseServerClient()
     const origin = (await headers()).get('origin') ?? ''
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${origin}/auth/callback`,
+      redirectTo: `${origin}/auth/callback?type=recovery`,
     })
     if (error) return { ok: false, error: 'No se pudo enviar el email. Intentá de nuevo.' }
     return { ok: true }
   } catch {
     return { ok: false, error: 'Error inesperado al procesar la solicitud' }
+  }
+}
+
+export async function reenviarEmailConfirmacion(email: string) {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const origin = (await headers()).get('origin') ?? ''
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback?next=/inicio`,
+      },
+    })
+    if (error) {
+      return { ok: false, error: 'No se pudo reenviar el email de confirmación. Verificá la dirección ingresada.' }
+    }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Error inesperado al reenviar el correo.' }
   }
 }
 
