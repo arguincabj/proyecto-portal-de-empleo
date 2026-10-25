@@ -50,7 +50,7 @@ export async function registrarPostulante(data: {
       email: data.email,
       password: data.password,
       options: {
-        emailRedirectTo: `${origin}/auth/callback?next=/inicio`,
+        emailRedirectTo: `${origin}/auth/callback?next=/perfil`,
       },
     })
 
@@ -114,7 +114,7 @@ export async function registrarEmpresa(data: {
       email: data.email,
       password: data.password,
       options: {
-        emailRedirectTo: `${origin}/auth/callback?next=/empresa`,
+        emailRedirectTo: `${origin}/auth/callback?next=/empresa/perfil`,
       },
     })
 
@@ -181,7 +181,7 @@ export async function registrarAdministrador(data: {
       email: data.email,
       password: data.password,
       options: {
-        emailRedirectTo: `${origin}/auth/callback?next=/admin`,
+        emailRedirectTo: `${origin}/auth/callback?next=/admin/perfil`,
       },
     })
 
@@ -243,7 +243,8 @@ export async function reenviarEmailConfirmacion(email: string) {
       type: 'signup',
       email,
       options: {
-        emailRedirectTo: `${origin}/auth/callback?next=/inicio`,
+        // Sin next: el callback determinará el perfil correcto según el rol del usuario
+        emailRedirectTo: `${origin}/auth/callback`,
       },
     })
     if (error) {
