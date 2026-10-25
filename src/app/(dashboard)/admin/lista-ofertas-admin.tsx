@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { Briefcase, ChevronDown } from 'lucide-react'
+import { Briefcase } from 'lucide-react'
 import { BotonModerarOferta } from './boton-moderar'
+import { Paginacion } from '@/components/ui/paginacion'
 
 const ESTADO_BADGE: Record<string, { label: string; class: string }> = {
   publicada: { label: 'Publicada', class: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
@@ -26,10 +27,11 @@ type Props = {
   ofertas: OfertaAdminItem[]
 }
 
-const PASO_PAGINACION = 15
+const ITEMS_POR_PAGINA = 15
 
 export function ListaOfertasAdmin({ ofertas }: Props) {
-  const [limite, setLimite] = useState(PASO_PAGINACION)
+  const [paginaActual, setPaginaActual] = useState(1)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   if (ofertas.length === 0) {
     return (
@@ -43,12 +45,21 @@ export function ListaOfertasAdmin({ ofertas }: Props) {
     )
   }
 
-  const ofertasVisibles = ofertas.slice(0, limite)
-  const hayMas = limite < ofertas.length
-  const restantes = ofertas.length - limite
+  const totalPaginas = Math.ceil(ofertas.length / ITEMS_POR_PAGINA) || 1
+  const paginaValida = Math.min(Math.max(1, paginaActual), totalPaginas)
+  const inicio = (paginaValida - 1) * ITEMS_POR_PAGINA
+  const fin = Math.min(inicio + ITEMS_POR_PAGINA, ofertas.length)
+  const ofertasVisibles = ofertas.slice(inicio, fin)
+
+  const manejarCambioPagina = (nuevaPagina: number) => {
+    setPaginaActual(nuevaPagina)
+    if (containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
 
   return (
-    <div>
+    <div ref={containerRef}>
       <div className="divide-y divide-gray-100">
         {ofertasVisibles.map((oferta) => {
           const cantPostulaciones = oferta.postulaciones?.[0]?.count ?? 0
@@ -100,27 +111,14 @@ export function ListaOfertasAdmin({ ofertas }: Props) {
       </div>
 
       {/* Pie de lista con paginación */}
-      <div className="p-4 bg-gray-50/60 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p className="text-xs text-gray-500">
-          Mostrando <span className="font-semibold text-gray-800">{ofertasVisibles.length}</span> de{' '}
-          <span className="font-semibold text-gray-800">{ofertas.length}</span> ofertas
-        </p>
-
-        {hayMas ? (
-          <button
-            type="button"
-            onClick={() => setLimite((prev) => prev + PASO_PAGINACION)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-teal-800 hover:bg-teal-50 hover:border-teal-300 transition-colors shadow-sm"
-          >
-            <span>Cargar más ofertas ({Math.min(PASO_PAGINACION, restantes)} más)</span>
-            <ChevronDown className="size-3.5" />
-          </button>
-        ) : (
-          ofertas.length > PASO_PAGINACION && (
-            <span className="text-xs text-gray-400 font-medium">Se mostraron todas las ofertas registradas</span>
-          )
-        )}
-      </div>
+      <Paginacion
+        paginaActual={paginaValida}
+        totalPaginas={totalPaginas}
+        totalItems={ofertas.length}
+        itemsPorPagina={ITEMS_POR_PAGINA}
+        nombreItems="ofertas"
+        onCambiarPagina={manejarCambioPagina}
+      />
     </div>
   )
 }

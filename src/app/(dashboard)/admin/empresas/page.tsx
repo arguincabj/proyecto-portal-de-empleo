@@ -174,7 +174,7 @@ export default async function AdminEmpresasPage() {
         </div>
       </div>
 
-      {/* Sección: Perfiles de Empresa con tope de 15 y botón para cargar más */}
+      {/* Sección: Perfiles de Empresa con paginación de 15 por página */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>

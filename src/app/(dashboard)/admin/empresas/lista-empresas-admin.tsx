@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Building2, ChevronDown } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Building2 } from 'lucide-react'
 import { BotonModerarEmpresa } from '../boton-moderar-empresa'
+import { Paginacion } from '@/components/ui/paginacion'
 
 export type EmpresaAdminItem = {
   id: string
@@ -20,10 +21,11 @@ type Props = {
   empresas: EmpresaAdminItem[]
 }
 
-const PASO_PAGINACION = 15
+const ITEMS_POR_PAGINA = 15
 
 export function ListaEmpresasAdmin({ empresas }: Props) {
-  const [limite, setLimite] = useState(PASO_PAGINACION)
+  const [paginaActual, setPaginaActual] = useState(1)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   if (empresas.length === 0) {
     return (
@@ -35,12 +37,21 @@ export function ListaEmpresasAdmin({ empresas }: Props) {
     )
   }
 
-  const empresasVisibles = empresas.slice(0, limite)
-  const hayMas = limite < empresas.length
-  const restantes = empresas.length - limite
+  const totalPaginas = Math.ceil(empresas.length / ITEMS_POR_PAGINA) || 1
+  const paginaValida = Math.min(Math.max(1, paginaActual), totalPaginas)
+  const inicio = (paginaValida - 1) * ITEMS_POR_PAGINA
+  const fin = Math.min(inicio + ITEMS_POR_PAGINA, empresas.length)
+  const empresasVisibles = empresas.slice(inicio, fin)
+
+  const manejarCambioPagina = (nuevaPagina: number) => {
+    setPaginaActual(nuevaPagina)
+    if (containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
 
   return (
-    <div>
+    <div ref={containerRef}>
       <div className="divide-y divide-gray-100">
         {empresasVisibles.map((empresa) => {
           const isPendiente = empresa.estado_aprobacion === 'pendiente'
@@ -117,27 +128,14 @@ export function ListaEmpresasAdmin({ empresas }: Props) {
       </div>
 
       {/* Pie de lista con paginación */}
-      <div className="p-4 bg-gray-50/60 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p className="text-xs text-gray-500">
-          Mostrando <span className="font-semibold text-gray-800">{empresasVisibles.length}</span> de{' '}
-          <span className="font-semibold text-gray-800">{empresas.length}</span> empresas
-        </p>
-
-        {hayMas ? (
-          <button
-            type="button"
-            onClick={() => setLimite((prev) => prev + PASO_PAGINACION)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-teal-800 hover:bg-teal-50 hover:border-teal-300 transition-colors shadow-sm"
-          >
-            <span>Cargar más perfiles de empresas ({Math.min(PASO_PAGINACION, restantes)} más)</span>
-            <ChevronDown className="size-3.5" />
-          </button>
-        ) : (
-          empresas.length > PASO_PAGINACION && (
-            <span className="text-xs text-gray-400 font-medium">Se mostraron todos los perfiles registrados</span>
-          )
-        )}
-      </div>
+      <Paginacion
+        paginaActual={paginaValida}
+        totalPaginas={totalPaginas}
+        totalItems={empresas.length}
+        itemsPorPagina={ITEMS_POR_PAGINA}
+        nombreItems="empresas"
+        onCambiarPagina={manejarCambioPagina}
+      />
     </div>
   )
 }

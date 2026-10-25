@@ -1,7 +1,9 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { Paginacion } from '@/components/ui/paginacion'
 
 type Oferta = {
   id: string
@@ -19,12 +21,15 @@ const ESTADO_COLOR: Record<string, string> = {
   rechazada: 'bg-red-100 text-red-600 border-red-200',
 }
 
+const ITEMS_POR_PAGINA = 15
+
 export default function OfertasPage() {
   const [ofertas, setOfertas] = useState<Oferta[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [modalidadFilter, setModalidadFilter] = useState('todas')
+  const [paginaActual, setPaginaActual] = useState(1)
 
   useEffect(() => {
     async function fetchOfertas() {
@@ -63,11 +68,27 @@ export default function OfertasPage() {
     fetchOfertas()
   }, [searchTerm])
 
+  // Resetear a la página 1 cuando se alteran los filtros
+  useEffect(() => {
+    setPaginaActual(1)
+  }, [searchTerm, modalidadFilter])
+
   const filteredOfertas = ofertas.filter((oferta) => {
     if (modalidadFilter === 'todas') return true
     const content = `${oferta.titulo} ${oferta.descripcion}`.toLowerCase()
     return content.includes(modalidadFilter.toLowerCase())
   })
+
+  const totalPaginas = Math.ceil(filteredOfertas.length / ITEMS_POR_PAGINA) || 1
+  const paginaValida = Math.min(Math.max(1, paginaActual), totalPaginas)
+  const inicio = (paginaValida - 1) * ITEMS_POR_PAGINA
+  const fin = Math.min(inicio + ITEMS_POR_PAGINA, filteredOfertas.length)
+  const ofertasVisibles = filteredOfertas.slice(inicio, fin)
+
+  const manejarCambioPagina = (nuevaPagina: number) => {
+    setPaginaActual(nuevaPagina)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   return (
     <main className="min-h-screen p-4 sm:p-8 bg-gray-50">
@@ -153,52 +174,65 @@ export default function OfertasPage() {
 
         {/* Lista de Ofertas — solo lectura pública */}
         {!loading && !error && filteredOfertas.length > 0 && (
-          <ul className="flex flex-col gap-4">
-            {filteredOfertas.map((oferta) => (
-              <li
-                key={oferta.id}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow flex flex-col sm:flex-row justify-between gap-4"
-              >
-                <div className="space-y-2 flex-1">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <Link
-                      href={`/ofertas/${oferta.id}`}
-                      className="font-bold text-lg text-gray-900 hover:text-teal-700 transition-colors"
-                    >
-                      {oferta.titulo}
-                    </Link>
-                    <span
-                      className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${
-                        ESTADO_COLOR[oferta.estado] || 'bg-gray-100 text-gray-600 border-gray-200'
-                      }`}
-                    >
-                      {oferta.estado}
-                    </span>
+          <>
+            <ul className="flex flex-col gap-4">
+              {ofertasVisibles.map((oferta) => (
+                <li
+                  key={oferta.id}
+                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow flex flex-col sm:flex-row justify-between gap-4"
+                >
+                  <div className="space-y-2 flex-1">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Link
+                        href={`/ofertas/${oferta.id}`}
+                        className="font-bold text-lg text-gray-900 hover:text-teal-700 transition-colors"
+                      >
+                        {oferta.titulo}
+                      </Link>
+                      <span
+                        className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${
+                          ESTADO_COLOR[oferta.estado] || 'bg-gray-100 text-gray-600 border-gray-200'
+                        }`}
+                      >
+                        {oferta.estado}
+                      </span>
+                    </div>
+
+                    <p className="text-sm font-medium text-teal-700">{oferta.empresa_nombre}</p>
+
+                    <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+                      {oferta.descripcion}
+                    </p>
+
+                    <p className="text-xs text-gray-400 pt-1 font-mono">
+                      Publicado el: {new Date(oferta.created_at).toLocaleDateString('es-AR')}
+                    </p>
                   </div>
 
-                  <p className="text-sm font-medium text-teal-700">{oferta.empresa_nombre}</p>
+                  {/* Solo el botón Ver detalle — sin editar ni eliminar */}
+                  <div className="flex sm:flex-col justify-end items-end gap-2 border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
+                    <Link
+                      href={`/ofertas/${oferta.id}`}
+                      className="text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 px-3.5 py-1.5 rounded-lg transition-colors text-center w-full sm:w-auto"
+                    >
+                      Ver detalle
+                    </Link>
+                  </div>
+                </li>
+              ))}
+            </ul>
 
-                  <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
-                    {oferta.descripcion}
-                  </p>
-
-                  <p className="text-xs text-gray-400 pt-1 font-mono">
-                    Publicado el: {new Date(oferta.created_at).toLocaleDateString('es-AR')}
-                  </p>
-                </div>
-
-                {/* Solo el botón Ver detalle — sin editar ni eliminar */}
-                <div className="flex sm:flex-col justify-end items-end gap-2 border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
-                  <Link
-                    href={`/ofertas/${oferta.id}`}
-                    className="text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 px-3.5 py-1.5 rounded-lg transition-colors text-center w-full sm:w-auto"
-                  >
-                    Ver detalle
-                  </Link>
-                </div>
-              </li>
-            ))}
-          </ul>
+            {/* Paginación */}
+            <Paginacion
+              paginaActual={paginaValida}
+              totalPaginas={totalPaginas}
+              totalItems={filteredOfertas.length}
+              itemsPorPagina={ITEMS_POR_PAGINA}
+              nombreItems="ofertas"
+              onCambiarPagina={manejarCambioPagina}
+              className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"
+            />
+          </>
         )}
       </div>
     </main>
