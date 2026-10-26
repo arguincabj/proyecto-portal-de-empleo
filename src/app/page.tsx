@@ -3,7 +3,7 @@ import Link from 'next/link'
 import escudoFunes from '@/assets/brand/escudo-funes-blanco.png'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { OfertasCarousel, type OfertaSlide } from '@/components/home/ofertas-carousel'
-import { UserCheck, Building2, Shield, ArrowRight, Briefcase, Search, LogIn } from 'lucide-react'
+import { UserCheck, Building2, ArrowRight, Briefcase, Search, LogIn } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -126,8 +126,8 @@ export default async function HomePage() {
           </p>
         </div>
 
-        {/* Las 3 Tarjetas de Perfil */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        {/* Las 2 Tarjetas de Perfil */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
           {/* 1. Postulante */}
           <div className="bg-white rounded-2xl border border-gray-200 p-7 shadow-sm hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between group">
             <div className="space-y-4">
@@ -175,32 +175,6 @@ export default async function HomePage() {
                 className="w-full inline-flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs py-2.5 px-4 rounded-xl transition-colors shadow-sm"
               >
                 <span>Registrar mi empresa</span>
-                <ArrowRight className="size-3.5" />
-              </Link>
-            </div>
-          </div>
-
-          {/* 3. Administración */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-7 shadow-sm hover:shadow-md hover:border-blue-500/50 transition-all flex flex-col justify-between group">
-            <div className="space-y-4">
-              <div className="size-12 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Shield className="size-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Administración</h3>
-                <p className="text-xs font-medium text-blue-700 mt-0.5">Equipo de Empleo Municipal</p>
-              </div>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                Moderar y aprobar ofertas de empleo enviadas por comercios, revisar perfiles de postulantes y gestionar derivaciones laborales.
-              </p>
-            </div>
-
-            <div className="pt-6 mt-6 border-t border-gray-100">
-              <Link
-                href="/auth/registro/administrador"
-                className="w-full inline-flex items-center justify-center gap-2 bg-gray-900 hover:bg-black text-white font-semibold text-xs py-2.5 px-4 rounded-xl transition-colors shadow-sm"
-              >
-                <span>Acceso administrativo</span>
                 <ArrowRight className="size-3.5" />
               </Link>
             </div>

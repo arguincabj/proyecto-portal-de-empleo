@@ -51,6 +51,12 @@ export default async function AdminDashboardPage() {
     .select('id', { count: 'exact', head: true })
     .eq('estado_aprobacion', 'pendiente')
 
+  // Contar postulaciones pendientes para el badge de la pestaña
+  const { count: postulantesPendientesCount } = await supabaseAdmin
+    .from('postulaciones')
+    .select('id', { count: 'exact', head: true })
+    .in('estado', ['recibida', 'en_revision'])
+
   // Obtener todas las ofertas creadas en el sistema usando admin client
   const { data: ofertasRaw, error: errorOfertas } = await supabaseAdmin
     .from('ofertas')
@@ -99,11 +105,12 @@ export default async function AdminDashboardPage() {
         </Link>
       </div>
 
-      {/* Pestañas de navegación entre Ofertas y Empresas */}
+      {/* Pestañas de navegación entre Ofertas, Empresas y Postulantes */}
       <AdminNavTabs
         tabActivo="ofertas"
         pendientesOfertas={pendientes}
         pendientesEmpresas={empresasPendientesCount ?? 0}
+        pendientesPostulantes={postulantesPendientesCount ?? 0}
       />
 
       {/* Tarjetas de Métricas de Ofertas */}

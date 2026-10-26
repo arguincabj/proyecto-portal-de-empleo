@@ -39,6 +39,7 @@ export async function moderarOferta(
     }
 
     revalidatePath('/admin')
+    revalidatePath('/admin/postulantes')
     revalidatePath('/ofertas')
     revalidatePath(`/ofertas/${ofertaId}`)
     return { ok: true }
@@ -102,6 +103,7 @@ export async function moderarEmpresa(
     }
 
     revalidatePath('/admin')
+    revalidatePath('/admin/empresas')
     revalidatePath('/empresa/perfil')
     revalidatePath('/empresa')
     return { ok: true }
@@ -162,11 +164,107 @@ export async function derivarPostulante(postulacionId: string, notaMunicipalidad
     }
 
     revalidatePath('/admin')
+    revalidatePath('/admin/postulantes')
     revalidatePath('/empresa')
     revalidatePath('/postulaciones')
     return { ok: true }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Error inesperado al derivar postulante'
+    return { ok: false, error: msg }
+  }
+}
+
+export async function noEnviarPostulante(postulacionId: string) {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { ok: false, error: 'No autorizado. Iniciá sesión.' }
+    }
+
+    // Verificar rol municipal
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('rol')
+      .eq('id', user.id)
+      .single()
+
+    if (!usuario || usuario.rol !== 'municipalidad') {
+      return { ok: false, error: 'Permisos insuficientes. Solo el personal municipal puede moderar postulantes.' }
+    }
+
+    // 1. Actualizar estado de la postulación a 'rechazada_municipalidad'
+    const { error: errorPost } = await supabaseAdmin
+      .from('postulaciones')
+      .update({ estado: 'rechazada_municipalidad' })
+      .eq('id', postulacionId)
+
+    if (errorPost) {
+      return { ok: false, error: `Error al actualizar postulación: ${errorPost.message}` }
+    }
+
+    // 2. Si existía derivación previa enviada a la empresa, eliminarla para que la empresa no la vea
+    await supabaseAdmin
+      .from('derivaciones')
+      .delete()
+      .eq('postulacion_id', postulacionId)
+
+    revalidatePath('/admin')
+    revalidatePath('/admin/postulantes')
+    revalidatePath('/empresa')
+    revalidatePath('/postulaciones')
+    return { ok: true }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error inesperado al descartar postulante'
+    return { ok: false, error: msg }
+  }
+}
+
+export async function reabrirPostulante(postulacionId: string) {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { ok: false, error: 'No autorizado. Iniciá sesión.' }
+    }
+
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('rol')
+      .eq('id', user.id)
+      .single()
+
+    if (!usuario || usuario.rol !== 'municipalidad') {
+      return { ok: false, error: 'Permisos insuficientes.' }
+    }
+
+    const { error: errorPost } = await supabaseAdmin
+      .from('postulaciones')
+      .update({ estado: 'recibida' })
+      .eq('id', postulacionId)
+
+    if (errorPost) {
+      return { ok: false, error: `Error al reabrir postulación: ${errorPost.message}` }
+    }
+
+    await supabaseAdmin
+      .from('derivaciones')
+      .delete()
+      .eq('postulacion_id', postulacionId)
+
+    revalidatePath('/admin')
+    revalidatePath('/admin/postulantes')
+    revalidatePath('/empresa')
+    revalidatePath('/postulaciones')
+    return { ok: true }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error inesperado'
     return { ok: false, error: msg }
   }
 }

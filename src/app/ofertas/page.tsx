@@ -68,11 +68,6 @@ export default function OfertasPage() {
     fetchOfertas()
   }, [searchTerm])
 
-  // Resetear a la página 1 cuando se alteran los filtros
-  useEffect(() => {
-    setPaginaActual(1)
-  }, [searchTerm, modalidadFilter])
-
   const filteredOfertas = ofertas.filter((oferta) => {
     if (modalidadFilter === 'todas') return true
     const content = `${oferta.titulo} ${oferta.descripcion}`.toLowerCase()
@@ -116,7 +111,10 @@ export default function OfertasPage() {
               type="text"
               placeholder="Buscar por palabra clave (título, descripción, empresa)..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setPaginaActual(1)
+              }}
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-gray-50/50"
             />
           </div>
@@ -124,7 +122,10 @@ export default function OfertasPage() {
           <div className="w-full sm:w-48">
             <select
               value={modalidadFilter}
-              onChange={(e) => setModalidadFilter(e.target.value)}
+              onChange={(e) => {
+                setModalidadFilter(e.target.value)
+                setPaginaActual(1)
+              }}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-gray-50/50 text-gray-700"
             >
               <option value="todas">Todas las modalidades</option>

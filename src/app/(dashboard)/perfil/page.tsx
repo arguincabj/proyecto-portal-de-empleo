@@ -49,6 +49,9 @@ export default async function PerfilPage() {
 
   let postulante: {
     dni: string | null
+    localidad?: string | null
+    direccion?: string | null
+    codigo_postal?: string | null
     cv_url: string | null
     estudios?: string | null
     cursos?: string | null
@@ -58,24 +61,26 @@ export default async function PerfilPage() {
     horarios?: string | null
   } | null = null
 
-  // Intento de consulta completa con campos de perfil laboral
-  const { data: postData, error: postErr } = await supabase
+  // Intento de consulta completa con campos de perfil laboral y domicilio
+  const { data: postData, error: postErr } = await supabaseAdmin
     .from('postulantes')
-    .select('dni, cv_url, estudios, cursos, experiencia, idiomas, habilidades, horarios')
+    .select('dni, cv_url, localidad, direccion, codigo_postal, estudios, cursos, experiencia, idiomas, habilidades, horarios')
     .eq('usuario_id', user.id)
     .single()
 
   if (!postErr && postData) {
     postulante = postData
   } else {
-    // Si la migración 010 aún no se corrió, se consulta lo básico sin fallar
-    const { data: basicPost } = await supabase
+    // Si la migración aún no se corrió, se consulta lo básico sin fallar
+    const { data: basicPost } = await supabaseAdmin
       .from('postulantes')
       .select('dni, cv_url')
       .eq('usuario_id', user.id)
       .single()
     postulante = basicPost ?? null
   }
+
+  const meta = user.user_metadata || {}
 
   let cvFirmadaUrl: string | null = null
   let cv: { nombre: string; fecha: string | null } | null = null
@@ -97,13 +102,16 @@ export default async function PerfilPage() {
       </div>
 
       <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
-        <h2 className="mb-4 text-base font-semibold text-foreground">Datos personales</h2>
+        <h2 className="mb-4 text-base font-semibold text-foreground">Datos personales y domicilio</h2>
         <PerfilForm
           defaultValues={{
-            nombre: usuario?.nombre ?? '',
-            apellido: usuario?.apellido ?? '',
-            telefono: usuario?.telefono ?? '',
-            dni: postulante?.dni ?? '',
+            nombre: usuario?.nombre ?? (meta.nombre as string) ?? '',
+            apellido: usuario?.apellido ?? (meta.apellido as string) ?? '',
+            telefono: usuario?.telefono ?? (meta.telefono as string) ?? '',
+            dni: postulante?.dni ?? (meta.dni as string) ?? '',
+            localidad: postulante?.localidad || (meta.localidad as string) || '',
+            direccion: postulante?.direccion || (meta.direccion as string) || '',
+            codigo_postal: postulante?.codigo_postal || (meta.codigo_postal as string) || '',
           }}
         />
       </section>

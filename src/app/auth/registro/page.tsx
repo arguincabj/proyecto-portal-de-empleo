@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { UserPlus, Briefcase, Shield } from 'lucide-react'
+import { UserPlus, Briefcase } from 'lucide-react'
 
 const tipos = [
   {
@@ -15,13 +15,6 @@ const tipos = [
     title: 'Soy empresa',
     description: 'Representás una empresa y querés publicar ofertas de empleo.',
     color: 'bg-amber-100 text-amber-600',
-  },
-  {
-    href: '/auth/registro/administrador',
-    icon: Shield,
-    title: 'Administración',
-    description: 'Sos personal de la Municipalidad de Funes con acceso administrativo.',
-    color: 'bg-emerald-100 text-emerald-700',
   },
 ]
 

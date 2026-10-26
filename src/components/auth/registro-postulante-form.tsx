@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowRight, Eye, EyeOff, LoaderCircle } from 'lucide-react'
 import { useForm } from 'react-hook-form'
@@ -19,6 +18,9 @@ const schema = z.object({
   confirmar_email: z.string().email('Email inválido'),
   dni:             z.string().regex(/^\d{7,8}$/, 'DNI inválido (7 u 8 dígitos)'),
   telefono:        z.string().regex(/^[\d\s\+\-\(\)]{8,20}$/, 'Teléfono inválido'),
+  localidad:       z.string().min(2, 'Ingresá tu localidad'),
+  direccion:       z.string().min(3, 'Ingresá tu dirección (calle y número)'),
+  codigo_postal:   z.string().min(2, 'Ingresá tu código postal'),
   password:        z.string().min(8, 'Mínimo 8 caracteres'),
   confirmar:       z.string(),
 }).refine(d => d.email === d.confirmar_email, {
@@ -43,7 +45,19 @@ export function RegistroPostulanteForm({
   const [showPassword, setShowPassword] = useState(false)
   const form = useForm<RegistroPostulanteValues>({
     resolver: zodResolver(schema),
-    defaultValues: { nombre: '', apellido: '', email: '', confirmar_email: '', dni: '', telefono: '', password: '', confirmar: '' },
+    defaultValues: {
+      nombre: '',
+      apellido: '',
+      email: '',
+      confirmar_email: '',
+      dni: '',
+      telefono: '',
+      localidad: '',
+      direccion: '',
+      codigo_postal: '',
+      password: '',
+      confirmar: '',
+    },
   })
 
   return (
@@ -101,6 +115,33 @@ export function RegistroPostulanteForm({
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField control={form.control} name="localidad" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Localidad<R /></FormLabel>
+              <FormControl><Input placeholder="Ej: Funes" autoComplete="address-level2" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <FormField control={form.control} name="codigo_postal" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Código postal<R /></FormLabel>
+              <FormControl><Input placeholder="Ej: 2132" autoComplete="postal-code" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+
+        <div>
+          <FormField control={form.control} name="direccion" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Dirección<R /></FormLabel>
+              <FormControl><Input placeholder="Calle y número (ej: Av. Santa Fe 1500)" autoComplete="street-address" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField control={form.control} name="password" render={({ field }) => (
             <FormItem>
               <FormLabel>Contraseña<R /></FormLabel>
@@ -149,13 +190,6 @@ export function RegistroPostulanteForm({
             : <>Crear cuenta<ArrowRight className="transition-transform duration-200 group-hover:translate-x-0.75 motion-reduce:transition-none" aria-hidden /></>
           }
         </Button>
-
-        <p className="text-center text-sm text-foreground-secondary">
-          ¿Ya tenés cuenta?{' '}
-          <Link href="/auth/login" className="font-semibold text-primary-600 hover:text-primary-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-sm">
-            Iniciá sesión
-          </Link>
-        </p>
       </form>
     </Form>
   )

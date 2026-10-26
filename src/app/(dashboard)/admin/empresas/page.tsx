@@ -51,6 +51,12 @@ export default async function AdminEmpresasPage() {
     .select('id', { count: 'exact', head: true })
     .eq('estado', 'pendiente')
 
+  // Contar postulaciones pendientes para el badge de la pestaña
+  const { count: postulantesPendientesCount } = await supabaseAdmin
+    .from('postulaciones')
+    .select('id', { count: 'exact', head: true })
+    .in('estado', ['recibida', 'en_revision'])
+
   // Obtener todos los perfiles de empresa
   const { data: initialEmpresas, error: errorEmpresas } = await supabaseAdmin
     .from('empresas')
@@ -128,11 +134,12 @@ export default async function AdminEmpresasPage() {
         </Link>
       </div>
 
-      {/* Pestañas de navegación entre Ofertas y Empresas */}
+      {/* Pestañas de navegación entre Ofertas, Empresas y Postulantes */}
       <AdminNavTabs
         tabActivo="empresas"
         pendientesOfertas={ofertasPendientesCount ?? 0}
         pendientesEmpresas={empresasPendientes}
+        pendientesPostulantes={postulantesPendientesCount ?? 0}
       />
 
       {/* Tarjetas de Métricas de Empresas */}

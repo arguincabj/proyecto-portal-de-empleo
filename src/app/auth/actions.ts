@@ -5,6 +5,18 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 
+async function getAppOrigin(): Promise<string> {
+  const h = await headers()
+  const origin = h.get('origin')
+  if (origin && origin !== 'null') return origin
+
+  const host = h.get('x-forwarded-host') || h.get('host')
+  const proto = h.get('x-forwarded-proto') || (host && host.includes('localhost') ? 'http' : 'https')
+  if (host) return `${proto}://${host}`
+
+  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+}
+
 export async function login(email: string, password: string) {
   try {
     const supabase = await createSupabaseServerClient()
@@ -39,18 +51,28 @@ export async function registrarPostulante(data: {
   apellido: string
   dni: string
   telefono: string
+  localidad?: string
+  direccion?: string
+  codigo_postal?: string
   email: string
   password: string
 }) {
   try {
     const supabase = await createSupabaseServerClient()
-    const origin = (await headers()).get('origin') ?? ''
+    const origin = await getAppOrigin()
 
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
         emailRedirectTo: `${origin}/auth/callback?next=/perfil`,
+        data: {
+          nombre: data.nombre,
+          apellido: data.apellido,
+          localidad: data.localidad,
+          direccion: data.direccion,
+          codigo_postal: data.codigo_postal,
+        },
       },
     })
 
@@ -72,9 +94,25 @@ export async function registrarPostulante(data: {
       return { ok: false, error: `No se pudo crear el perfil: ${errorUsuario.message}` }
     }
 
-    const { error: errorPostulante } = await supabaseAdmin
+    const payloadPostulante: Record<string, string | null> = {
+      usuario_id: userId,
+      dni: data.dni,
+    }
+    if (data.localidad?.trim()) payloadPostulante.localidad = data.localidad.trim()
+    if (data.direccion?.trim()) payloadPostulante.direccion = data.direccion.trim()
+    if (data.codigo_postal?.trim()) payloadPostulante.codigo_postal = data.codigo_postal.trim()
+
+    let { error: errorPostulante } = await supabaseAdmin
       .from('postulantes')
-      .insert({ usuario_id: userId, dni: data.dni })
+      .insert(payloadPostulante)
+
+    // Fallback de seguridad si la migración de columnas de domicilio aún no se ejecutó en la base de datos
+    if (errorPostulante && errorPostulante.message?.includes('column')) {
+      const fallback = await supabaseAdmin
+        .from('postulantes')
+        .insert({ usuario_id: userId, dni: data.dni })
+      errorPostulante = fallback.error
+    }
 
     if (errorPostulante) {
       await supabaseAdmin.auth.admin.deleteUser(userId)
@@ -108,7 +146,7 @@ export async function registrarEmpresa(data: {
 }) {
   try {
     const supabase = await createSupabaseServerClient()
-    const origin = (await headers()).get('origin') ?? ''
+    const origin = await getAppOrigin()
 
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
@@ -175,7 +213,7 @@ export async function registrarAdministrador(data: {
 }) {
   try {
     const supabase = await createSupabaseServerClient()
-    const origin = (await headers()).get('origin') ?? ''
+    const origin = await getAppOrigin()
 
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
@@ -224,7 +262,7 @@ export async function registrarAdministrador(data: {
 export async function solicitarRecuperacion(email: string) {
   try {
     const supabase = await createSupabaseServerClient()
-    const origin = (await headers()).get('origin') ?? ''
+    const origin = await getAppOrigin()
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${origin}/auth/callback?type=recovery`,
     })
@@ -238,12 +276,11 @@ export async function solicitarRecuperacion(email: string) {
 export async function reenviarEmailConfirmacion(email: string) {
   try {
     const supabase = await createSupabaseServerClient()
-    const origin = (await headers()).get('origin') ?? ''
+    const origin = await getAppOrigin()
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
       options: {
-        // Sin next: el callback determinará el perfil correcto según el rol del usuario
         emailRedirectTo: `${origin}/auth/callback`,
       },
     })

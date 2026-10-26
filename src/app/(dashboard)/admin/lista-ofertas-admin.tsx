@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { Briefcase } from 'lucide-react'
+import { Briefcase, Users } from 'lucide-react'
 import { BotonModerarOferta } from './boton-moderar'
 import { Paginacion } from '@/components/ui/paginacion'
 
@@ -97,12 +97,26 @@ export function ListaOfertasAdmin({ ofertas }: Props) {
 
                 <div className="flex items-center gap-4 text-xs text-gray-400 pt-1 font-mono">
                   <span>Cargada: {new Date(oferta.created_at).toLocaleDateString('es-AR')}</span>
-                  <span>👥 {cantPostulaciones} postulaciones</span>
+                  <Link
+                    href={`/admin/postulantes?oferta=${oferta.id}`}
+                    className="hover:text-teal-700 hover:underline transition-colors flex items-center gap-1 font-semibold text-teal-800"
+                    title="Ir a gestionar postulantes de esta oferta"
+                  >
+                    👥 {cantPostulaciones} {cantPostulaciones === 1 ? 'postulación' : 'postulaciones'}
+                  </Link>
                 </div>
               </div>
 
-              {/* Acciones de Moderación */}
+              {/* Acciones de Moderación y Postulantes */}
               <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                <Link
+                  href={`/admin/postulantes?oferta=${oferta.id}`}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-200 transition-colors shadow-2xs"
+                  title="Gestionar postulantes de esta oferta"
+                >
+                  <Users className="size-3.5" />
+                  <span>Postulantes ({cantPostulaciones})</span>
+                </Link>
                 <BotonModerarOferta ofertaId={oferta.id} estadoActual={oferta.estado} />
               </div>
             </div>

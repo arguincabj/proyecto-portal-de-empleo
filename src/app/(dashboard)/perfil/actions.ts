@@ -39,9 +39,12 @@ export async function actualizarPerfil(formData: FormData): Promise<ActionResult
     const apellido = (formData.get('apellido') as string | null)?.trim() ?? ''
     const telefono = (formData.get('telefono') as string | null)?.trim() ?? ''
     const dni = (formData.get('dni') as string | null)?.trim() ?? ''
+    const localidad = (formData.get('localidad') as string | null)?.trim() ?? ''
+    const direccion = (formData.get('direccion') as string | null)?.trim() ?? ''
+    const codigo_postal = (formData.get('codigo_postal') as string | null)?.trim() ?? ''
 
     if (!nombre || !apellido || !telefono || !dni) {
-      return { ok: false, error: 'Todos los campos son obligatorios' }
+      return { ok: false, error: 'Nombre, apellido, teléfono y DNI son obligatorios' }
     }
 
     const { error: errorUsuario } = await supabase
@@ -51,16 +54,53 @@ export async function actualizarPerfil(formData: FormData): Promise<ActionResult
 
     if (errorUsuario) return { ok: false, error: 'No se pudieron actualizar los datos personales' }
 
-    const { error: errorPostulante } = await supabase
+    // Respaldar siempre en Auth Metadata para garantizar persistencia y disponibilidad
+    try {
+      await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...(user.user_metadata || {}),
+          nombre,
+          apellido,
+          telefono,
+          dni,
+          localidad,
+          direccion,
+          codigo_postal,
+        },
+      })
+    } catch (authErr) {
+      console.error('Error al actualizar metadata de auth:', authErr)
+    }
+
+    const updatePostulante: Record<string, string | null> = { dni }
+    updatePostulante.localidad = localidad
+    updatePostulante.direccion = direccion
+    updatePostulante.codigo_postal = codigo_postal
+
+    let { error: errorPostulante } = await supabaseAdmin
       .from('postulantes')
-      .update({ dni })
+      .update(updatePostulante)
       .eq('usuario_id', user.id)
+
+    // Fallback si la migración 011 aún no fue corrida en Supabase
+    if (
+      errorPostulante &&
+      (errorPostulante.message?.includes('column') ||
+        errorPostulante.code === '42703' ||
+        errorPostulante.code === 'PGRST204')
+    ) {
+      const fallback = await supabaseAdmin
+        .from('postulantes')
+        .update({ dni })
+        .eq('usuario_id', user.id)
+      errorPostulante = fallback.error
+    }
 
     if (errorPostulante) {
       if (errorPostulante.code === '23505') {
         return { ok: false, error: 'Ese DNI ya está registrado en otra cuenta' }
       }
-      return { ok: false, error: 'No se pudo actualizar el DNI' }
+      return { ok: false, error: 'No se pudo actualizar los datos del postulante' }
     }
 
     revalidatePath('/perfil')
@@ -133,7 +173,6 @@ export async function subirCv(formData: FormData): Promise<ActionResult> {
     }
 
     // Paso 1: subir nuevo archivo (antes de tocar la DB)
-    // El nombre original va en el path para poder mostrarlo en el perfil sin agregar columnas
     const nuevoPath = `${user.id}/${Date.now()}-${nombreSeguro(archivo.name)}.${ext}`
     const bytes = await archivo.arrayBuffer()
     const { error: uploadError } = await supabaseAdmin.storage
