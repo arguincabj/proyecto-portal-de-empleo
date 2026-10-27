@@ -68,6 +68,7 @@ export type PostulacionItem = {
   } | null
   postulante: PostulanteData | null
   cv_signed_url?: string | null
+  cv_nombre?: string | null
 }
 
 type Props = {
@@ -696,16 +697,16 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                           href={cvUrlFinal}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-teal-800 hover:bg-teal-50 hover:border-teal-300 transition-colors shadow-2xs"
-                          title="Abrir CV adjunto en pestaña nueva"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-teal-800 hover:bg-teal-50 hover:border-teal-300 transition-colors shadow-2xs max-w-[200px]"
+                          title={postulacion.cv_nombre ? `CV adjunto: ${postulacion.cv_nombre}` : 'Abrir CV adjunto en pestaña nueva'}
                         >
-                          <FileText className="size-3.5" />
-                          <span>Ver CV</span>
-                          <ExternalLink className="size-3 text-gray-400" />
+                          <FileText className="size-3.5 shrink-0" />
+                          <span className="truncate">{postulacion.cv_nombre || 'Ver CV'}</span>
+                          <ExternalLink className="size-3 text-gray-400 shrink-0" />
                         </a>
                       ) : (
                         <span className="text-[11px] text-gray-400 border border-gray-200 px-2 py-1 rounded-lg">
-                          Sin CV
+                          Datos de perfil (Sin archivo adjunto)
                         </span>
                       )}
 

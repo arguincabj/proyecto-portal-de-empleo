@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { BotonPostular } from './boton-postular'
+import { ArrowLeft, Building2, Calendar, ShieldCheck, Briefcase } from 'lucide-react'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -44,6 +46,7 @@ export default async function OfertaDetallePage({ params }: PageProps) {
   let yaPostulado = false
   let estadoPostulacion: string | null = null
   let estadoLaboral: string | null = null
+  let cvsDisponibles: Array<{ id: string; nombre: string }> = []
 
   if (user) {
     const { data: usuario } = await supabase
@@ -57,7 +60,7 @@ export default async function OfertaDetallePage({ params }: PageProps) {
     if (userRole === 'postulante') {
       const { data: postulante } = await supabase
         .from('postulantes')
-        .select('id, estado_laboral')
+        .select('id, cv_url, estado_laboral')
         .eq('usuario_id', user.id)
         .single()
 
@@ -74,6 +77,33 @@ export default async function OfertaDetallePage({ params }: PageProps) {
           yaPostulado = true
           estadoPostulacion = postu.estado
         }
+
+        // Obtener CVs disponibles del postulante
+        try {
+          const { data: dbCurricula } = await supabaseAdmin
+            .from('curricula')
+            .select('id, nombre')
+            .eq('postulante_id', postulante.id)
+            .order('created_at', { ascending: false })
+
+          if (dbCurricula && dbCurricula.length > 0) {
+            cvsDisponibles = dbCurricula.map((c) => ({
+              id: c.id,
+              nombre: c.nombre || 'Currículum',
+            }))
+          }
+        } catch {
+          // ignore
+        }
+
+        // Fallback para CV legacy si no hay en tabla curricula
+        if (cvsDisponibles.length === 0 && postulante.cv_url) {
+          const nombreArchivo = postulante.cv_url.split('/').pop()?.replace(/^\d+-/, '') || 'Currículum subido'
+          cvsDisponibles.push({
+            id: 'legacy',
+            nombre: nombreArchivo,
+          })
+        }
       }
     }
   }
@@ -85,86 +115,90 @@ export default async function OfertaDetallePage({ params }: PageProps) {
   })
 
   return (
-    <main className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Navegación / Volver */}
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Navegación / Volver */}
+      <div>
+        <Link
+          href="/ofertas"
+          className="inline-flex items-center gap-2 text-xs font-bold text-foreground-secondary hover:text-primary-600 transition-colors bg-surface px-3.5 py-2 rounded-xl shadow-card border border-border/60"
+        >
+          <ArrowLeft className="size-3.5" />
+          <span>Volver a todas las ofertas</span>
+        </Link>
+      </div>
+
+      {/* Encabezado Principal */}
+      <section className="rounded-xl bg-surface shadow-card border border-border/60 p-6 sm:p-8 space-y-4">
         <div>
-          <Link
-            href="/ofertas"
-            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-teal-700 transition-colors font-medium"
-          >
-            <span>←</span> Volver a todas las ofertas
-          </Link>
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-primary-600">
+            <Building2 className="size-4" />
+            <span>{oferta.empresa_nombre}</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mt-1.5">
+            {oferta.titulo}
+          </h1>
         </div>
 
-        {/* Encabezado Principal */}
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <span className="text-sm font-semibold uppercase tracking-wider text-teal-700">
-                {oferta.empresa_nombre}
+        <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs text-foreground-muted pt-2 border-t border-border/60">
+          <span className="flex items-center gap-1.5">
+            <Calendar className="size-3.5" />
+            Publicada el {fechaPublicacion}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="size-3.5 text-primary-600" />
+            Portal Municipal de Empleo de Funes
+          </span>
+        </div>
+
+        {/* Categorías */}
+        {categorias && categorias.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-2">
+            {categorias.map((cat, idx) => (
+              <span
+                key={idx}
+                className="bg-primary-50 text-primary-700 text-xs px-3 py-1 rounded-lg font-medium border border-primary-100"
+              >
+                {cat}
               </span>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">
-                {oferta.titulo}
-              </h1>
-            </div>
-
-            <span className="inline-flex items-center text-xs px-3 py-1 rounded-full font-medium bg-green-100 text-green-800 border border-green-200 capitalize">
-              {oferta.estado}
-            </span>
+            ))}
           </div>
+        )}
+      </section>
 
-          <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs sm:text-sm text-gray-500 pt-2 border-t border-gray-100">
-            <span>📅 Publicada el {fechaPublicacion}</span>
-            <span>🏛️ Portal Municipal de Empleo</span>
-          </div>
+      {/* Detalle y Requisitos */}
+      <section className="rounded-xl bg-surface shadow-card border border-border/60 p-6 sm:p-8 space-y-4">
+        <div className="flex items-center gap-2 text-base font-bold text-foreground">
+          <Briefcase className="size-5 text-primary-600" />
+          <h2>Descripción del Puesto</h2>
+        </div>
+        <div className="text-foreground-secondary whitespace-pre-line leading-relaxed text-sm sm:text-base">
+          {oferta.descripcion}
+        </div>
+      </section>
 
-          {/* Categorías */}
-          {categorias && categorias.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-2">
-              {categorias.map((cat, idx) => (
-                <span
-                  key={idx}
-                  className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-lg font-medium"
-                >
-                  {cat}
-                </span>
-              ))}
-            </div>
-          )}
-        </section>
+      {/* Sección de Postulación */}
+      <section>
+        <BotonPostular
+          ofertaId={oferta.id}
+          isAuthenticated={!!user}
+          userRole={userRole}
+          yaPostulado={yaPostulado}
+          estadoPostulacion={estadoPostulacion}
+          estadoLaboral={estadoLaboral}
+          cvsDisponibles={cvsDisponibles}
+        />
+      </section>
 
-        {/* Detalle y Requisitos */}
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-4">
-          <h2 className="text-lg font-bold text-gray-900">Descripción del Puesto</h2>
-          <div className="prose prose-gray max-w-none text-gray-700 whitespace-pre-line leading-relaxed text-sm sm:text-base">
-            {oferta.descripcion}
-          </div>
-        </section>
-
-        {/* Sección de Postulación */}
-        <section>
-          <BotonPostular
-            ofertaId={oferta.id}
-            isAuthenticated={!!user}
-            userRole={userRole}
-            yaPostulado={yaPostulado}
-            estadoPostulacion={estadoPostulacion}
-            estadoLaboral={estadoLaboral}
-          />
-        </section>
-
-        {/* Información Adicional Municipal */}
-        <footer className="bg-blue-50/60 border border-blue-100 rounded-2xl p-5 text-xs text-blue-900 flex items-start gap-3">
-          <span className="text-lg">ℹ️</span>
-          <div>
-            <h5 className="font-semibold text-blue-950">Información para postulantes</h5>
-            <p className="mt-0.5 text-blue-800 leading-relaxed">
-              Al postularte, la Dirección de Empleo Municipal revisa tu perfil y efectúa la intermediación laboral con la empresa contratante. Tus datos están protegidos y solo se comparten con fines de selección laboral.
-            </p>
-          </div>
-        </footer>
-      </div>
-    </main>
+      {/* Información Adicional Municipal */}
+      <footer className="bg-primary-50/70 border border-primary-100 rounded-xl p-5 text-xs text-primary-900 flex items-start gap-3">
+        <ShieldCheck className="size-5 text-primary-600 shrink-0 mt-0.5" />
+        <div>
+          <h5 className="font-bold text-primary-950">Información para postulantes</h5>
+          <p className="mt-0.5 text-primary-800 leading-relaxed">
+            Al postularte, la Oficina de Empleo Municipal revisa tu perfil y efectúa la intermediación laboral con la empresa contratante. Tus datos están protegidos y solo se comparten con fines de selección laboral.
+          </p>
+        </div>
+      </footer>
+    </div>
   )
 }

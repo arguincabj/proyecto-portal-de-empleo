@@ -49,6 +49,7 @@ export default async function PerfilPage() {
   }
 
   let postulante: {
+    id: string
     dni: string | null
     localidad?: string | null
     direccion?: string | null
@@ -66,7 +67,7 @@ export default async function PerfilPage() {
   // Intento de consulta completa con campos de perfil laboral y domicilio
   const { data: postData, error: postErr } = await supabaseAdmin
     .from('postulantes')
-    .select('dni, cv_url, localidad, direccion, codigo_postal, estudios, cursos, experiencia, idiomas, habilidades, horarios, estado_laboral')
+    .select('id, dni, cv_url, localidad, direccion, codigo_postal, estudios, cursos, experiencia, idiomas, habilidades, horarios, estado_laboral')
     .eq('usuario_id', user.id)
     .single()
 
@@ -76,7 +77,7 @@ export default async function PerfilPage() {
     // Si la migración aún no se corrió, se consulta lo básico sin fallar
     const { data: basicPost } = await supabaseAdmin
       .from('postulantes')
-      .select('dni, cv_url')
+      .select('id, dni, cv_url')
       .eq('usuario_id', user.id)
       .single()
     postulante = basicPost ?? null
@@ -84,14 +85,57 @@ export default async function PerfilPage() {
 
   const meta = user.user_metadata || {}
 
-  let cvFirmadaUrl: string | null = null
-  let cv: { nombre: string; fecha: string | null } | null = null
-  if (postulante?.cv_url) {
-    cv = datosCv(postulante.cv_url)
-    const { data } = await supabaseAdmin.storage
-      .from(CV_BUCKET)
-      .createSignedUrl(postulante.cv_url, 3600)
-    cvFirmadaUrl = data?.signedUrl ?? null
+  const listaCvs: Array<{ id: string; nombre: string; fecha: string | null; signedUrl: string | null }> = []
+
+  if (postulante) {
+    // 1. Obtener CVs desde la tabla curricula
+    try {
+      const { data: dbCurricula } = await supabaseAdmin
+        .from('curricula')
+        .select('id, url, nombre, created_at')
+        .eq('postulante_id', postulante.id)
+        .order('created_at', { ascending: false })
+
+      if (dbCurricula && dbCurricula.length > 0) {
+        for (const item of dbCurricula) {
+          const { data } = await supabaseAdmin.storage
+            .from(CV_BUCKET)
+            .createSignedUrl(item.url, 3600)
+
+          const fecha = item.created_at
+            ? new Date(item.created_at).toLocaleDateString('es-AR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                timeZone: 'America/Argentina/Buenos_Aires',
+              })
+            : null
+
+          listaCvs.push({
+            id: item.id,
+            nombre: item.nombre || 'Currículum',
+            fecha,
+            signedUrl: data?.signedUrl ?? null,
+          })
+        }
+      }
+    } catch (e) {
+      console.error('Error al cargar curricula:', e)
+    }
+
+    // 2. Soporte para CV previo (legacy) en postulantes.cv_url si no está en la tabla curricula
+    if (postulante.cv_url && listaCvs.length === 0) {
+      const datos = datosCv(postulante.cv_url)
+      const { data } = await supabaseAdmin.storage
+        .from(CV_BUCKET)
+        .createSignedUrl(postulante.cv_url, 3600)
+      listaCvs.push({
+        id: 'legacy',
+        nombre: datos.nombre,
+        fecha: datos.fecha,
+        signedUrl: data?.signedUrl ?? null,
+      })
+    }
   }
 
   return (
@@ -153,7 +197,7 @@ export default async function PerfilPage() {
 
       <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
         <h2 className="mb-4 text-base font-semibold text-foreground">Currículum vitae</h2>
-        <CvUpload cvUrl={cvFirmadaUrl} cv={cv} />
+        <CvUpload cvs={listaCvs} />
       </section>
     </div>
   )

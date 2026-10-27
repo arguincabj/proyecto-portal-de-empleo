@@ -40,7 +40,14 @@ export async function login(email: string, password: string) {
       }
     }
 
-    return { ok: true }
+    const userId = data.user.id
+    const { data: usuario } = await supabaseAdmin
+      .from('usuarios')
+      .select('rol')
+      .eq('id', userId)
+      .single()
+
+    return { ok: true, rol: (usuario?.rol as string) ?? 'postulante' }
   } catch {
     return { ok: false, error: 'Error inesperado al iniciar sesión' }
   }
