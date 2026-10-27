@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { PerfilForm } from './perfil-form'
 import { PerfilLaboralForm } from './perfil-laboral-form'
 import { CvUpload } from './cv-upload'
+import { EstadoLaboralToggle } from './estado-laboral-toggle'
 
 const CV_BUCKET = 'curricula'
 
@@ -59,12 +60,13 @@ export default async function PerfilPage() {
     idiomas?: string | null
     habilidades?: string | null
     horarios?: string | null
+    estado_laboral?: string | null
   } | null = null
 
   // Intento de consulta completa con campos de perfil laboral y domicilio
   const { data: postData, error: postErr } = await supabaseAdmin
     .from('postulantes')
-    .select('dni, cv_url, localidad, direccion, codigo_postal, estudios, cursos, experiencia, idiomas, habilidades, horarios')
+    .select('dni, cv_url, localidad, direccion, codigo_postal, estudios, cursos, experiencia, idiomas, habilidades, horarios, estado_laboral')
     .eq('usuario_id', user.id)
     .single()
 
@@ -100,6 +102,20 @@ export default async function PerfilPage() {
           Tus datos personales, perfil laboral y currículum vitae.
         </p>
       </div>
+
+      <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
+        <h2 className="mb-1 text-base font-semibold text-foreground">Situación laboral actual</h2>
+        <p className="mb-4 text-xs text-foreground-secondary">
+          Indicá si te encontrás en búsqueda activa de empleo o si estás trabajando actualmente.
+        </p>
+        <EstadoLaboralToggle
+          defaultEstado={
+            (postulante?.estado_laboral || meta.estado_laboral) === 'trabajando'
+              ? 'trabajando'
+              : 'en_busqueda'
+          }
+        />
+      </section>
 
       <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
         <h2 className="mb-4 text-base font-semibold text-foreground">Datos personales y domicilio</h2>

@@ -43,6 +43,7 @@ type PostulanteRow = {
   idiomas?: string | null
   habilidades?: string | null
   horarios?: string | null
+  estado_laboral?: string | null
 }
 
 type UsuarioRow = {
@@ -278,6 +279,7 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
     const metaDireccion = typeof userMeta.direccion === 'string' ? userMeta.direccion : null
     const metaCodigoPostal = typeof userMeta.codigo_postal === 'string' ? userMeta.codigo_postal : null
     const metaDni = typeof userMeta.dni === 'string' ? userMeta.dni : null
+    const metaEstadoLaboral = typeof userMeta.estado_laboral === 'string' ? userMeta.estado_laboral : null
 
     const localidad = post?.localidad || metaLocalidad || rawUser?.localidad || null
     const direccion = post?.direccion || metaDireccion || rawUser?.direccion || null
@@ -319,6 +321,7 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
             idiomas: post?.idiomas || null,
             habilidades: post?.habilidades || null,
             horarios: post?.horarios || null,
+            estado_laboral: post?.estado_laboral || metaEstadoLaboral || null,
             usuario: rawUser
               ? {
                   nombre: rawUser.nombre,

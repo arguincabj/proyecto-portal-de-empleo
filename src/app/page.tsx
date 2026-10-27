@@ -3,7 +3,7 @@ import Link from 'next/link'
 import escudoFunes from '@/assets/brand/escudo-funes-blanco.png'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { OfertasCarousel, type OfertaSlide } from '@/components/home/ofertas-carousel'
-import { UserCheck, Building2, ArrowRight, Briefcase, Search, LogIn } from 'lucide-react'
+import { UserCheck, Building2, ArrowRight, Briefcase, Search, LogIn, UserPlus } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,6 +54,13 @@ export default async function HomePage() {
             >
               <LogIn className="size-3.5" />
               <span>Iniciar sesión</span>
+            </Link>
+            <Link
+              href="/auth/registro"
+              className="inline-flex items-center gap-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl transition-all shadow-sm"
+            >
+              <UserPlus className="size-3.5" />
+              <span>Registrarse</span>
             </Link>
           </div>
         </div>

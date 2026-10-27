@@ -43,6 +43,7 @@ export default async function OfertaDetallePage({ params }: PageProps) {
   let userRole: string | null = null
   let yaPostulado = false
   let estadoPostulacion: string | null = null
+  let estadoLaboral: string | null = null
 
   if (user) {
     const { data: usuario } = await supabase
@@ -56,11 +57,12 @@ export default async function OfertaDetallePage({ params }: PageProps) {
     if (userRole === 'postulante') {
       const { data: postulante } = await supabase
         .from('postulantes')
-        .select('id')
+        .select('id, estado_laboral')
         .eq('usuario_id', user.id)
         .single()
 
       if (postulante) {
+        estadoLaboral = postulante.estado_laboral || (user.user_metadata?.estado_laboral as string) || null
         const { data: postu } = await supabase
           .from('postulaciones')
           .select('estado')
@@ -148,6 +150,7 @@ export default async function OfertaDetallePage({ params }: PageProps) {
             userRole={userRole}
             yaPostulado={yaPostulado}
             estadoPostulacion={estadoPostulacion}
+            estadoLaboral={estadoLaboral}
           />
         </section>
 

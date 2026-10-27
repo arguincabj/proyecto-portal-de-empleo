@@ -214,6 +214,51 @@ export async function subirCv(formData: FormData): Promise<ActionResult> {
   }
 }
 
+export async function actualizarEstadoLaboral(
+  nuevoEstado: 'en_busqueda' | 'trabajando'
+): Promise<ActionResult> {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'No autenticado' }
+
+    const { data: usuarioRol } = await supabase.from('usuarios').select('rol').eq('id', user.id).single()
+    if (usuarioRol?.rol !== 'postulante') return { ok: false, error: 'Acción no disponible para tu tipo de cuenta' }
+
+    if (!['en_busqueda', 'trabajando'].includes(nuevoEstado)) {
+      return { ok: false, error: 'Estado laboral inválido' }
+    }
+
+    // Respaldar siempre en Auth Metadata para garantizar persistencia y disponibilidad inmediata
+    try {
+      await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...(user.user_metadata || {}),
+          estado_laboral: nuevoEstado,
+        },
+      })
+    } catch (authErr) {
+      console.error('Error al actualizar metadata de auth:', authErr)
+    }
+
+    const { error } = await supabaseAdmin
+      .from('postulantes')
+      .update({ estado_laboral: nuevoEstado })
+      .eq('usuario_id', user.id)
+
+    // Si la migración aún no se corrió en Supabase, el valor ya quedó seguro en user_metadata
+    if (error && !error.message?.includes('column') && error.code !== '42703' && error.code !== 'PGRST204') {
+      return { ok: false, error: 'No se pudo actualizar el estado laboral en la base de datos' }
+    }
+
+    revalidatePath('/perfil')
+    revalidatePath('/inicio')
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Error inesperado al actualizar el estado laboral' }
+  }
+}
+
 export async function eliminarCv(): Promise<ActionResult> {
   try {
     const supabase = await createSupabaseServerClient()

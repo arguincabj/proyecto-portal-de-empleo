@@ -11,6 +11,7 @@ interface BotonPostularProps {
   userRole: string | null
   yaPostulado: boolean
   estadoPostulacion?: string | null
+  estadoLaboral?: string | null
 }
 
 const ESTADOS_MAP: Record<string, { label: string; class: string }> = {
@@ -26,6 +27,7 @@ export function BotonPostular({
   userRole,
   yaPostulado: initialYaPostulado,
   estadoPostulacion,
+  estadoLaboral,
 }: BotonPostularProps) {
   const [yaPostulado, setYaPostulado] = useState(initialYaPostulado)
   const [isPending, startTransition] = useTransition()
@@ -84,6 +86,15 @@ export function BotonPostular({
             </span>
           </div>
         )}
+        {estadoLaboral && (
+          <span className={`text-xs px-3 py-1 rounded-full font-semibold border ${
+            estadoLaboral === 'trabajando'
+              ? 'bg-blue-50 text-blue-800 border-blue-200'
+              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+          }`}>
+            {estadoLaboral === 'trabajando' ? '🔵 Trabajando' : '🟢 En búsqueda'}
+          </span>
+        )}
       </div>
     )
   }
@@ -107,6 +118,18 @@ export function BotonPostular({
         <p className="text-sm text-gray-500 mt-0.5">
           Tu perfil y CV serán enviados a la Oficina de Empleo para su revisión.
         </p>
+        {estadoLaboral && (
+          <div className="mt-2">
+            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border ${
+              estadoLaboral === 'trabajando'
+                ? 'bg-blue-50 text-blue-800 border-blue-200'
+                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            }`}>
+              <span>{estadoLaboral === 'trabajando' ? '🔵' : '🟢'}</span>
+              {estadoLaboral === 'trabajando' ? 'Actualmente trabajando' : 'En búsqueda laboral'}
+            </span>
+          </div>
+        )}
       </div>
 
       <button

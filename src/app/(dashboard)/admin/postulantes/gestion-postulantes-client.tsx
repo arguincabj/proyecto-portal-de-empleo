@@ -40,6 +40,7 @@ export type PostulanteData = {
   idiomas?: string | null
   habilidades?: string | null
   horarios?: string | null
+  estado_laboral?: string | null
   usuario: {
     nombre: string
     apellido: string
@@ -643,6 +644,15 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                           {postulacion.postulante?.localidad ? postulacion.postulante.localidad : 'Localidad: No informada'}
                         </span>
 
+                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-sans font-medium border ${
+                          postulacion.postulante?.estado_laboral === 'trabajando'
+                            ? 'text-blue-800 bg-blue-50 border-blue-100'
+                            : 'text-emerald-800 bg-emerald-50 border-emerald-100'
+                        }`}>
+                          <span className="text-[10px]">{postulacion.postulante?.estado_laboral === 'trabajando' ? '🔵' : '🟢'}</span>
+                          {postulacion.postulante?.estado_laboral === 'trabajando' ? 'Trabajando' : 'En búsqueda'}
+                        </span>
+
                         {postUser?.telefono && (
                           <a
                             href={`tel:${postUser.telefono}`}
@@ -832,6 +842,17 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                     {modalDerivar.postulante?.localidad || 'No informada'}
                   </span>
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-700">Situación laboral:</span>
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-lg border shadow-2xs ${
+                    modalDerivar.postulante?.estado_laboral === 'trabajando'
+                      ? 'text-blue-900 bg-white border-blue-200'
+                      : 'text-emerald-900 bg-white border-emerald-200'
+                  }`}>
+                    <span className="text-[10px]">{modalDerivar.postulante?.estado_laboral === 'trabajando' ? '🔵' : '🟢'}</span>
+                    {modalDerivar.postulante?.estado_laboral === 'trabajando' ? 'Actualmente trabajando' : 'En búsqueda laboral'}
+                  </span>
+                </div>
                 {(modalDerivar.postulante?.direccion || modalDerivar.postulante?.codigo_postal) && (
                   <div className="text-xs text-gray-600 flex flex-wrap items-center gap-3 pt-2 border-t border-teal-100">
                     {modalDerivar.postulante?.direccion && (
@@ -961,6 +982,14 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                     <span className="flex items-center gap-1 text-teal-800 bg-white/90 px-2 py-0.5 rounded-md font-sans font-medium border border-teal-200/60">
                       <MapPin className="size-3.5 text-teal-600" />
                       Localidad: {perfilModalItem.postulante?.localidad || 'No informada'}
+                    </span>
+                    <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-sans font-medium border ${
+                      perfilModalItem.postulante?.estado_laboral === 'trabajando'
+                        ? 'text-blue-800 bg-blue-50 border-blue-200/60'
+                        : 'text-emerald-800 bg-emerald-50 border-emerald-200/60'
+                    }`}>
+                      <span className="text-[10px]">{perfilModalItem.postulante?.estado_laboral === 'trabajando' ? '🔵' : '🟢'}</span>
+                      {perfilModalItem.postulante?.estado_laboral === 'trabajando' ? 'Actualmente trabajando' : 'En búsqueda laboral'}
                     </span>
                     {perfilModalItem.postulante?.usuario?.telefono && (
                       <a
