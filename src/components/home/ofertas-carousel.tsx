@@ -47,45 +47,47 @@ export function OfertasCarousel({ ofertas }: { ofertas: OfertaSlide[] }) {
 
   return (
     <div className="relative group">
-      {/* Contenedor de la Tarjeta del Carrusel */}
-      <div className="relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border border-white/30 p-6 sm:p-7 shadow-xl transition-all duration-300">
-        <div className="flex items-start justify-between gap-4 mb-3">
-          <div className="flex items-center gap-2">
-            <span className="size-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
-              <Briefcase className="size-4.5" />
-            </span>
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50/80 px-2.5 py-0.5 rounded-full border border-teal-200/50">
-                Oferta Destacada
+      {/* Contenedor de la Tarjeta del Carrusel con altura fija para evitar saltos de tamaño */}
+      <div className="relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border border-white/30 p-6 sm:p-7 shadow-xl h-[285px] sm:h-[275px] flex flex-col justify-between">
+        <div>
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="size-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+                <Briefcase className="size-4.5" />
               </span>
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50/80 px-2.5 py-0.5 rounded-full border border-teal-200/50">
+                  Oferta Destacada
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 font-mono">
+              <span>{currentIndex + 1}</span>
+              <span>/</span>
+              <span>{ofertas.length}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-gray-500 font-mono">
-            <span>{currentIndex + 1}</span>
-            <span>/</span>
-            <span>{ofertas.length}</span>
+          {/* Título y Empresa */}
+          <div className="mb-3">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 leading-snug line-clamp-1">
+              {oferta.titulo}
+            </h3>
+            <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+              <Building2 className="size-3.5 text-gray-400" />
+              <span className="font-semibold text-gray-800">{oferta.empresa_nombre}</span>
+              <span className="text-gray-300">·</span>
+              <MapPin className="size-3.5 text-gray-400" />
+              <span>Funes, Santa Fe</span>
+            </div>
           </div>
-        </div>
 
-        {/* Título y Empresa */}
-        <div className="mb-3">
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900 leading-snug line-clamp-1">
-            {oferta.titulo}
-          </h3>
-          <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-            <Building2 className="size-3.5 text-gray-400" />
-            <span className="font-semibold text-gray-800">{oferta.empresa_nombre}</span>
-            <span className="text-gray-300">·</span>
-            <MapPin className="size-3.5 text-gray-400" />
-            <span>Funes, Santa Fe</span>
-          </div>
+          {/* Descripción con altura fija para 2 líneas */}
+          <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 leading-relaxed min-h-[2.5rem]">
+            {oferta.descripcion}
+          </p>
         </div>
-
-        {/* Descripción */}
-        <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 leading-relaxed mb-5">
-          {oferta.descripcion}
-        </p>
 
         {/* Pie de tarjeta con botón a la oferta */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
