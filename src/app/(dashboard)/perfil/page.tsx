@@ -123,18 +123,21 @@ export default async function PerfilPage() {
       console.error('Error al cargar curricula:', e)
     }
 
-    // 2. Soporte para CV previo (legacy) en postulantes.cv_url si no está en la tabla curricula
-    if (postulante.cv_url && listaCvs.length === 0) {
-      const datos = datosCv(postulante.cv_url)
-      const { data } = await supabaseAdmin.storage
-        .from(CV_BUCKET)
-        .createSignedUrl(postulante.cv_url, 3600)
-      listaCvs.push({
-        id: 'legacy',
-        nombre: datos.nombre,
-        fecha: datos.fecha,
-        signedUrl: data?.signedUrl ?? null,
-      })
+    // 2. Si todavía queda un CV previo en postulantes.cv_url que no está en la tabla, mostrarlo también
+    if (postulante.cv_url) {
+      const yaEnLista = listaCvs.some((c) => c.nombre === datosCv(postulante!.cv_url!).nombre)
+      if (!yaEnLista) {
+        const datos = datosCv(postulante.cv_url)
+        const { data } = await supabaseAdmin.storage
+          .from(CV_BUCKET)
+          .createSignedUrl(postulante.cv_url, 3600)
+        listaCvs.push({
+          id: 'legacy',
+          nombre: datos.nombre,
+          fecha: datos.fecha,
+          signedUrl: data?.signedUrl ?? null,
+        })
+      }
     }
   }
 

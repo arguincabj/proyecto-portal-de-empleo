@@ -26,6 +26,14 @@ function nombreSeguro(nombre: string) {
   return limpio || 'cv'
 }
 
+function datosCv(path: string) {
+  const archivo = path.split('/').pop() ?? ''
+  const match = archivo.match(/^(\d+)(?:-(.+))?\.(\w+)$/)
+  if (!match) return { nombre: archivo }
+  const [, , nombre, ext] = match
+  return { nombre: `${nombre ?? 'curriculum'}.${ext}` }
+}
+
 export async function actualizarPerfil(formData: FormData): Promise<ActionResult> {
   try {
     const supabase = await createSupabaseServerClient()
@@ -201,7 +209,19 @@ export async function subirCv(formData: FormData): Promise<ActionResult> {
 
     if (uploadError) return { ok: false, error: 'No se pudo subir el archivo. Intentá de nuevo.' }
 
-    // Paso 2: registrar en la tabla curricula (o fallback a postulantes.cv_url)
+    // Paso 2: si el postulante tenía un CV viejo en postulantes.cv_url y aún no está en la tabla curricula, migrarlo primero
+    if (postulante.cv_url) {
+      const nombreLegacy = datosCv(postulante.cv_url).nombre
+      await supabaseAdmin.from('curricula').insert({
+        postulante_id: postulante.id,
+        url: postulante.cv_url,
+        nombre: nombreLegacy,
+      })
+      // Limpiar cv_url viejo ya migrado a la tabla curricula
+      await supabase.from('postulantes').update({ cv_url: null }).eq('id', postulante.id)
+    }
+
+    // Paso 3: registrar el nuevo CV en la tabla curricula
     const { error: insertError } = await supabaseAdmin
       .from('curricula')
       .insert({
@@ -211,6 +231,7 @@ export async function subirCv(formData: FormData): Promise<ActionResult> {
       })
 
     if (insertError) {
+      console.error('Error insertando en tabla curricula:', insertError)
       // Fallback si la migración de la tabla curricula aún no se aplicó
       const { error: fallbackUpdateError } = await supabase
         .from('postulantes')

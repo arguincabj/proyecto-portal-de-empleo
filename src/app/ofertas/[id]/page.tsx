@@ -78,7 +78,7 @@ export default async function OfertaDetallePage({ params }: PageProps) {
           estadoPostulacion = postu.estado
         }
 
-        // Obtener CVs disponibles del postulante
+        // Obtener CVs disponibles del postulante desde la tabla curricula
         try {
           const { data: dbCurricula } = await supabaseAdmin
             .from('curricula')
@@ -96,13 +96,16 @@ export default async function OfertaDetallePage({ params }: PageProps) {
           // ignore
         }
 
-        // Fallback para CV legacy si no hay en tabla curricula
-        if (cvsDisponibles.length === 0 && postulante.cv_url) {
+        // Si todavía tiene un CV viejo en postulantes.cv_url, agregarlo a la lista de opciones
+        if (postulante.cv_url) {
           const nombreArchivo = postulante.cv_url.split('/').pop()?.replace(/^\d+-/, '') || 'Currículum subido'
-          cvsDisponibles.push({
-            id: 'legacy',
-            nombre: nombreArchivo,
-          })
+          const yaEstaEnLista = cvsDisponibles.some((c) => c.nombre === nombreArchivo)
+          if (!yaEstaEnLista) {
+            cvsDisponibles.push({
+              id: 'legacy',
+              nombre: nombreArchivo,
+            })
+          }
         }
       }
     }
