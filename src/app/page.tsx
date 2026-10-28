@@ -3,7 +3,21 @@ import Link from 'next/link'
 import escudoFunes from '@/assets/brand/escudo-funes-blanco.png'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { OfertasCarousel, type OfertaSlide } from '@/components/home/ofertas-carousel'
-import { UserCheck, Building2, ArrowRight, Briefcase, Search, LogIn } from 'lucide-react'
+import {
+  UserCheck,
+  Building2,
+  ArrowRight,
+  Briefcase,
+  Search,
+  LogIn,
+  UserPlus,
+  Landmark,
+  GraduationCap,
+  Award,
+  FileText,
+  CheckCircle2,
+  MapPin,
+} from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,6 +69,13 @@ export default async function HomePage() {
               <LogIn className="size-3.5" />
               <span>Iniciar sesión</span>
             </Link>
+            <Link
+              href="/auth/registro"
+              className="inline-flex items-center gap-1.5 text-xs font-bold bg-emerald-700/90 hover:bg-emerald-600 text-white px-3.5 sm:px-4 py-2 rounded-xl transition-all border border-emerald-500/40 shadow-sm hover:scale-[1.02]"
+            >
+              <UserPlus className="size-3.5 text-emerald-200" />
+              <span>Registrarse</span>
+            </Link>
           </div>
         </div>
       </header>
@@ -105,6 +126,62 @@ export default async function HomePage() {
               </Link>
             </div>
             <OfertasCarousel ofertas={ofertas} />
+          </div>
+        </div>
+
+        {/* Círculos decorativos institucionales en el fondo */}
+        {/* Elementos e íconos flotantes traslúcidos en el fondo */}
+        <div aria-hidden className="pointer-events-none select-none absolute inset-0 overflow-hidden z-0">
+          {/* Marca de agua institucional del Escudo de Funes */}
+          <div className="absolute -top-10 left-[35%] -translate-x-1/2 opacity-[0.06] animate-float-1">
+            <Image
+              src={escudoFunes}
+              alt=""
+              width={260}
+              height={260}
+              priority={false}
+              className="size-52 sm:size-64 object-contain brightness-200"
+            />
+          </div>
+
+          {/* Maletín de Trabajo - Arriba a la izquierda */}
+          <div className="absolute top-10 left-[6%] text-emerald-300/15 animate-float-1">
+            <Briefcase className="size-16 sm:size-20" strokeWidth={1.4} />
+          </div>
+
+          {/* Palacio / Municipalidad - Centro-izquierda detrás del titular */}
+          <div className="absolute top-[48%] left-[3%] text-white/10 animate-float-2">
+            <Landmark className="size-14 sm:size-18" strokeWidth={1.4} />
+          </div>
+
+          {/* Empresas / Comercios locales - Abajo a la izquierda */}
+          <div className="absolute bottom-8 left-[24%] text-emerald-200/10 animate-float-3">
+            <Building2 className="size-16 sm:size-20" strokeWidth={1.4} />
+          </div>
+
+          {/* CV / Postulaciones - Arriba al centro */}
+          <div className="absolute top-8 left-[48%] text-white/10 animate-float-4">
+            <FileText className="size-12 sm:size-14" strokeWidth={1.4} />
+          </div>
+
+          {/* Capacitación / Oficios - Abajo al centro */}
+          <div className="absolute bottom-6 left-[46%] text-emerald-300/15 animate-float-2">
+            <GraduationCap className="size-14 sm:size-16" strokeWidth={1.4} />
+          </div>
+
+          {/* Oportunidad / Respaldo oficial - Arriba a la derecha */}
+          <div className="absolute top-8 right-[7%] text-emerald-200/10 animate-float-3">
+            <Award className="size-16 sm:size-20" strokeWidth={1.4} />
+          </div>
+
+          {/* Ubicación / Territorio Funes - Abajo a la derecha */}
+          <div className="absolute bottom-10 right-[10%] text-white/10 animate-float-1">
+            <MapPin className="size-12 sm:size-16" strokeWidth={1.4} />
+          </div>
+
+          {/* Match / Postulación exitosa - Lateral derecho */}
+          <div className="absolute top-[48%] right-[2%] text-emerald-300/10 animate-float-4">
+            <CheckCircle2 className="size-14 sm:size-16" strokeWidth={1.4} />
           </div>
         </div>
 

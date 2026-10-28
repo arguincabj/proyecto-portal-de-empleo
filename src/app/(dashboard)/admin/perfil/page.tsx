@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { AdminPerfilForm } from './admin-perfil-form'
+import { FotoPerfilUpload } from '@/components/perfil/foto-perfil-upload'
 import { ShieldCheck, UserCog } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +45,22 @@ export default async function AdminPerfilPage() {
           <span>Personal Municipal</span>
         </div>
       </div>
+
+      {/* Foto de Perfil Institucional */}
+      <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-4">
+        <div>
+          <h2 className="text-base font-bold text-gray-900">Foto de perfil institucional</h2>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Imagen de perfil que se muestra en el panel de control municipal y en tus datos de cuenta.
+          </p>
+        </div>
+        <FotoPerfilUpload
+          currentAvatarUrl={user.user_metadata?.avatar_url || (usuario as any)?.avatar_url || null}
+          nombre={usuario?.nombre ?? 'Admin'}
+          apellido={usuario?.apellido ?? ''}
+          rol="municipalidad"
+        />
+      </section>
 
       {/* Tarjeta de formulario */}
       <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-6">

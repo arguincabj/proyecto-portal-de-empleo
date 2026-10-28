@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { PerfilForm } from './perfil-form'
 import { PerfilLaboralForm } from './perfil-laboral-form'
 import { CvUpload } from './cv-upload'
+import { FotoPerfilUpload } from '@/components/perfil/foto-perfil-upload'
 
 const CV_BUCKET = 'curricula'
 
@@ -101,9 +102,20 @@ export default async function PerfilPage() {
         </p>
       </div>
 
-      <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
-        <h2 className="mb-4 text-base font-semibold text-foreground">Datos personales y domicilio</h2>
-        <PerfilForm
+      <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6 space-y-6">
+        <div>
+          <h2 className="mb-4 text-base font-semibold text-foreground">Foto de perfil</h2>
+          <FotoPerfilUpload
+            currentAvatarUrl={user.user_metadata?.avatar_url || (usuario as any)?.avatar_url || null}
+            nombre={usuario?.nombre ?? (meta.nombre as string) ?? ''}
+            apellido={usuario?.apellido ?? (meta.apellido as string) ?? ''}
+            rol="postulante"
+          />
+        </div>
+
+        <div className="border-t border-border pt-6">
+          <h2 className="mb-4 text-base font-semibold text-foreground">Datos personales y domicilio</h2>
+          <PerfilForm
           defaultValues={{
             nombre: usuario?.nombre ?? (meta.nombre as string) ?? '',
             apellido: usuario?.apellido ?? (meta.apellido as string) ?? '',
@@ -114,6 +126,7 @@ export default async function PerfilPage() {
             codigo_postal: postulante?.codigo_postal || (meta.codigo_postal as string) || '',
           }}
         />
+        </div>
       </section>
 
       <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { EmpresaPerfilForm } from './empresa-perfil-form'
+import { FotoPerfilUpload } from '@/components/perfil/foto-perfil-upload'
 import { Building2, Clock, CheckCircle2, XCircle } from 'lucide-react'
 
 const ESTADO_BADGE = {
@@ -121,6 +122,22 @@ export default async function EmpresaPerfilPage() {
           {badge.banner}
         </div>
       )}
+
+      {/* Foto / Logo de la Empresa */}
+      <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-4">
+        <div>
+          <h2 className="text-base font-bold text-gray-900">Logo o foto de perfil</h2>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Imagen representativa de la empresa que se muestra en tus ofertas de empleo y panel.
+          </p>
+        </div>
+        <FotoPerfilUpload
+          currentAvatarUrl={user.user_metadata?.avatar_url || (usuario as any)?.avatar_url || null}
+          nombre={empresa.razon_social || usuario?.nombre || 'Empresa'}
+          apellido=""
+          rol="empresa"
+        />
+      </section>
 
       {/* Formulario */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">

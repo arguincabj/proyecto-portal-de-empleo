@@ -89,16 +89,16 @@ export default function OfertasPage() {
     <main className="min-h-screen p-4 sm:p-8 bg-gray-50">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-sidebar text-sidebar-foreground p-6 rounded-2xl shadow-sm border border-white/10">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Portal de Ofertas Laborales</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-2xl font-bold text-white tracking-tight">Portal de Ofertas Laborales</h1>
+            <p className="text-sm text-sidebar-muted mt-1">
               Explora las oportunidades laborales activas publicadas por las empresas de la ciudad.
             </p>
           </div>
           <Link
             href="/"
-            className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-sidebar-muted hover:text-white bg-white/10 hover:bg-white/15 px-3.5 py-2 rounded-xl border border-white/15 transition-all"
           >
             ← Volver al inicio
           </Link>

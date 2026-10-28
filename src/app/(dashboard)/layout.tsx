@@ -47,10 +47,13 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
     usuario = nuevoUsuario
   }
 
+  const avatarUrl = user.user_metadata?.avatar_url || (usuario as { avatar_url?: string | null })?.avatar_url || null
+  const usuarioConAvatar = usuario ? { ...usuario, avatar_url: avatarUrl } : null
+
   return (
     <div className="flex h-dvh flex-col bg-page lg:flex-row">
-      <MobileSidebar usuario={usuario} />
-      <Sidebar usuario={usuario} />
+      <MobileSidebar usuario={usuarioConAvatar} />
+      <Sidebar usuario={usuarioConAvatar} />
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         {children}
       </main>

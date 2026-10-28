@@ -11,7 +11,7 @@ const ROL_LABEL: Record<string, string> = {
 }
 
 type Props = {
-  usuario: { nombre: string; apellido: string; rol: string } | null
+  usuario: { nombre: string; apellido: string; rol: string; avatar_url?: string | null } | null
 }
 
 export function Sidebar({ usuario }: Props) {
@@ -103,9 +103,17 @@ export function Sidebar({ usuario }: Props) {
 function UsuarioInfo({ usuario }: { usuario: NonNullable<Props['usuario']> }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-sidebar-foreground ring-1 ring-white/20">
-        <UserRound className="size-5" aria-hidden />
-      </span>
+      {usuario.avatar_url ? (
+        <img
+          src={usuario.avatar_url}
+          alt={`Foto de ${usuario.nombre}`}
+          className="size-9 shrink-0 rounded-full object-cover ring-1 ring-white/30"
+        />
+      ) : (
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-sidebar-foreground ring-1 ring-white/20">
+          <UserRound className="size-5" aria-hidden />
+        </span>
+      )}
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-sidebar-foreground">
           {usuario.nombre} {usuario.apellido}
