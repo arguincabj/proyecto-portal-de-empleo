@@ -71,17 +71,46 @@ export default async function OfertaDetallePage({ params }: PageProps) {
     userRole = usuario?.rol ?? null
 
     if (userRole === 'postulante') {
-      const { data: postulante } = await supabaseAdmin
+      let postulante: {
+        id: string
+        cv_url: string | null
+        estado_laboral?: string | null
+        dni: string | null
+        localidad?: string | null
+        direccion?: string | null
+        codigo_postal?: string | null
+        estudios?: string | null
+        experiencia?: string | null
+        habilidades?: string | null
+        cursos?: string | null
+        idiomas?: string | null
+        horarios?: string | null
+      } | null = null
+
+      // Intentar consulta completa con columnas nuevas si existen
+      const { data: postData, error: postErr } = await supabaseAdmin
         .from('postulantes')
         .select('id, cv_url, estado_laboral, dni, localidad, direccion, codigo_postal, estudios, experiencia, habilidades, cursos, idiomas, horarios')
         .eq('usuario_id', user.id)
         .single()
 
+      if (!postErr && postData) {
+        postulante = postData
+      } else {
+        // Fallback seguro si faltan columnas como localidad/direccion en la tabla postulantes
+        const { data: basicPost } = await supabaseAdmin
+          .from('postulantes')
+          .select('id, cv_url, estado_laboral, dni, estudios, experiencia, habilidades, cursos, idiomas, horarios')
+          .eq('usuario_id', user.id)
+          .single()
+        postulante = basicPost ?? null
+      }
+
       if (postulante) {
         estadoLaboral = postulante.estado_laboral || (user.user_metadata?.estado_laboral as string) || null
 
         // Comprobación de perfil incompleto:
-        // 1. Datos personales requeridos: nombre, apellido, teléfono, DNI
+        // 1. Datos personales requeridos: nombre, apellido, teléfono, DNI, localidad
         const tieneNombre = !!(usuario?.nombre || user.user_metadata?.nombre)
         const tieneApellido = !!(usuario?.apellido || user.user_metadata?.apellido)
         const tieneTelefono = !!(usuario?.telefono || user.user_metadata?.telefono)
