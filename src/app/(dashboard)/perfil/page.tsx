@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { PerfilForm } from './perfil-form'
@@ -25,7 +27,12 @@ function datosCv(path: string) {
   return { nombre: `${nombre ?? 'curriculum'}.${ext}`, fecha }
 }
 
-export default async function PerfilPage() {
+interface PerfilPageProps {
+  searchParams: Promise<{ retorno?: string }>
+}
+
+export default async function PerfilPage({ searchParams }: PerfilPageProps) {
+  const { retorno } = await searchParams
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
@@ -144,11 +151,43 @@ export default async function PerfilPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Mi perfil</h1>
-        <p className="mt-1 text-sm text-foreground-secondary">
-          Tus datos personales, perfil laboral y currículum vitae.
-        </p>
+      {retorno && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-bold text-amber-950 flex items-center gap-1.5">
+              <span>⚠️</span>
+              <span>Completá tus datos para continuar con tu postulación</span>
+            </h3>
+            <p className="text-xs text-amber-800">
+              Una vez que actualices tus datos personales o laborales, hacé clic en el botón para regresar directamente a la oferta de trabajo.
+            </p>
+          </div>
+          <Link
+            href={retorno}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white transition-colors shrink-0 shadow-xs"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Volver a la oferta laboral</span>
+          </Link>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Mi perfil</h1>
+          <p className="mt-1 text-sm text-foreground-secondary">
+            Tus datos personales, perfil laboral y currículum vitae.
+          </p>
+        </div>
+        {retorno && (
+          <Link
+            href={retorno}
+            className="inline-flex items-center gap-2 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3.5 py-2 rounded-xl transition-colors self-start sm:self-auto"
+          >
+            <CheckCircle2 className="size-3.5 text-teal-600" />
+            <span>Terminé de editar, volver a la oferta</span>
+          </Link>
+        )}
       </div>
 
       {/* Foto de perfil */}
@@ -181,6 +220,7 @@ export default async function PerfilPage() {
       <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
         <h2 className="mb-4 text-base font-semibold text-foreground">Datos personales y domicilio</h2>
         <PerfilForm
+          retorno={retorno}
           defaultValues={{
             nombre: usuario?.nombre ?? (meta.nombre as string) ?? '',
             apellido: usuario?.apellido ?? (meta.apellido as string) ?? '',
@@ -202,6 +242,7 @@ export default async function PerfilPage() {
           </p>
         </div>
         <PerfilLaboralForm
+          retorno={retorno}
           defaultValues={{
             estudios: postulante?.estudios ?? '',
             cursos: postulante?.cursos ?? '',

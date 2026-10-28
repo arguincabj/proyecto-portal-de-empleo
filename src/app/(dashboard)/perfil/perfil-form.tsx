@@ -34,9 +34,10 @@ type Props = {
     direccion?: string
     codigo_postal?: string
   }
+  retorno?: string
 }
 
-export function PerfilForm({ defaultValues }: Props) {
+export function PerfilForm({ defaultValues, retorno }: Props) {
   const router = useRouter()
   const [editando, setEditando] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -83,7 +84,11 @@ export function PerfilForm({ defaultValues }: Props) {
           form.reset(values)
           setEditando(false)
           toast.success('Datos actualizados correctamente')
-          router.refresh()
+          if (retorno) {
+            router.push(retorno)
+          } else {
+            router.refresh()
+          }
         } else {
           toast.error(result.error)
         }

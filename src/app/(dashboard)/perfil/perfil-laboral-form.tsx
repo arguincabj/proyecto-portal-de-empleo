@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   GraduationCap,
   Award,
@@ -27,9 +28,11 @@ export type PerfilLaboralValues = {
 
 type Props = {
   defaultValues: PerfilLaboralValues
+  retorno?: string
 }
 
-export function PerfilLaboralForm({ defaultValues }: Props) {
+export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
+  const router = useRouter()
   const [editando, setEditando] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [valores, setValores] = useState<PerfilLaboralValues>(defaultValues)
@@ -62,6 +65,9 @@ export function PerfilLaboralForm({ defaultValues }: Props) {
         if (result.ok) {
           setEditando(false)
           toast.success('Perfil laboral actualizado correctamente')
+          if (retorno) {
+            router.push(retorno)
+          }
         } else {
           toast.error(result.error)
         }
