@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { BotonPostular } from './boton-postular'
-import { ArrowLeft, Building2, Calendar, ShieldCheck, Briefcase } from 'lucide-react'
+import { ArrowLeft, Building2, Calendar, ShieldCheck, Briefcase, Clock } from 'lucide-react'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -16,7 +16,7 @@ export default async function OfertaDetallePage({ params }: PageProps) {
   // 1. Obtener la oferta
   const { data: oferta, error: ofertaError } = await supabase
     .from('ofertas')
-    .select('id, empresa_nombre, titulo, descripcion, estado, created_at')
+    .select('*')
     .eq('id', id)
     .single()
 
@@ -117,6 +117,26 @@ export default async function OfertaDetallePage({ params }: PageProps) {
     year: 'numeric',
   })
 
+  // Período de selección: calcular con base a columnas o fallback a created_at
+  const duracionDias = oferta.duracion_dias || 30
+  const fechaInicioRaw = oferta.fecha_inicio_seleccion || oferta.created_at
+  const fechaInicioObj = new Date(fechaInicioRaw)
+  const fechaFinObj = oferta.fecha_fin_seleccion
+    ? new Date(oferta.fecha_fin_seleccion + 'T23:59:59')
+    : new Date(fechaInicioObj.getTime() + duracionDias * 24 * 60 * 60 * 1000)
+
+  const fechaInicioTexto = !isNaN(fechaInicioObj.getTime())
+    ? fechaInicioObj.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
+    : fechaPublicacion
+
+  const fechaFinTexto = !isNaN(fechaFinObj.getTime())
+    ? fechaFinObj.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null
+
+  const hoy = new Date()
+  const diasRestantes = Math.ceil((fechaFinObj.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+  const convocatoriaAbierta = diasRestantes > 0
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Navegación / Volver */}
@@ -147,10 +167,46 @@ export default async function OfertaDetallePage({ params }: PageProps) {
             <Calendar className="size-3.5" />
             Publicada el {fechaPublicacion}
           </span>
+          <span className="flex items-center gap-1.5 text-teal-800 font-semibold bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-200">
+            <Clock className="size-3.5 text-teal-600" />
+            Selección: {duracionDias} días {fechaFinTexto ? `(hasta el ${fechaFinTexto})` : ''}
+          </span>
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="size-3.5 text-primary-600" />
             Portal Municipal de Empleo de Funes
           </span>
+        </div>
+
+        {/* Banner informativo de inicio y cierre de selección */}
+        <div className="rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50/60 border border-teal-200/80 p-4 text-xs text-teal-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="font-bold uppercase tracking-wider text-[11px] text-teal-800">
+                Proceso de Selección Laboral
+              </span>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  convocatoriaAbierta
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                }`}
+              >
+                {convocatoriaAbierta
+                  ? `${diasRestantes} ${diasRestantes === 1 ? 'día restante' : 'días restantes'}`
+                  : 'Convocatoria cumplida'}
+              </span>
+            </div>
+            <p className="text-gray-700">
+              <strong>Comienzo de selección:</strong> {fechaInicioTexto} &nbsp;·&nbsp;
+              <strong>Duración de convocatoria:</strong> {duracionDias} días corridos.
+            </p>
+          </div>
+          {fechaFinTexto && (
+            <div className="shrink-0 text-right sm:text-right">
+              <span className="text-[10px] uppercase font-semibold text-gray-500 block">Cierre estimado</span>
+              <span className="font-mono font-bold text-teal-900">{fechaFinTexto}</span>
+            </div>
+          )}
         </div>
 
         {/* Categorías */}

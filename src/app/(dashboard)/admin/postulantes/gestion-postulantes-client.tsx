@@ -22,10 +22,20 @@ import {
   ArrowLeft,
   ChevronRight,
   MapPin,
+  CalendarCheck,
+  CalendarClock,
+  RotateCcw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Paginacion } from '@/components/ui/paginacion'
-import { derivarPostulante, noEnviarPostulante, reabrirPostulante } from '../actions'
+import {
+  derivarPostulante,
+  noEnviarPostulante,
+  reabrirPostulante,
+  agendarOActualizarPreentrevista,
+  actualizarEstadoPreentrevista,
+  PreentrevistaItem,
+} from '../actions'
 
 export type PostulanteData = {
   id: string
@@ -66,6 +76,7 @@ export type PostulacionItem = {
     estado_empresa?: string | null
     created_at?: string
   } | null
+  preentrevista?: PreentrevistaItem | null
   postulante: PostulanteData | null
   cv_signed_url?: string | null
   cv_nombre?: string | null
@@ -95,6 +106,13 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
   const [perfilModalItem, setPerfilModalItem] = useState<PostulacionItem | null>(null)
   const [modalDerivar, setModalDerivar] = useState<PostulacionItem | null>(null)
   const [notaDerivacion, setNotaDerivacion] = useState('')
+
+  // Modal Preentrevista
+  const [modalPreentrevista, setModalPreentrevista] = useState<PostulacionItem | null>(null)
+  const [formFechaHora, setFormFechaHora] = useState('')
+  const [formLugar, setFormLugar] = useState('Presencial en Oficina de Empleo')
+  const [formNotas, setFormNotas] = useState('')
+  const [formResultado, setFormResultado] = useState<'pendiente' | 'aprobada' | 'no_asistio' | 'desfavorable'>('pendiente')
 
   const [isPending, startTransition] = useTransition()
 
@@ -237,6 +255,101 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
         }
       } else {
         toast.error(res.error || 'Error al reabrir')
+      }
+    })
+  }
+
+  // Preentrevista handlers
+  const handleAbrirPreentrevista = (postulacion: PostulacionItem) => {
+    setModalPreentrevista(postulacion)
+    const existing = postulacion.preentrevista
+    if (existing) {
+      // Ajustar fecha para input datetime-local: YYYY-MM-DDTHH:mm
+      try {
+        const d = new Date(existing.fecha_hora)
+        // Convertir a horario local para el input
+        const pad = (n: number) => String(n).padStart(2, '0')
+        const formatted = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+        setFormFechaHora(formatted)
+      } catch {
+        setFormFechaHora('')
+      }
+      setFormLugar(existing.lugar_modalidad || 'Presencial en Oficina de Empleo')
+      setFormNotas(existing.notas || '')
+      setFormResultado(existing.resultado as any || 'pendiente')
+    } else {
+      // Valor por defecto: mañana a las 10:00 o la próxima hora
+      const d = new Date()
+      d.setDate(d.getDate() + 1)
+      d.setHours(10, 0, 0, 0)
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const formatted = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+      setFormFechaHora(formatted)
+      setFormLugar('Presencial en Oficina de Empleo')
+      setFormNotas('')
+      setFormResultado('pendiente')
+    }
+  }
+
+  const handleGuardarPreentrevista = () => {
+    if (!modalPreentrevista) return
+    if (!formFechaHora) {
+      toast.error('Por favor, seleccioná la fecha y hora acordada.')
+      return
+    }
+
+    const fechaSeleccionada = new Date(formFechaHora)
+    const ahora = new Date()
+    if (fechaSeleccionada.getTime() < ahora.getTime() - 2 * 60 * 1000) {
+      toast.error('No se pueden seleccionar fechas u horarios ya pasados.')
+      return
+    }
+
+    startTransition(async () => {
+      const res = await agendarOActualizarPreentrevista({
+        preentrevistaId: modalPreentrevista.preentrevista?.id,
+        postulacionId: modalPreentrevista.id,
+        fechaHora: fechaSeleccionada.toISOString(),
+        lugarModalidad: formLugar,
+        notas: formNotas,
+        estado: modalPreentrevista.preentrevista?.id ? 'reprogramada' : 'programada',
+        resultado: formResultado,
+      })
+
+      if (res.ok) {
+        toast.success(
+          modalPreentrevista.preentrevista?.id
+            ? 'Preentrevista reprogramada exitosamente.'
+            : 'Preentrevista agendada exitosamente.'
+        )
+        setModalPreentrevista(null)
+      } else {
+        toast.error(res.error || 'Error al guardar preentrevista.')
+      }
+    })
+  }
+
+  const handleMarcarResultadoPreentrevista = (
+    postulacion: PostulacionItem,
+    nuevoResultado: 'aprobada' | 'no_asistio' | 'desfavorable'
+  ) => {
+    if (!postulacion.preentrevista?.id) return
+    startTransition(async () => {
+      const res = await actualizarEstadoPreentrevista(
+        postulacion.preentrevista!.id,
+        nuevoResultado === 'no_asistio' ? 'reprogramada' : 'completada',
+        nuevoResultado
+      )
+      if (res.ok) {
+        if (nuevoResultado === 'no_asistio') {
+          toast.info('Se registró que el postulante no asistió. Podés reprogramar la fecha cuando corresponda.')
+        } else if (nuevoResultado === 'aprobada') {
+          toast.success('Preentrevista marcada como aprobada. Podés derivar al postulante a la empresa.')
+        } else {
+          toast.info('Preentrevista finalizada.')
+        }
+      } else {
+        toast.error(res.error || 'Error al actualizar resultado.')
       }
     })
   }
@@ -680,6 +793,72 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                         </span>
                       </div>
 
+                      {/* Información de Preentrevista si existe */}
+                      {postulacion.preentrevista && (
+                        <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                            postulacion.preentrevista.resultado === 'aprobada'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : postulacion.preentrevista.resultado === 'no_asistio'
+                              ? 'bg-rose-50 text-rose-800 border-rose-200'
+                              : postulacion.preentrevista.resultado === 'desfavorable'
+                              ? 'bg-orange-50 text-orange-800 border-orange-200'
+                              : 'bg-blue-50 text-blue-800 border-blue-200'
+                          }`}>
+                            <CalendarClock className="size-3.5" />
+                            <span>
+                              Preentrevista: {new Date(postulacion.preentrevista.fecha_hora).toLocaleString('es-AR', {
+                                dateStyle: 'short',
+                                timeStyle: 'short',
+                              })}
+                            </span>
+                            <span className="font-bold">
+                              ({postulacion.preentrevista.resultado === 'no_asistio'
+                                ? 'No asistió'
+                                : postulacion.preentrevista.resultado === 'aprobada'
+                                ? 'Aprobada'
+                                : postulacion.preentrevista.resultado === 'desfavorable'
+                                ? 'No favorable'
+                                : 'Programada'})
+                            </span>
+                          </div>
+
+                          {/* Botón rápido para reprogramar si no pudo asistir */}
+                          <button
+                            type="button"
+                            onClick={() => handleAbrirPreentrevista(postulacion)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 hover:text-blue-900 hover:underline"
+                          >
+                            <RotateCcw className="size-3" />
+                            <span>Reprogramar / Editar</span>
+                          </button>
+
+                          {/* Opciones rápidas de resultado si está pendiente de realizar */}
+                          {postulacion.preentrevista.resultado === 'pendiente' && (
+                            <div className="inline-flex items-center gap-1.5 ml-1">
+                              <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() => handleMarcarResultadoPreentrevista(postulacion, 'aprobada')}
+                                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors"
+                                title="Marcar como aprobada y realizada"
+                              >
+                                ✓ Asistió / Aprobó
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() => handleMarcarResultadoPreentrevista(postulacion, 'no_asistio')}
+                                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 text-rose-800 hover:bg-rose-200 transition-colors"
+                                title="Marcar que no asistió para reprogramar"
+                              >
+                                ✕ No asistió
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Nota de derivación si existe */}
                       {esDerivada && postulacion.derivacion?.nota_municipalidad && (
                         <p className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200/80 rounded-lg px-2.5 py-1 mt-1 inline-block">
@@ -719,6 +898,29 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                         <Users className="size-3.5 text-gray-500" />
                         <span>Ficha completa</span>
                       </button>
+
+                      {/* Botón de Preentrevista (Opcional) */}
+                      {!esDerivada && (
+                        <button
+                          type="button"
+                          onClick={() => handleAbrirPreentrevista(postulacion)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors shadow-2xs ${
+                            postulacion.preentrevista
+                              ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                              : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200'
+                          }`}
+                          title="Acordar o reprogramar preentrevista previa (opcional)"
+                        >
+                          <CalendarCheck className="size-3.5 text-blue-600" />
+                          <span>
+                            {postulacion.preentrevista
+                              ? postulacion.preentrevista.resultado === 'no_asistio'
+                                ? 'Reprogramar entrevista'
+                                : 'Ver preentrevista'
+                              : 'Preentrevista'}
+                          </span>
+                        </button>
+                      )}
 
                       {/* BOTONES PRINCIPALES DE DECISIÓN: ENVIAR SOLICITUD vs NO ENVIAR */}
                       {esPendiente && (
@@ -1165,6 +1367,147 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: Agendar / Reprogramar Preentrevista                              */}
+      {/* ========================================================================= */}
+      {modalPreentrevista && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div
+            className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-gray-100 flex items-start justify-between bg-blue-50/60">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 flex items-center gap-1.5">
+                  <CalendarCheck className="size-3.5" />
+                  Preentrevista Municipal (Opcional)
+                </span>
+                <h3 className="text-base font-bold text-gray-900 mt-0.5">
+                  {[modalPreentrevista.postulante?.usuario?.nombre, modalPreentrevista.postulante?.usuario?.apellido].filter(Boolean).join(' ') ||
+                    (modalPreentrevista.postulante?.dni ? `Postulante (DNI ${modalPreentrevista.postulante.dni})` : 'Postulante registrado')}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Oferta: {modalPreentrevista.oferta?.titulo} · {modalPreentrevista.oferta?.empresa_nombre}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalPreentrevista(null)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-200/50"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+                <p className="font-semibold">💡 Recordá que la preentrevista no es obligatoria:</p>
+                <p>
+                  Si ya conocés al candidato o considerás que su perfil es idóneo, podés derivarlo directamente a la empresa sin necesidad de coordinar esta reunión.
+                </p>
+              </div>
+
+              {/* Teléfono de contacto rápido para coordinar */}
+              {modalPreentrevista.postulante?.usuario?.telefono && (
+                <div className="flex items-center justify-between text-xs bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <span className="text-gray-500">Teléfono para coordinar fecha y hora:</span>
+                  <a
+                    href={`tel:${modalPreentrevista.postulante.usuario.telefono}`}
+                    className="font-bold text-teal-700 hover:underline flex items-center gap-1"
+                  >
+                    <Phone className="size-3.5" />
+                    {modalPreentrevista.postulante.usuario.telefono}
+                  </a>
+                </div>
+              )}
+
+              {/* Campo Fecha y Hora acordada */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 block">
+                  Fecha y Hora Acordada *
+                </label>
+                <input
+                  type="datetime-local"
+                  // min se establece en el instante actual para no permitir fechas pasadas
+                  min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                  value={formFechaHora}
+                  onChange={(e) => setFormFechaHora(e.target.value)}
+                  className="w-full text-xs rounded-xl border border-gray-300 px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+                <p className="text-[11px] text-gray-400">
+                  Solo podés seleccionar fechas a partir de la fecha y hora actual del sistema.
+                </p>
+              </div>
+
+              {/* Campo Lugar / Modalidad */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 block">
+                  Lugar o Modalidad
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej: Presencial en Oficina de Empleo, videollamada Meet, o telefónica"
+                  value={formLugar}
+                  onChange={(e) => setFormLugar(e.target.value)}
+                  className="w-full text-xs rounded-xl border border-gray-300 px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
+
+              {/* Estado / Resultado si ya existía */}
+              {modalPreentrevista.preentrevista && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-700 block">
+                    Estado / Asistencia
+                  </label>
+                  <select
+                    value={formResultado}
+                    onChange={(e) => setFormResultado(e.target.value as any)}
+                    className="w-full text-xs rounded-xl border border-gray-300 px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  >
+                    <option value="pendiente">Pendiente de realizar</option>
+                    <option value="aprobada">Asistió y aprobó (Favorable)</option>
+                    <option value="no_asistio">No pudo asistir (Para reprogramar)</option>
+                    <option value="desfavorable">No favorable</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Observaciones o notas internas */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 block">
+                  Observaciones internas de la preentrevista (Opcional)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Anotaciones de la entrevista, motivo de reprogramación o aspectos evaluados..."
+                  value={formNotas}
+                  onChange={(e) => setFormNotas(e.target.value)}
+                  className="w-full text-xs rounded-xl border border-gray-300 px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="px-6 py-3.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setModalPreentrevista(null)}
+                className="text-xs font-semibold text-gray-600 hover:text-gray-800"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={handleGuardarPreentrevista}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-2xs disabled:opacity-50"
+              >
+                {isPending ? 'Guardando...' : modalPreentrevista.preentrevista ? 'Reprogramar / Guardar' : 'Agendar Preentrevista'}
+              </button>
             </div>
           </div>
         </div>

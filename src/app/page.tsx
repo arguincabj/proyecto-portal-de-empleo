@@ -3,6 +3,7 @@ import Link from 'next/link'
 import escudoFunes from '@/assets/brand/escudo-funes-blanco.png'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { OfertasCarousel, type OfertaSlide } from '@/components/home/ofertas-carousel'
+import { FunesCiudadCarousel } from '@/components/home/funes-ciudad-carousel'
 import {
   UserCheck,
   Building2,
@@ -204,7 +205,7 @@ export default async function HomePage() {
         </div>
 
         {/* Las 2 Tarjetas de Perfil */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {/* 1. Postulante */}
           <div className="bg-white rounded-2xl border border-gray-200 p-7 shadow-sm hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between group">
             <div className="space-y-4">
@@ -256,6 +257,11 @@ export default async function HomePage() {
               </Link>
             </div>
           </div>
+        </div>
+
+        {/* Carrusel Ciudad de Funes e Instagram Oficial */}
+        <div className="mt-16 max-w-4xl mx-auto">
+          <FunesCiudadCarousel />
         </div>
       </section>
 

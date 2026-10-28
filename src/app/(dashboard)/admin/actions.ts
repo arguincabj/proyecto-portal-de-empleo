@@ -268,3 +268,148 @@ export async function reabrirPostulante(postulacionId: string) {
     return { ok: false, error: msg }
   }
 }
+
+export type PreentrevistaItem = {
+  id: string
+  postulacion_id: string
+  municipalidad_usuario_id?: string
+  fecha_hora: string
+  lugar_modalidad: string
+  estado: 'programada' | 'reprogramada' | 'completada' | 'cancelada'
+  notas?: string | null
+  resultado?: 'aprobada' | 'no_asistio' | 'desfavorable' | 'pendiente' | null
+  created_at?: string
+  updated_at?: string
+}
+
+export async function agendarOActualizarPreentrevista(data: {
+  preentrevistaId?: string
+  postulacionId: string
+  fechaHora: string
+  lugarModalidad?: string
+  notas?: string
+  estado?: 'programada' | 'reprogramada' | 'completada' | 'cancelada'
+  resultado?: 'aprobada' | 'no_asistio' | 'desfavorable' | 'pendiente'
+}) {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { ok: false, error: 'No autorizado. Iniciá sesión.' }
+    }
+
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('rol')
+      .eq('id', user.id)
+      .single()
+
+    if (!usuario || usuario.rol !== 'municipalidad') {
+      return { ok: false, error: 'Permisos insuficientes. Solo el personal municipal puede gestionar preentrevistas.' }
+    }
+
+    if (!data.fechaHora) {
+      return { ok: false, error: 'Debés especificar una fecha y hora.' }
+    }
+
+    // Validar que la fecha acordada no sea anterior a hoy/ahora (tolerancia de 2 min)
+    const fechaSeleccionada = new Date(data.fechaHora)
+    const ahora = new Date()
+    if (fechaSeleccionada.getTime() < ahora.getTime() - 2 * 60 * 1000) {
+      return { ok: false, error: 'La fecha y hora acordada no puede ser anterior al momento actual.' }
+    }
+
+    const payload = {
+      postulacion_id: data.postulacionId,
+      municipalidad_usuario_id: user.id,
+      fecha_hora: data.fechaHora,
+      lugar_modalidad: data.lugarModalidad?.trim() || 'Presencial en Oficina de Empleo',
+      notas: data.notas?.trim() || null,
+      estado: data.estado || (data.preentrevistaId ? 'reprogramada' : 'programada'),
+      resultado: data.resultado || 'pendiente',
+      updated_at: new Date().toISOString(),
+    }
+
+    if (data.preentrevistaId) {
+      const { error } = await supabaseAdmin
+        .from('preentrevistas')
+        .update(payload)
+        .eq('id', data.preentrevistaId)
+
+      if (error) {
+        return { ok: false, error: `Error al reprogramar preentrevista: ${error.message}` }
+      }
+    } else {
+      const { error } = await supabaseAdmin
+        .from('preentrevistas')
+        .insert(payload)
+
+      if (error) {
+        return { ok: false, error: `Error al agendar preentrevista: ${error.message}` }
+      }
+    }
+
+    revalidatePath('/admin')
+    revalidatePath('/admin/postulantes')
+    revalidatePath('/postulaciones')
+    return { ok: true }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error inesperado al gestionar preentrevista'
+    return { ok: false, error: msg }
+  }
+}
+
+export async function actualizarEstadoPreentrevista(
+  preentrevistaId: string,
+  estado: 'programada' | 'reprogramada' | 'completada' | 'cancelada',
+  resultado?: 'aprobada' | 'no_asistio' | 'desfavorable' | 'pendiente',
+  notas?: string
+) {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { ok: false, error: 'No autorizado. Iniciá sesión.' }
+    }
+
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('rol')
+      .eq('id', user.id)
+      .single()
+
+    if (!usuario || usuario.rol !== 'municipalidad') {
+      return { ok: false, error: 'Permisos insuficientes.' }
+    }
+
+    const updateData: Record<string, unknown> = {
+      estado,
+      updated_at: new Date().toISOString(),
+    }
+    if (resultado) updateData.resultado = resultado
+    if (notas !== undefined) updateData.notas = notas
+
+    const { error } = await supabaseAdmin
+      .from('preentrevistas')
+      .update(updateData)
+      .eq('id', preentrevistaId)
+
+    if (error) {
+      return { ok: false, error: `Error al actualizar: ${error.message}` }
+    }
+
+    revalidatePath('/admin')
+    revalidatePath('/admin/postulantes')
+    revalidatePath('/postulaciones')
+    return { ok: true }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error al actualizar estado de preentrevista'
+    return { ok: false, error: msg }
+  }
+}

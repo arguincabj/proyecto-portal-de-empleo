@@ -10,6 +10,8 @@ export async function crearOfertaEmpresa(data: {
   categoriaId?: string
   modalidad?: string
   estado?: 'publicada' | 'pendiente'
+  fechaInicioSeleccion?: string
+  duracionDias?: number
 }) {
   try {
     const supabase = await createSupabaseServerClient()
@@ -43,6 +45,30 @@ export async function crearOfertaEmpresa(data: {
       return { ok: false, error: 'No se encontró el perfil de tu empresa.' }
     }
 
+    // Calcular período de selección (entre 30 y 60 días)
+    const duracionFinal = Math.min(Math.max(Number(data.duracionDias) || 30, 30), 60)
+    const hoyStr = new Date().toISOString().split('T')[0]
+    const fechaInicioFinal = data.fechaInicioSeleccion && !isNaN(Date.parse(data.fechaInicioSeleccion))
+      ? data.fechaInicioSeleccion
+      : hoyStr
+
+    const fechaInicioObj = new Date(fechaInicioFinal + 'T00:00:00')
+    const fechaFinObj = new Date(fechaInicioObj)
+    fechaFinObj.setDate(fechaFinObj.getDate() + duracionFinal)
+    const fechaFinStr = fechaFinObj.toISOString().split('T')[0]
+
+    // Formatear fechas para texto legible en español
+    const fechaInicioFormato = fechaInicioObj.toLocaleDateString('es-AR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+    const fechaFinFormato = fechaFinObj.toLocaleDateString('es-AR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+
     // Preparar descripción integrando la modalidad si se especificó
     let descripcionFinal = data.descripcion.trim()
     if (data.modalidad && data.modalidad !== 'no_especificada') {
@@ -52,21 +78,51 @@ export async function crearOfertaEmpresa(data: {
       }
     }
 
-    // 2. Insertar la oferta en estado pendiente (requiere aprobación del administrador)
-    const { data: nuevaOferta, error: ofertaError } = await supabaseAdmin
+    // Añadir aclaración clara del período de selección en la descripción para compatibilidad total
+    const periodoTexto = `\n\n📅 Proceso de Selección:\n• Comienzo de selección: ${fechaInicioFormato}\n• Período de convocatoria: ${duracionFinal} días (hasta el ${fechaFinFormato})`
+    if (!descripcionFinal.includes('Proceso de Selección:')) {
+      descripcionFinal += periodoTexto
+    }
+
+    // 2. Insertar la oferta en estado pendiente (con fallback si las columnas aún no existen en la BD)
+    let nuevaOferta: { id: string } | null = null
+    const insertPayloadConColumnas = {
+      empresa_id: empresa.id,
+      empresa_nombre: empresa.razon_social,
+      titulo: data.titulo.trim(),
+      descripcion: descripcionFinal,
+      estado: 'pendiente',
+      fecha_inicio_seleccion: fechaInicioFinal,
+      duracion_dias: duracionFinal,
+      fecha_fin_seleccion: fechaFinStr,
+    }
+
+    const { data: resConCol, error: errConCol } = await supabaseAdmin
       .from('ofertas')
-      .insert({
-        empresa_id: empresa.id,
-        empresa_nombre: empresa.razon_social,
-        titulo: data.titulo.trim(),
-        descripcion: descripcionFinal,
-        estado: 'pendiente',
-      })
+      .insert(insertPayloadConColumnas)
       .select('id')
       .single()
 
-    if (ofertaError || !nuevaOferta) {
-      return { ok: false, error: `Error al guardar la oferta: ${ofertaError?.message}` }
+    if (errConCol) {
+      // Fallback si la migración de columnas en la BD aún no fue ejecutada en Supabase
+      const { data: resFallback, error: errFallback } = await supabaseAdmin
+        .from('ofertas')
+        .insert({
+          empresa_id: empresa.id,
+          empresa_nombre: empresa.razon_social,
+          titulo: data.titulo.trim(),
+          descripcion: descripcionFinal,
+          estado: 'pendiente',
+        })
+        .select('id')
+        .single()
+
+      if (errFallback || !resFallback) {
+        return { ok: false, error: `Error al guardar la oferta: ${errFallback?.message}` }
+      }
+      nuevaOferta = resFallback
+    } else {
+      nuevaOferta = resConCol
     }
 
     // 3. Vincular categoría si fue seleccionada

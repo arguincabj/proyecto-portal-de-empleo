@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Paginacion } from '@/components/ui/paginacion'
-import { Search, Briefcase, Building2, Calendar, ArrowRight, LoaderCircle, AlertCircle } from 'lucide-react'
+import { Search, Briefcase, Building2, Calendar, ArrowRight, LoaderCircle, AlertCircle, Clock } from 'lucide-react'
 
 type Oferta = {
   id: string
@@ -13,6 +13,9 @@ type Oferta = {
   descripcion: string
   estado: string
   created_at: string
+  fecha_inicio_seleccion?: string | null
+  duracion_dias?: number | null
+  fecha_fin_seleccion?: string | null
 }
 
 const ITEMS_POR_PAGINA = 15
@@ -208,9 +211,15 @@ export default function OfertasPage() {
                     {oferta.descripcion}
                   </p>
 
-                  <div className="flex items-center gap-1.5 text-xs text-foreground-muted pt-1">
-                    <Calendar className="size-3.5" />
-                    <span>Publicado el {new Date(oferta.created_at).toLocaleDateString('es-AR')}</span>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-foreground-muted pt-1">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="size-3.5" />
+                      <span>Publicado el {new Date(oferta.created_at).toLocaleDateString('es-AR')}</span>
+                    </span>
+                    <span className="flex items-center gap-1.5 text-teal-800 font-medium bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
+                      <Clock className="size-3 text-teal-600" />
+                      <span>Convocatoria: {oferta.duracion_dias || 30} días</span>
+                    </span>
                   </div>
                 </div>
 

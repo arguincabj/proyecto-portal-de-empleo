@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { CambiarEstadoBoton } from './cambiar-estado-boton'
 
 export default async function EmpresaDashboardPage() {
@@ -31,19 +32,26 @@ export default async function EmpresaDashboardPage() {
 
   const razonSocial = empresa?.razon_social ?? ''
 
-  // 3. Obtener ofertas creadas por esta empresa
-  const { data: ofertasData } = await supabase
-    .from('ofertas')
-    .select(`
-      id,
-      titulo,
-      descripcion,
-      estado,
-      created_at,
-      postulaciones (count)
-    `)
-    .eq('empresa_nombre', razonSocial)
-    .order('created_at', { ascending: false })
+  // 3. Obtener ofertas creadas por esta empresa (por id o por razon_social)
+  const queryOfertas = empresa?.id
+    ? supabaseAdmin.from('ofertas').select(`
+        id,
+        titulo,
+        descripcion,
+        estado,
+        created_at,
+        postulaciones (count)
+      `).or(`empresa_id.eq.${empresa.id},empresa_nombre.eq.${razonSocial}`)
+    : supabaseAdmin.from('ofertas').select(`
+        id,
+        titulo,
+        descripcion,
+        estado,
+        created_at,
+        postulaciones (count)
+      `).eq('empresa_nombre', razonSocial)
+
+  const { data: ofertasData } = await queryOfertas.order('created_at', { ascending: false })
 
   const ofertas = ofertasData ?? []
 
@@ -52,37 +60,147 @@ export default async function EmpresaDashboardPage() {
   const ofertasPublicadas = ofertas.filter((o) => o.estado === 'publicada').length
 
   // 5. Obtener derivaciones enviadas por la municipalidad a esta empresa
-  const { data: derivacionesData } = await supabase
-    .from('derivaciones')
-    .select(`
-      id,
-      nota_municipalidad,
-      estado_empresa,
-      nota_empresa,
-      created_at,
-      postulaciones!inner (
-        id,
-        oferta:ofertas!inner (
-          id,
-          titulo,
-          empresa_nombre
-        ),
-        postulante:postulantes!inner (
-          id,
-          cv_url,
-          usuario:usuarios!inner (
-            nombre,
-            apellido,
-            email,
-            telefono
-          )
-        )
-      )
-    `)
-    .eq('postulaciones.ofertas.empresa_nombre', razonSocial)
-    .order('created_at', { ascending: false })
+  const ofertaIds = ofertas.map((o) => o.id)
+  const ofertasMap = new Map(ofertas.map((o) => [o.id, o]))
 
-  const derivaciones = derivacionesData ?? []
+  interface DerivacionItem {
+    id: string
+    nota_municipalidad: string | null
+    estado_empresa: string
+    nota_empresa: string | null
+    created_at: string
+    puesto: string
+    postulanteNombre: string
+    telefono: string | null
+    email: string | null
+    cvUrl: string | null
+  }
+
+  let derivaciones: DerivacionItem[] = []
+
+  if (ofertaIds.length > 0) {
+    // 5.1 Buscar postulaciones para las ofertas de esta empresa
+    const { data: postulacionesData } = await supabaseAdmin
+      .from('postulaciones')
+      .select('id, oferta_id, postulante_id, cv_id')
+      .in('oferta_id', ofertaIds)
+
+    const postulaciones = postulacionesData ?? []
+    const postulacionIds = postulaciones.map((p) => p.id)
+    const postulacionesMap = new Map(postulaciones.map((p) => [p.id, p]))
+
+    if (postulacionIds.length > 0) {
+      // 5.2 Obtener derivaciones para estas postulaciones
+      const { data: derivacionesData } = await supabaseAdmin
+        .from('derivaciones')
+        .select('id, postulacion_id, nota_municipalidad, estado_empresa, nota_empresa, created_at')
+        .in('postulacion_id', postulacionIds)
+        .order('created_at', { ascending: false })
+
+      const rawDerivaciones = derivacionesData ?? []
+
+      // 5.3 Obtener postulantes, usuarios y CVs involucrados
+      const postulanteIds = Array.from(new Set(postulaciones.map((p) => p.postulante_id).filter(Boolean)))
+      const cvIds = Array.from(new Set(postulaciones.map((p) => p.cv_id).filter(Boolean) as string[]))
+
+      const [postulantesRes, curriculaRes] = await Promise.all([
+        postulanteIds.length > 0
+          ? supabaseAdmin.from('postulantes').select('id, usuario_id, cv_url').in('id', postulanteIds)
+          : Promise.resolve({ data: [] }),
+        cvIds.length > 0
+          ? supabaseAdmin.from('curricula').select('id, url, nombre').in('id', cvIds)
+          : Promise.resolve({ data: [] }),
+      ])
+
+      const postulantesMap = new Map((postulantesRes.data ?? []).map((p) => [p.id, p]))
+      const curriculaMap = new Map((curriculaRes.data ?? []).map((c) => [c.id, c]))
+
+      const usuarioIds = Array.from(
+        new Set((postulantesRes.data ?? []).map((p) => p.usuario_id).filter(Boolean) as string[])
+      )
+
+      const usuariosRes = usuarioIds.length > 0
+        ? await supabaseAdmin.from('usuarios').select('id, nombre, apellido, telefono').in('id', usuarioIds)
+        : { data: [] }
+
+      const usuariosMap = new Map((usuariosRes.data ?? []).map((u) => [u.id, u]))
+
+      // Obtener emails de auth para cada usuario
+      const emailsMap = new Map<string, string>()
+      await Promise.all(
+        usuarioIds.map(async (uid) => {
+          try {
+            const { data } = await supabaseAdmin.auth.admin.getUserById(uid)
+            if (data?.user?.email) {
+              emailsMap.set(uid, data.user.email)
+            }
+          } catch {
+            // Ignorar errores puntuales de auth
+          }
+        })
+      )
+
+      // Generar URLs firmadas de CVs
+      const cvFirmadas: Record<string, string> = {}
+      const cvPaths = Array.from(
+        new Set([
+          ...Array.from(postulantesMap.values()).map((p) => p.cv_url).filter(Boolean),
+          ...Array.from(curriculaMap.values()).map((c) => c.url).filter(Boolean),
+        ] as string[])
+      )
+
+      await Promise.all(
+        cvPaths.map(async (path) => {
+          try {
+            if (path.startsWith('http://') || path.startsWith('https://')) {
+              cvFirmadas[path] = path
+              return
+            }
+            const cleanPath = path.startsWith('curricula/') ? path.replace('curricula/', '') : path
+            const { data } = await supabaseAdmin.storage.from('curricula').createSignedUrl(cleanPath, 3600)
+            if (data?.signedUrl) {
+              cvFirmadas[path] = data.signedUrl
+            } else {
+              const { data: d2 } = await supabaseAdmin.storage.from('curricula').createSignedUrl(path, 3600)
+              if (d2?.signedUrl) {
+                cvFirmadas[path] = d2.signedUrl
+              }
+            }
+          } catch {
+            // Ignorar errores al firmar
+          }
+        })
+      )
+
+      // Construir listado de derivaciones listo para la vista
+      derivaciones = rawDerivaciones.map((d) => {
+        const post = postulacionesMap.get(d.postulacion_id)
+        const oferta = post?.oferta_id ? ofertasMap.get(post.oferta_id) : null
+        const postulante = post?.postulante_id ? postulantesMap.get(post.postulante_id) : null
+        const usuarioPostulante = postulante?.usuario_id ? usuariosMap.get(postulante.usuario_id) : null
+        const userEmail = postulante?.usuario_id ? emailsMap.get(postulante.usuario_id) ?? null : null
+
+        const cvElegido = post?.cv_id ? curriculaMap.get(post.cv_id) : null
+        const cvPath = cvElegido ? cvElegido.url : postulante?.cv_url
+        const cvUrl = cvPath ? cvFirmadas[cvPath] ?? (cvPath.startsWith('http') ? cvPath : null) : null
+
+        return {
+          id: d.id,
+          nota_municipalidad: d.nota_municipalidad,
+          estado_empresa: d.estado_empresa,
+          nota_empresa: d.nota_empresa,
+          created_at: d.created_at,
+          puesto: oferta?.titulo ?? 'Puesto no disponible',
+          postulanteNombre: usuarioPostulante
+            ? `${usuarioPostulante.nombre} ${usuarioPostulante.apellido}`
+            : 'Postulante',
+          telefono: usuarioPostulante?.telefono ?? null,
+          email: userEmail,
+          cvUrl,
+        }
+      })
+    }
+  }
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Encabezado Principal */}
@@ -251,29 +369,14 @@ export default async function EmpresaDashboardPage() {
         ) : (
           <div className="divide-y divide-gray-100">
             {derivaciones.map((derivacion) => {
-              const postulacion = Array.isArray(derivacion.postulaciones)
-                ? derivacion.postulaciones[0]
-                : derivacion.postulaciones
-              const postulante = Array.isArray(postulacion?.postulante)
-                ? postulacion.postulante[0]
-                : postulacion?.postulante
-              const postulanteUser = Array.isArray(postulante?.usuario)
-                ? postulante.usuario[0]
-                : postulante?.usuario
-              const cvUrl = postulante?.cv_url
-              const oferta = Array.isArray(postulacion?.oferta)
-                ? postulacion.oferta[0]
-                : postulacion?.oferta
-              const puesto = oferta?.titulo
-
               return (
                 <div key={derivacion.id} className="p-6 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h4 className="font-bold text-gray-900 text-sm">
-                        {postulanteUser?.nombre} {postulanteUser?.apellido}
+                        {derivacion.postulanteNombre}
                       </h4>
-                      <p className="text-xs text-teal-700 font-medium">Para el puesto: {puesto}</p>
+                      <p className="text-xs text-teal-700 font-medium">Para el puesto: {derivacion.puesto}</p>
                     </div>
 
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-blue-50 text-blue-800 border border-blue-200 capitalize">
@@ -289,19 +392,21 @@ export default async function EmpresaDashboardPage() {
 
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-gray-500">
                     <div className="flex items-center gap-4">
-                      {postulanteUser?.email && <span>📧 {postulanteUser.email}</span>}
-                      {postulanteUser?.telefono && <span>📞 {postulanteUser.telefono}</span>}
+                      {derivacion.email && <span>📧 {derivacion.email}</span>}
+                      {derivacion.telefono && <span>📞 {derivacion.telefono}</span>}
                     </div>
 
-                    {cvUrl && (
+                    {derivacion.cvUrl ? (
                       <a
-                        href={cvUrl}
+                        href={derivacion.cvUrl}
                         target="_blank"
                         rel="noreferrer"
                         className="text-teal-700 hover:underline font-medium"
                       >
                         📄 Ver Curriculum Vitae
                       </a>
+                    ) : (
+                      <span className="text-gray-400 italic">Sin CV adjunto</span>
                     )}
                   </div>
                 </div>

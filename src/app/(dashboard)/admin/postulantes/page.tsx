@@ -29,6 +29,18 @@ type DerivacionRow = {
   created_at?: string
 }
 
+type PreentrevistaRow = {
+  id: string
+  postulacion_id: string
+  fecha_hora: string
+  lugar_modalidad: string
+  estado: 'programada' | 'reprogramada' | 'completada' | 'cancelada'
+  notas?: string | null
+  resultado?: 'aprobada' | 'no_asistio' | 'desfavorable' | 'pendiente' | null
+  created_at?: string
+  updated_at?: string
+}
+
 type PostulanteRow = {
   id: string
   usuario_id?: string
@@ -171,6 +183,25 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
     ;(derivacionesData ?? []).forEach((d) => derivacionesMap.set(d.postulacion_id, d))
   }
 
+  // 4.1. Consultar preentrevistas existentes
+  const preentrevistasMap = new Map<string, PreentrevistaRow>()
+  if (postulacionIds.length > 0) {
+    const { data: preData, error: preErr } = await supabaseAdmin
+      .from('preentrevistas')
+      .select('id, postulacion_id, fecha_hora, lugar_modalidad, estado, notas, resultado, created_at, updated_at')
+      .in('postulacion_id', postulacionIds)
+      .order('created_at', { ascending: false })
+
+    if (!preErr && preData) {
+      preData.forEach((p) => {
+        // Asignamos la más reciente a la postulación si aún no está mapeada
+        if (!preentrevistasMap.has(p.postulacion_id)) {
+          preentrevistasMap.set(p.postulacion_id, p as PreentrevistaRow)
+        }
+      })
+    }
+  }
+
   // 5. Consultar los postulantes de forma desacoplada
   const postulantesMap = new Map<string, PostulanteRow>()
   const postulantesByUsuarioIdMap = new Map<string, PostulanteRow>()
@@ -302,6 +333,7 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
     const userId = post?.usuario_id || p.postulante_id
     const rawUser = usuariosMap.get(userId)
     const der = derivacionesMap.get(p.id)
+    const pre = preentrevistasMap.get(p.id)
 
     // Si la postulación eligió un CV específico de la tabla curricula
     const cvElegido = p.cv_id ? curriculaMap.get(p.cv_id) : null
@@ -343,6 +375,7 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
             created_at: der.created_at,
           }
         : null,
+      preentrevista: pre || null,
       postulante: post || rawUser || userMeta
         ? {
             id: post?.id || p.postulante_id,

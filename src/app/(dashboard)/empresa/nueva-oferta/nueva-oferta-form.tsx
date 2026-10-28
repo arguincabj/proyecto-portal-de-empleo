@@ -18,6 +18,8 @@ export function NuevaOfertaForm({ razonSocial, categorias }: NuevaOfertaFormProp
   const [titulo, setTitulo] = useState('')
   const [categoriaId, setCategoriaId] = useState('')
   const [modalidad, setModalidad] = useState('presencial')
+  const [fechaInicioSeleccion, setFechaInicioSeleccion] = useState(() => new Date().toISOString().split('T')[0])
+  const [duracionDias, setDuracionDias] = useState(30)
   const [descripcion, setDescripcion] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -27,6 +29,11 @@ export function NuevaOfertaForm({ razonSocial, categorias }: NuevaOfertaFormProp
 
     if (!titulo.trim()) {
       setError('El título del puesto es obligatorio.')
+      return
+    }
+
+    if (duracionDias < 30 || duracionDias > 60) {
+      setError('La duración de la selección debe ser de entre 30 y 60 días.')
       return
     }
 
@@ -41,6 +48,8 @@ export function NuevaOfertaForm({ razonSocial, categorias }: NuevaOfertaFormProp
         descripcion,
         categoriaId: categoriaId || undefined,
         modalidad,
+        fechaInicioSeleccion,
+        duracionDias,
         estado: 'pendiente',
       })
 
@@ -129,6 +138,72 @@ export function NuevaOfertaForm({ razonSocial, categorias }: NuevaOfertaFormProp
             <option value="remoto">Remoto</option>
             <option value="hibrido">Híbrido</option>
           </select>
+        </div>
+      </div>
+
+      {/* Período y Comienzo de Selección (30 a 60 días a elección) */}
+      <div className="bg-teal-50/50 border border-teal-100 rounded-2xl p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="text-base">📅</span>
+          <div>
+            <h4 className="text-sm font-bold text-gray-900">Período de Selección y Convocatoria</h4>
+            <p className="text-xs text-gray-500">
+              Indicá cuándo comienza el proceso y cuánto tiempo durará la recepción de candidatos (entre 30 y 60 días).
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          <div>
+            <label htmlFor="fechaInicio" className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5">
+              Comienzo de selección *
+            </label>
+            <input
+              id="fechaInicio"
+              type="date"
+              value={fechaInicioSeleccion}
+              onChange={(e) => setFechaInicioSeleccion(e.target.value)}
+              required
+              className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-800"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="duracionDias" className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5">
+              Duración de la búsqueda (30 a 60 días) *
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                id="duracionDias"
+                type="number"
+                min={30}
+                max={60}
+                value={duracionDias}
+                onChange={(e) => setDuracionDias(Number(e.target.value))}
+                required
+                className="w-28 border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white font-bold text-teal-800 text-center"
+              />
+              <div className="flex gap-1.5">
+                {[30, 45, 60].map((dias) => (
+                  <button
+                    key={dias}
+                    type="button"
+                    onClick={() => setDuracionDias(dias)}
+                    className={`text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-colors border ${
+                      duracionDias === dias
+                        ? 'bg-teal-600 text-white border-teal-600'
+                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    {dias} d
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-1.5">
+              Elegí entre 30 y 60 días corridos de convocatoria laboral.
+            </p>
+          </div>
         </div>
       </div>
 

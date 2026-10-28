@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
-import { FileText, Building2, Calendar, Clock, CheckCircle2, XCircle, ArrowUpRight } from 'lucide-react'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { FileText, Building2, Calendar, Clock, CheckCircle2, XCircle, ArrowUpRight, CalendarClock, MapPin } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -83,6 +84,35 @@ export default async function MisPostulacionesPage() {
     .order('created_at', { ascending: false })
 
   const postulaciones = postulacionesRaw ?? []
+  const postIds = postulaciones.map((p) => p.id)
+
+  // Consultar preentrevistas de estas postulaciones
+  type PreRow = {
+    id: string
+    postulacion_id: string
+    fecha_hora: string
+    lugar_modalidad: string
+    estado: string
+    notas?: string | null
+    resultado?: string | null
+  }
+  const preentrevistasMap = new Map<string, PreRow>()
+
+  if (postIds.length > 0) {
+    const { data: preData } = await supabaseAdmin
+      .from('preentrevistas')
+      .select('id, postulacion_id, fecha_hora, lugar_modalidad, estado, notas, resultado')
+      .in('postulacion_id', postIds)
+      .order('created_at', { ascending: false })
+
+    if (preData) {
+      preData.forEach((pr) => {
+        if (!preentrevistasMap.has(pr.postulacion_id)) {
+          preentrevistasMap.set(pr.postulacion_id, pr as PreRow)
+        }
+      })
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -124,6 +154,7 @@ export default async function MisPostulacionesPage() {
               desc: '',
             }
             const StatusIcon = estadoCfg.icon
+            const preentrevista = preentrevistasMap.get(p.id)
 
             return (
               <div
@@ -154,6 +185,41 @@ export default async function MisPostulacionesPage() {
                         Postulado el {new Date(p.created_at).toLocaleDateString('es-AR')}
                       </span>
                     </div>
+
+                    {preentrevista && (
+                      <div className="mt-3 p-3.5 rounded-xl border border-blue-200 bg-blue-50/70 text-xs text-blue-900 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-blue-800">
+                          <CalendarClock className="size-4 text-blue-600" />
+                          <span>Preentrevista acordada con la Oficina de Empleo</span>
+                        </div>
+                        <p className="text-gray-700">
+                          <span className="font-semibold">Fecha y Hora:</span>{' '}
+                          {new Date(preentrevista.fecha_hora).toLocaleString('es-AR', {
+                            dateStyle: 'full',
+                            timeStyle: 'short',
+                          })}
+                        </p>
+                        <p className="text-gray-700 flex items-center gap-1">
+                          <MapPin className="size-3.5 text-blue-500" />
+                          <span><span className="font-semibold">Modalidad / Lugar:</span> {preentrevista.lugar_modalidad}</span>
+                        </p>
+                        {preentrevista.resultado === 'no_asistio' && (
+                          <p className="text-amber-800 font-medium bg-amber-100/80 p-2 rounded-lg mt-1">
+                            ⚠️ Se registró que no pudiste asistir. La administración reprogramará la fecha acordando un nuevo horario con vos.
+                          </p>
+                        )}
+                        {preentrevista.resultado === 'aprobada' && (
+                          <p className="text-emerald-800 font-medium bg-emerald-100/80 p-2 rounded-lg mt-1">
+                            ✓ Preentrevista completada con éxito.
+                          </p>
+                        )}
+                        {preentrevista.notas && (
+                          <p className="text-gray-600 italic mt-1">
+                            Nota: &quot;{preentrevista.notas}&quot;
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     {estadoCfg.desc && (
                       <p className="text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-xl p-3 leading-relaxed mt-2">
