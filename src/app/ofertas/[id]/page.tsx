@@ -5,6 +5,9 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { BotonPostular } from './boton-postular'
 import { ArrowLeft, Building2, Calendar, ShieldCheck, Briefcase } from 'lucide-react'
 
+// Forzar renderizado dinámico para que siempre evalúe el usuario logueado, su perfil y sus CVs actualizados
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ id: string }>
 }
@@ -46,26 +49,55 @@ export default async function OfertaDetallePage({ params }: PageProps) {
   let yaPostulado = false
   let estadoPostulacion: string | null = null
   let estadoLaboral: string | null = null
+  let perfilIncompleto = false
   let cvsDisponibles: Array<{ id: string; nombre: string }> = []
 
   if (user) {
-    const { data: usuario } = await supabase
+    let { data: usuario } = await supabase
       .from('usuarios')
-      .select('rol')
+      .select('rol, nombre, apellido, telefono')
       .eq('id', user.id)
       .single()
+
+    if (!usuario) {
+      const { data: adminUsuario } = await supabaseAdmin
+        .from('usuarios')
+        .select('rol, nombre, apellido, telefono')
+        .eq('id', user.id)
+        .single()
+      usuario = adminUsuario
+    }
 
     userRole = usuario?.rol ?? null
 
     if (userRole === 'postulante') {
-      const { data: postulante } = await supabase
+      const { data: postulante } = await supabaseAdmin
         .from('postulantes')
-        .select('id, cv_url, estado_laboral')
+        .select('id, cv_url, estado_laboral, dni, localidad, direccion, codigo_postal, estudios, experiencia, habilidades, cursos, idiomas, horarios')
         .eq('usuario_id', user.id)
         .single()
 
       if (postulante) {
         estadoLaboral = postulante.estado_laboral || (user.user_metadata?.estado_laboral as string) || null
+
+        // Comprobación de perfil incompleto:
+        // 1. Datos personales requeridos: nombre, apellido, teléfono, DNI
+        const tieneNombre = !!(usuario?.nombre || user.user_metadata?.nombre)
+        const tieneApellido = !!(usuario?.apellido || user.user_metadata?.apellido)
+        const tieneTelefono = !!(usuario?.telefono || user.user_metadata?.telefono)
+        const tieneDni = !!(postulante.dni || user.user_metadata?.dni)
+        const tieneLocalidad = !!(postulante.localidad || user.user_metadata?.localidad)
+        const datosPersonalesCompletos = tieneNombre && tieneApellido && tieneTelefono && tieneDni && tieneLocalidad
+
+        // 2. Perfil laboral: se requiere que al menos uno de los campos principales esté completado
+        const tieneEstudios = Boolean(postulante.estudios && postulante.estudios.trim())
+        const tieneExperiencia = Boolean(postulante.experiencia && postulante.experiencia.trim())
+        const tieneHabilidades = Boolean(postulante.habilidades && postulante.habilidades.trim())
+        const tieneCursos = Boolean(postulante.cursos && postulante.cursos.trim())
+        const datosLaboralesCompletos = tieneEstudios || tieneExperiencia || tieneHabilidades || tieneCursos
+
+        perfilIncompleto = !datosPersonalesCompletos || !datosLaboralesCompletos
+
         const { data: postu } = await supabase
           .from('postulaciones')
           .select('estado')
@@ -96,7 +128,7 @@ export default async function OfertaDetallePage({ params }: PageProps) {
           // ignore
         }
 
-        // Si todavía tiene un CV viejo en postulantes.cv_url, agregarlo a la lista de opciones
+        // Si todavía tiene un CV previo en postulantes.cv_url, agregarlo a la lista de opciones
         if (postulante.cv_url) {
           const nombreArchivo = postulante.cv_url.split('/').pop()?.replace(/^\d+-/, '') || 'Currículum subido'
           const yaEstaEnLista = cvsDisponibles.some((c) => c.nombre === nombreArchivo)
@@ -189,6 +221,7 @@ export default async function OfertaDetallePage({ params }: PageProps) {
           estadoPostulacion={estadoPostulacion}
           estadoLaboral={estadoLaboral}
           cvsDisponibles={cvsDisponibles}
+          perfilIncompleto={perfilIncompleto}
         />
       </section>
 

@@ -772,21 +772,8 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                           <button
                             type="button"
                             disabled={isPending}
-                            onClick={() => {
-                              setModalDerivar(postulacion)
-                              setNotaDerivacion('')
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white transition-colors shadow-2xs disabled:opacity-50"
-                          >
-                            <Send className="size-3.5" />
-                            <span>Enviar solicitud</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={isPending}
                             onClick={() => handleReabrir(postulacion.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-900 transition-colors shadow-2xs"
                             title="Volver a estado pendiente"
                           >
                             Restablecer

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { postularAOferta } from '../actions'
-import { CheckCircle2, LoaderCircle, FileText, UserCheck } from 'lucide-react'
+import { CheckCircle2, LoaderCircle, FileText, UserCheck, AlertTriangle, ArrowRight } from 'lucide-react'
 
 interface BotonPostularProps {
   ofertaId: string
@@ -14,6 +14,7 @@ interface BotonPostularProps {
   estadoPostulacion?: string | null
   estadoLaboral?: string | null
   cvsDisponibles?: Array<{ id: string; nombre: string }>
+  perfilIncompleto?: boolean
 }
 
 const ESTADOS_MAP: Record<string, { label: string; class: string }> = {
@@ -31,6 +32,7 @@ export function BotonPostular({
   estadoPostulacion,
   estadoLaboral,
   cvsDisponibles = [],
+  perfilIncompleto = false,
 }: BotonPostularProps) {
   const [yaPostulado, setYaPostulado] = useState(initialYaPostulado)
   const [isPending, startTransition] = useTransition()
@@ -104,6 +106,39 @@ export function BotonPostular({
               {estadoLaboral === 'trabajando' ? '🔵 Trabajando' : '🟢 En búsqueda'}
             </span>
           )}
+        </div>
+      </div>
+    )
+  }
+
+  if (perfilIncompleto) {
+    return (
+      <div className="rounded-xl bg-amber-50/90 border border-amber-300 p-6 shadow-card space-y-4">
+        <div className="flex items-start gap-3.5">
+          <div className="p-2 rounded-xl bg-amber-100 text-amber-800 shrink-0 mt-0.5">
+            <AlertTriangle className="size-5" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-bold text-amber-950 text-base">
+              Te faltan datos en tu perfil para poder postularte
+            </h4>
+            <p className="text-xs sm:text-sm text-amber-900 leading-relaxed">
+              Para que la empresa y la Oficina de Empleo puedan evaluar tu candidatura, necesitás completar tus datos personales (DNI, teléfono) y tu perfil laboral (estudios, experiencia o habilidades).
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-amber-200/80">
+          <span className="text-xs text-amber-800">
+            Al guardar tus cambios, volverás automáticamente a esta oferta laboral.
+          </span>
+          <Link
+            href={`/perfil?retorno=/ofertas/${ofertaId}`}
+            className="inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition-colors shadow-sm shrink-0"
+          >
+            <span>Editar mis datos personales y de trabajo</span>
+            <ArrowRight className="size-3.5" />
+          </Link>
         </div>
       </div>
     )
@@ -185,7 +220,7 @@ export function BotonPostular({
               className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
                 cvSeleccionado === cv.id
                   ? 'border-primary-600 bg-primary-50/50 ring-1 ring-primary-600/30'
-                : 'border-border bg-surface-muted hover:border-border-hover'
+                  : 'border-border bg-surface-muted hover:border-border-hover'
               }`}
             >
               <input
