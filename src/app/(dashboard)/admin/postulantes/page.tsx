@@ -43,6 +43,7 @@ type PostulanteRow = {
   idiomas?: string | null
   habilidades?: string | null
   horarios?: string | null
+  estado_laboral?: string | null
 }
 
 type UsuarioRow = {
@@ -114,14 +115,32 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
   // 2. Obtener todas las postulaciones
   const { data: todasPostulaciones, error: errPost } = await supabaseAdmin
     .from('postulaciones')
-    .select('id, oferta_id, postulante_id, estado, created_at')
+    .select('id, oferta_id, postulante_id, estado, created_at, cv_id')
     .order('created_at', { ascending: false })
 
   if (errPost) {
     console.error('Error al consultar postulaciones:', errPost)
   }
 
-  const listaPostulaciones = todasPostulaciones ?? []
+  // Fallback si la columna cv_id aún no existe
+  let listaPostulaciones: Array<{
+    id: string
+    oferta_id: string
+    postulante_id: string
+    estado: string
+    created_at: string
+    cv_id?: string | null
+  }> = []
+
+  if (errPost && (errPost.message?.includes('cv_id') || errPost.code === '42703')) {
+    const { data: fallbackPost } = await supabaseAdmin
+      .from('postulaciones')
+      .select('id, oferta_id, postulante_id, estado, created_at')
+      .order('created_at', { ascending: false })
+    listaPostulaciones = fallbackPost ?? []
+  } else {
+    listaPostulaciones = todasPostulaciones ?? []
+  }
 
   // Obtener IDs únicos para búsquedas
   const ofertaIds = Array.from(new Set(listaPostulaciones.map((p) => p.oferta_id).filter(Boolean)))
@@ -185,8 +204,8 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
   // 6. Consultar los usuarios asociados (nombre, apellido, teléfono)
   const usuarioIds = Array.from(
     new Set([
-      ...Array.from(postulantesMap.values()).map((p) => p.usuario_id).filter(Boolean),
-      ...Array.from(postulantesByUsuarioIdMap.values()).map((p) => p.usuario_id).filter(Boolean),
+      ...Array.from(postulantesMap.values()).map((p) => p.usuario_id).filter((id): id is string => Boolean(id)),
+      ...Array.from(postulantesByUsuarioIdMap.values()).map((p) => p.usuario_id).filter((id): id is string => Boolean(id)),
       ...postulanteIds, // Por si postulante_id era el ID de auth/usuarios
     ])
   )
@@ -226,14 +245,29 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
     )
   }
 
-  // 7. Generar URLs firmadas de CVs desde storage
+  // 7. Consultar curricula para las postulaciones con cv_id
+  const cvIds = Array.from(new Set(listaPostulaciones.map((p) => p.cv_id).filter(Boolean) as string[]))
+  const curriculaMap = new Map<string, { id: string; url: string; nombre: string }>()
+
+  if (cvIds.length > 0) {
+    try {
+      const { data: cData } = await supabaseAdmin
+        .from('curricula')
+        .select('id, url, nombre')
+        .in('id', cvIds)
+      ;(cData ?? []).forEach((c) => curriculaMap.set(c.id, c))
+    } catch (err) {
+      console.error('Error al consultar curricula:', err)
+    }
+  }
+
+  // Generar URLs firmadas de CVs desde storage
   const cvFirmadas: Record<string, string> = {}
   const cvPaths = Array.from(
-    new Set(
-      Array.from(postulantesMap.values())
-        .map((p) => p.cv_url)
-        .filter(Boolean) as string[]
-    )
+    new Set([
+      ...Array.from(postulantesMap.values()).map((p) => p.cv_url).filter(Boolean),
+      ...Array.from(curriculaMap.values()).map((c) => c.url).filter(Boolean),
+    ] as string[])
   )
 
   await Promise.all(
@@ -269,7 +303,10 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
     const rawUser = usuariosMap.get(userId)
     const der = derivacionesMap.get(p.id)
 
-    const cvUrl = post?.cv_url
+    // Si la postulación eligió un CV específico de la tabla curricula
+    const cvElegido = p.cv_id ? curriculaMap.get(p.cv_id) : null
+    const cvUrl = cvElegido ? cvElegido.url : post?.cv_url
+    const cvNombre = cvElegido ? cvElegido.nombre : null
     const cvSigned = cvUrl ? cvFirmadas[cvUrl] ?? (cvUrl.startsWith('http') ? cvUrl : null) : null
     const userEmail = rawUser?.email || emailMap.get(userId) || null
     const userMeta = authMetadataMap.get(userId) || {}
@@ -278,6 +315,7 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
     const metaDireccion = typeof userMeta.direccion === 'string' ? userMeta.direccion : null
     const metaCodigoPostal = typeof userMeta.codigo_postal === 'string' ? userMeta.codigo_postal : null
     const metaDni = typeof userMeta.dni === 'string' ? userMeta.dni : null
+    const metaEstadoLaboral = typeof userMeta.estado_laboral === 'string' ? userMeta.estado_laboral : null
 
     const localidad = post?.localidad || metaLocalidad || rawUser?.localidad || null
     const direccion = post?.direccion || metaDireccion || rawUser?.direccion || null
@@ -319,6 +357,7 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
             idiomas: post?.idiomas || null,
             habilidades: post?.habilidades || null,
             horarios: post?.horarios || null,
+            estado_laboral: post?.estado_laboral || metaEstadoLaboral || null,
             usuario: rawUser
               ? {
                   nombre: rawUser.nombre,
@@ -330,6 +369,7 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
           }
         : null,
       cv_signed_url: cvSigned,
+      cv_nombre: cvNombre,
     }
   })
 

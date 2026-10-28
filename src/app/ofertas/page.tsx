@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Paginacion } from '@/components/ui/paginacion'
+import { Search, Briefcase, Building2, Calendar, ArrowRight, LoaderCircle, AlertCircle } from 'lucide-react'
 
 type Oferta = {
   id: string
@@ -12,13 +13,6 @@ type Oferta = {
   descripcion: string
   estado: string
   created_at: string
-}
-
-const ESTADO_COLOR: Record<string, string> = {
-  publicada: 'bg-green-100 text-green-700 border-green-200',
-  cerrada: 'bg-gray-100 text-gray-500 border-gray-200',
-  pendiente: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  rechazada: 'bg-red-100 text-red-600 border-red-200',
 }
 
 const ITEMS_POR_PAGINA = 15
@@ -86,156 +80,165 @@ export default function OfertasPage() {
   }
 
   return (
-    <main className="min-h-screen p-4 sm:p-8 bg-gray-50">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-sidebar text-sidebar-foreground p-6 rounded-2xl shadow-sm border border-white/10">
-          <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Portal de Ofertas Laborales</h1>
-            <p className="text-sm text-sidebar-muted mt-1">
-              Explora las oportunidades laborales activas publicadas por las empresas de la ciudad.
-            </p>
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header institucional en verde con letras blancas */}
+      <div className="rounded-2xl bg-sidebar text-sidebar-foreground p-6 shadow-sm border border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white border border-white/10">
+              <Briefcase className="size-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-white">
+                Portal de Ofertas Laborales
+              </h1>
+              <p className="mt-1 text-sm text-sidebar-muted">
+                Explora las oportunidades laborales activas publicadas por las empresas de la ciudad.
+              </p>
+            </div>
           </div>
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-sidebar-muted hover:text-white bg-white/10 hover:bg-white/15 px-3.5 py-2 rounded-xl border border-white/15 transition-all"
+            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-sidebar-muted hover:text-white bg-white/10 hover:bg-white/15 px-3.5 py-2 rounded-xl border border-white/15 transition-all self-start sm:self-auto"
           >
             ← Volver al inicio
           </Link>
         </div>
+      </div>
 
-        {/* Buscador y Filtros */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              placeholder="Buscar por palabra clave (título, descripción, empresa)..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value)
-                setPaginaActual(1)
-              }}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-gray-50/50"
-            />
-          </div>
-
-          <div className="w-full sm:w-48">
-            <select
-              value={modalidadFilter}
-              onChange={(e) => {
-                setModalidadFilter(e.target.value)
-                setPaginaActual(1)
-              }}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-gray-50/50 text-gray-700"
-            >
-              <option value="todas">Todas las modalidades</option>
-              <option value="presencial">Presencial</option>
-              <option value="remoto">Remoto</option>
-              <option value="hibrido">Híbrido</option>
-            </select>
-          </div>
+      {/* Buscador y Filtros */}
+      <div className="rounded-xl bg-surface p-4 shadow-card border border-border/60 flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Search className="size-4 text-foreground-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Buscar por palabra clave (título, descripción, empresa)..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value)
+              setPaginaActual(1)
+            }}
+            className="w-full rounded-xl border border-input bg-background pl-9 pr-4 py-2.5 text-sm text-foreground placeholder:text-foreground-muted focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50 transition-all"
+          />
         </div>
 
-        {/* Estado de Error */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-red-800">
-            <div className="flex items-start gap-3">
-              <span className="text-xl">⚠️</span>
-              <div>
-                <h3 className="font-semibold text-red-900">Error al consultar las ofertas</h3>
-                <p className="text-sm text-red-700 mt-1">{error}</p>
-                <p className="text-xs text-red-600 mt-2 font-mono">
-                  Sugerencia: Revisa las variables `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` en `.env.local`.
-                </p>
-              </div>
+        <div className="w-full sm:w-56">
+          <select
+            value={modalidadFilter}
+            onChange={(e) => {
+              setModalidadFilter(e.target.value)
+              setPaginaActual(1)
+            }}
+            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50 transition-all"
+          >
+            <option value="todas">Todas las modalidades</option>
+            <option value="presencial">Presencial</option>
+            <option value="remoto">Remoto</option>
+            <option value="hibrido">Híbrido</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Estado de Error */}
+      {error && (
+        <div className="rounded-xl border border-danger/30 bg-danger/10 p-5 text-danger">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="size-5 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-danger">Error al consultar las ofertas</h3>
+              <p className="text-sm mt-1">{error}</p>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Estado de Carga */}
-        {loading && !error && (
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center space-y-3">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-teal-600 border-t-transparent"></div>
-            <p className="text-gray-500 text-sm font-medium">Cargando ofertas de empleo...</p>
+      {/* Estado de Carga */}
+      {loading && !error && (
+        <div className="rounded-xl bg-surface p-12 shadow-card border border-border/60 text-center space-y-3">
+          <LoaderCircle className="size-8 motion-safe:animate-spin text-primary-600 mx-auto" />
+          <p className="text-sm font-medium text-foreground-secondary">Cargando ofertas de empleo...</p>
+        </div>
+      )}
+
+      {/* Ausencia de Resultados */}
+      {!loading && !error && filteredOfertas.length === 0 && (
+        <div className="rounded-xl bg-surface p-12 shadow-card border border-border/60 text-center space-y-3">
+          <div className="flex size-14 items-center justify-center rounded-full bg-primary-50 text-primary-600 mx-auto">
+            <Search className="size-7" />
           </div>
-        )}
+          <h3 className="text-base font-bold text-foreground">No se encontraron ofertas</h3>
+          <p className="text-sm text-foreground-secondary max-w-md mx-auto">
+            {searchTerm || modalidadFilter !== 'todas'
+              ? 'No hay ofertas que coincidan con la búsqueda o filtros aplicados. Intentá modificando los términos.'
+              : 'Actualmente no hay ofertas laborales activas disponibles en el portal.'}
+          </p>
+        </div>
+      )}
 
-        {/* Ausencia de Resultados */}
-        {!loading && !error && filteredOfertas.length === 0 && (
-          <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 text-center space-y-2">
-            <span className="text-4xl block">🔍</span>
-            <h3 className="font-semibold text-gray-800 text-lg">No se encontraron ofertas</h3>
-            <p className="text-gray-500 text-sm max-w-md mx-auto">
-              {searchTerm || modalidadFilter !== 'todas'
-                ? 'No hay ofertas publicadas que coincidan con los filtros aplicados. Intenta modificar la búsqueda.'
-                : 'Actualmente no hay ofertas laborales activas disponibles.'}
-            </p>
+      {/* Lista de Ofertas */}
+      {!loading && !error && filteredOfertas.length > 0 && (
+        <>
+          <div className="flex items-center justify-between text-xs font-semibold text-foreground-secondary px-1">
+            <span>{filteredOfertas.length} {filteredOfertas.length === 1 ? 'oferta disponible' : 'ofertas disponibles'}</span>
+            <span>Página {paginaValida} de {totalPaginas}</span>
           </div>
-        )}
 
-        {/* Lista de Ofertas — solo lectura pública */}
-        {!loading && !error && filteredOfertas.length > 0 && (
-          <>
-            <ul className="flex flex-col gap-4">
-              {ofertasVisibles.map((oferta) => (
-                <li
-                  key={oferta.id}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow flex flex-col sm:flex-row justify-between gap-4"
-                >
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <Link
-                        href={`/ofertas/${oferta.id}`}
-                        className="font-bold text-lg text-gray-900 hover:text-teal-700 transition-colors"
-                      >
-                        {oferta.titulo}
-                      </Link>
-                      <span
-                        className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${
-                          ESTADO_COLOR[oferta.estado] || 'bg-gray-100 text-gray-600 border-gray-200'
-                        }`}
-                      >
-                        {oferta.estado}
-                      </span>
-                    </div>
-
-                    <p className="text-sm font-medium text-teal-700">{oferta.empresa_nombre}</p>
-
-                    <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
-                      {oferta.descripcion}
-                    </p>
-
-                    <p className="text-xs text-gray-400 pt-1 font-mono">
-                      Publicado el: {new Date(oferta.created_at).toLocaleDateString('es-AR')}
-                    </p>
-                  </div>
-
-                  {/* Solo el botón Ver detalle — sin editar ni eliminar */}
-                  <div className="flex sm:flex-col justify-end items-end gap-2 border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
+          <ul className="flex flex-col gap-4">
+            {ofertasVisibles.map((oferta) => (
+              <li
+                key={oferta.id}
+                className="rounded-xl bg-surface p-6 shadow-card hover:shadow-elevated transition-all border border-border/60 hover:border-primary-500/40 flex flex-col sm:flex-row justify-between gap-4"
+              >
+                <div className="space-y-2.5 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Link
                       href={`/ofertas/${oferta.id}`}
-                      className="text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 px-3.5 py-1.5 rounded-lg transition-colors text-center w-full sm:w-auto"
+                      className="font-bold text-lg text-foreground hover:text-primary-600 transition-colors"
                     >
-                      Ver detalle
+                      {oferta.titulo}
                     </Link>
                   </div>
-                </li>
-              ))}
-            </ul>
 
-            {/* Paginación */}
-            <Paginacion
-              paginaActual={paginaValida}
-              totalPaginas={totalPaginas}
-              totalItems={filteredOfertas.length}
-              itemsPorPagina={ITEMS_POR_PAGINA}
-              nombreItems="ofertas"
-              onCambiarPagina={manejarCambioPagina}
-              className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"
-            />
-          </>
-        )}
-      </div>
-    </main>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-primary-600">
+                    <Building2 className="size-4 shrink-0" />
+                    <span>{oferta.empresa_nombre}</span>
+                  </div>
+
+                  <p className="text-sm text-foreground-secondary line-clamp-3 leading-relaxed">
+                    {oferta.descripcion}
+                  </p>
+
+                  <div className="flex items-center gap-1.5 text-xs text-foreground-muted pt-1">
+                    <Calendar className="size-3.5" />
+                    <span>Publicado el {new Date(oferta.created_at).toLocaleDateString('es-AR')}</span>
+                  </div>
+                </div>
+
+                <div className="flex sm:flex-col justify-end items-end gap-2 shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 border-border/60">
+                  <Link
+                    href={`/ofertas/${oferta.id}`}
+                    className="inline-flex items-center justify-center gap-2 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 px-5 py-2.5 rounded-xl transition-all shadow-sm w-full sm:w-auto"
+                  >
+                    <span>Ver detalle</span>
+                    <ArrowRight className="size-3.5" />
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {/* Paginación */}
+          <Paginacion
+            paginaActual={paginaValida}
+            totalPaginas={totalPaginas}
+            totalItems={filteredOfertas.length}
+            itemsPorPagina={ITEMS_POR_PAGINA}
+            nombreItems="ofertas"
+            onCambiarPagina={manejarCambioPagina}
+            className="rounded-xl bg-surface p-4 shadow-card border border-border/60"
+          />
+        </>
+      )}
+    </div>
   )
 }

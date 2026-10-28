@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useTransition } from 'react'
-import Image from 'next/image'
 import {
   Camera,
   Upload,
@@ -10,7 +9,6 @@ import {
   ZoomOut,
   RotateCw,
   RotateCcw,
-  UserRound,
   Building2,
   UserCog,
   Loader2,
@@ -257,6 +255,7 @@ export function FotoPerfilUpload({
         <div className="relative group shrink-0">
           <div className="size-24 sm:size-28 rounded-full overflow-hidden bg-gradient-to-br from-emerald-100 to-teal-50 border-2 border-emerald-500/20 shadow-md flex items-center justify-center">
             {avatarUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={avatarUrl}
                 alt={`Foto de ${nombre}`}
@@ -359,6 +358,7 @@ export function FotoPerfilUpload({
                       height: `${displayHeight}px`,
                     }}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={selectedImageSrc}
                       alt="Previsualización"

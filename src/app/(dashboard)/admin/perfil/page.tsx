@@ -55,7 +55,7 @@ export default async function AdminPerfilPage() {
           </p>
         </div>
         <FotoPerfilUpload
-          currentAvatarUrl={user.user_metadata?.avatar_url || (usuario as any)?.avatar_url || null}
+          currentAvatarUrl={user.user_metadata?.avatar_url || (usuario as { avatar_url?: string | null })?.avatar_url || null}
           nombre={usuario?.nombre ?? 'Admin'}
           apellido={usuario?.apellido ?? ''}
           rol="municipalidad"

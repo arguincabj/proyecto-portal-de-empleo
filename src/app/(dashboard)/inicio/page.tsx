@@ -42,15 +42,45 @@ export default async function InicioPage() {
     ? `${usuario.nombre} ${usuario.apellido}`.trim()
     : 'Postulante'
 
+  let estadoLaboral: 'en_busqueda' | 'trabajando' = 'en_busqueda'
+
+  if (!usuario?.rol || usuario.rol === 'postulante') {
+    const { data: postulante } = await supabaseAdmin
+      .from('postulantes')
+      .select('estado_laboral')
+      .eq('usuario_id', user.id)
+      .maybeSingle()
+
+    const meta = user.user_metadata || {}
+    const estado = postulante?.estado_laboral || meta.estado_laboral
+    if (estado === 'trabajando') {
+      estadoLaboral = 'trabajando'
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl bg-surface p-6 shadow-card">
         <h1 className="text-2xl font-semibold text-foreground">
           Bienvenido, {nombreCompleto}
         </h1>
-        <div className="mt-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-600">
             {ROL_LABEL[usuario?.rol ?? 'postulante'] ?? 'Postulante'}
+          </span>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
+              estadoLaboral === 'trabajando'
+                ? 'bg-blue-50 text-blue-800 border-blue-200'
+                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            }`}
+          >
+            <span>{estadoLaboral === 'trabajando' ? '🔵' : '🟢'}</span>
+            <span>
+              {estadoLaboral === 'trabajando'
+                ? 'Actualmente trabajando'
+                : 'En búsqueda laboral'}
+            </span>
           </span>
         </div>
         <p className="mt-4 text-sm text-foreground-secondary">
@@ -64,8 +94,19 @@ export default async function InicioPage() {
           className="group rounded-xl bg-surface p-5 shadow-card transition-all hover:shadow-md hover:border-primary-500/30 border border-transparent flex flex-col justify-between"
         >
           <div>
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 mb-3 group-hover:scale-105 transition-transform">
-              <UserRound className="size-5" />
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 group-hover:scale-105 transition-transform">
+                <UserRound className="size-5" />
+              </div>
+              <span
+                className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                  estadoLaboral === 'trabajando'
+                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                }`}
+              >
+                <span>{estadoLaboral === 'trabajando' ? '🔵 Trabajando' : '🟢 En búsqueda'}</span>
+              </span>
             </div>
             <h2 className="text-base font-semibold text-foreground">Mi Perfil</h2>
             <p className="mt-1 text-xs text-foreground-secondary leading-relaxed">

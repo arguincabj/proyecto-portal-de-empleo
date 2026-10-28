@@ -132,7 +132,7 @@ export default async function EmpresaPerfilPage() {
           </p>
         </div>
         <FotoPerfilUpload
-          currentAvatarUrl={user.user_metadata?.avatar_url || (usuario as any)?.avatar_url || null}
+          currentAvatarUrl={user.user_metadata?.avatar_url || (usuario as { avatar_url?: string | null })?.avatar_url || null}
           nombre={empresa.razon_social || usuario?.nombre || 'Empresa'}
           apellido=""
           rol="empresa"

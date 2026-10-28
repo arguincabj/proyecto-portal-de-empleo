@@ -5,6 +5,7 @@ import { PerfilForm } from './perfil-form'
 import { PerfilLaboralForm } from './perfil-laboral-form'
 import { CvUpload } from './cv-upload'
 import { FotoPerfilUpload } from '@/components/perfil/foto-perfil-upload'
+import { EstadoLaboralToggle } from './estado-laboral-toggle'
 
 const CV_BUCKET = 'curricula'
 
@@ -49,6 +50,7 @@ export default async function PerfilPage() {
   }
 
   let postulante: {
+    id: string
     dni: string | null
     localidad?: string | null
     direccion?: string | null
@@ -60,12 +62,13 @@ export default async function PerfilPage() {
     idiomas?: string | null
     habilidades?: string | null
     horarios?: string | null
+    estado_laboral?: string | null
   } | null = null
 
   // Intento de consulta completa con campos de perfil laboral y domicilio
   const { data: postData, error: postErr } = await supabaseAdmin
     .from('postulantes')
-    .select('dni, cv_url, localidad, direccion, codigo_postal, estudios, cursos, experiencia, idiomas, habilidades, horarios')
+    .select('id, dni, cv_url, localidad, direccion, codigo_postal, estudios, cursos, experiencia, idiomas, habilidades, horarios, estado_laboral')
     .eq('usuario_id', user.id)
     .single()
 
@@ -75,7 +78,7 @@ export default async function PerfilPage() {
     // Si la migración aún no se corrió, se consulta lo básico sin fallar
     const { data: basicPost } = await supabaseAdmin
       .from('postulantes')
-      .select('dni, cv_url')
+      .select('id, dni, cv_url')
       .eq('usuario_id', user.id)
       .single()
     postulante = basicPost ?? null
@@ -83,14 +86,60 @@ export default async function PerfilPage() {
 
   const meta = user.user_metadata || {}
 
-  let cvFirmadaUrl: string | null = null
-  let cv: { nombre: string; fecha: string | null } | null = null
-  if (postulante?.cv_url) {
-    cv = datosCv(postulante.cv_url)
-    const { data } = await supabaseAdmin.storage
-      .from(CV_BUCKET)
-      .createSignedUrl(postulante.cv_url, 3600)
-    cvFirmadaUrl = data?.signedUrl ?? null
+  const listaCvs: Array<{ id: string; nombre: string; fecha: string | null; signedUrl: string | null }> = []
+
+  if (postulante) {
+    // 1. Obtener CVs desde la tabla curricula
+    try {
+      const { data: dbCurricula } = await supabaseAdmin
+        .from('curricula')
+        .select('id, url, nombre, created_at')
+        .eq('postulante_id', postulante.id)
+        .order('created_at', { ascending: false })
+
+      if (dbCurricula && dbCurricula.length > 0) {
+        for (const item of dbCurricula) {
+          const { data } = await supabaseAdmin.storage
+            .from(CV_BUCKET)
+            .createSignedUrl(item.url, 3600)
+
+          const fecha = item.created_at
+            ? new Date(item.created_at).toLocaleDateString('es-AR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                timeZone: 'America/Argentina/Buenos_Aires',
+              })
+            : null
+
+          listaCvs.push({
+            id: item.id,
+            nombre: item.nombre || 'Currículum',
+            fecha,
+            signedUrl: data?.signedUrl ?? null,
+          })
+        }
+      }
+    } catch (e) {
+      console.error('Error al cargar curricula:', e)
+    }
+
+    // 2. Si todavía queda un CV previo en postulantes.cv_url que no está en la tabla, mostrarlo también
+    if (postulante.cv_url) {
+      const yaEnLista = listaCvs.some((c) => c.nombre === datosCv(postulante!.cv_url!).nombre)
+      if (!yaEnLista) {
+        const datos = datosCv(postulante.cv_url)
+        const { data } = await supabaseAdmin.storage
+          .from(CV_BUCKET)
+          .createSignedUrl(postulante.cv_url, 3600)
+        listaCvs.push({
+          id: 'legacy',
+          nombre: datos.nombre,
+          fecha: datos.fecha,
+          signedUrl: data?.signedUrl ?? null,
+        })
+      }
+    }
   }
 
   return (
@@ -102,20 +151,36 @@ export default async function PerfilPage() {
         </p>
       </div>
 
-      <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6 space-y-6">
-        <div>
-          <h2 className="mb-4 text-base font-semibold text-foreground">Foto de perfil</h2>
-          <FotoPerfilUpload
-            currentAvatarUrl={user.user_metadata?.avatar_url || (usuario as any)?.avatar_url || null}
-            nombre={usuario?.nombre ?? (meta.nombre as string) ?? ''}
-            apellido={usuario?.apellido ?? (meta.apellido as string) ?? ''}
-            rol="postulante"
-          />
-        </div>
+      {/* Foto de perfil */}
+      <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
+        <h2 className="mb-4 text-base font-semibold text-foreground">Foto de perfil</h2>
+        <FotoPerfilUpload
+          currentAvatarUrl={user.user_metadata?.avatar_url || (usuario as { avatar_url?: string | null })?.avatar_url || null}
+          nombre={usuario?.nombre ?? (meta.nombre as string) ?? ''}
+          apellido={usuario?.apellido ?? (meta.apellido as string) ?? ''}
+          rol="postulante"
+        />
+      </section>
 
-        <div className="border-t border-border pt-6">
-          <h2 className="mb-4 text-base font-semibold text-foreground">Datos personales y domicilio</h2>
-          <PerfilForm
+      {/* Situación laboral actual */}
+      <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
+        <h2 className="mb-1 text-base font-semibold text-foreground">Situación laboral actual</h2>
+        <p className="mb-4 text-xs text-foreground-secondary">
+          Indicá si te encontrás en búsqueda activa de empleo o si estás trabajando actualmente.
+        </p>
+        <EstadoLaboralToggle
+          defaultEstado={
+            (postulante?.estado_laboral || meta.estado_laboral) === 'trabajando'
+              ? 'trabajando'
+              : 'en_busqueda'
+          }
+        />
+      </section>
+
+      {/* Datos personales y domicilio */}
+      <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
+        <h2 className="mb-4 text-base font-semibold text-foreground">Datos personales y domicilio</h2>
+        <PerfilForm
           defaultValues={{
             nombre: usuario?.nombre ?? (meta.nombre as string) ?? '',
             apellido: usuario?.apellido ?? (meta.apellido as string) ?? '',
@@ -126,9 +191,9 @@ export default async function PerfilPage() {
             codigo_postal: postulante?.codigo_postal || (meta.codigo_postal as string) || '',
           }}
         />
-        </div>
       </section>
 
+      {/* Perfil laboral */}
       <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
         <div className="mb-4">
           <h2 className="text-base font-semibold text-foreground">Perfil laboral</h2>
@@ -148,9 +213,10 @@ export default async function PerfilPage() {
         />
       </section>
 
+      {/* Currículum vitae */}
       <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
         <h2 className="mb-4 text-base font-semibold text-foreground">Currículum vitae</h2>
-        <CvUpload cvUrl={cvFirmadaUrl} cv={cv} />
+        <CvUpload cvs={listaCvs} />
       </section>
     </div>
   )

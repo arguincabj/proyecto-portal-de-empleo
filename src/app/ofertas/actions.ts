@@ -3,7 +3,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 
-export async function postularAOferta(ofertaId: string) {
+export async function postularAOferta(ofertaId: string, cvId?: string | null) {
   try {
     const supabase = await createSupabaseServerClient()
 
@@ -46,11 +46,28 @@ export async function postularAOferta(ofertaId: string) {
     }
 
     // 3. Crear la postulación
-    const { error: postulaError } = await supabase.from('postulaciones').insert({
+    const insertData: Record<string, unknown> = {
       oferta_id: ofertaId,
       postulante_id: postulante.id,
       estado: 'recibida',
-    })
+    }
+
+    // Si cvId es un UUID válido (no 'legacy' ni 'perfil_solamente'), se asocia cv_id
+    if (cvId && cvId !== 'perfil_solamente' && cvId !== 'legacy') {
+      insertData.cv_id = cvId
+    }
+
+    let { error: postulaError } = await supabase.from('postulaciones').insert(insertData)
+
+    // Fallback si la columna cv_id aún no existe en la base de datos (antes de correr migración)
+    if (postulaError && (postulaError.message?.includes('cv_id') || postulaError.code === '42703' || postulaError.code === 'PGRST204')) {
+      const fallback = await supabase.from('postulaciones').insert({
+        oferta_id: ofertaId,
+        postulante_id: postulante.id,
+        estado: 'recibida',
+      })
+      postulaError = fallback.error
+    }
 
     if (postulaError) {
       if (postulaError.code === '23505') {

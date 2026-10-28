@@ -163,6 +163,7 @@ function UsuarioInfo({ usuario }: { usuario: NonNullable<Props['usuario']> }) {
   return (
     <div className="flex items-center gap-3">
       {usuario.avatar_url ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={usuario.avatar_url}
           alt={`Foto de ${usuario.nombre}`}

@@ -1,13 +1,16 @@
 'use client'
 
-import { useTransition, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useTransition, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { LogIn } from 'lucide-react'
 import { LoginForm, type LoginFormValues } from '@/components/auth/login-form'
 import { login } from '../actions'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectUrl = searchParams.get('redirect') || searchParams.get('next')
+
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
 
@@ -15,8 +18,22 @@ export default function LoginPage() {
     setError('')
     startTransition(async () => {
       const result = await login(values.email, values.password)
-      if (!result.ok) setError(result.error ?? 'Error inesperado')
-      else router.push('/inicio')
+      if (!result.ok) {
+        setError(result.error ?? 'Error inesperado')
+      } else {
+        // Si hay una URL de redirección específica (y es segura), usarla
+        if (redirectUrl && redirectUrl.startsWith('/') && !redirectUrl.startsWith('//')) {
+          router.push(redirectUrl)
+        } else if (result.rol === 'empresa') {
+          router.push('/empresa')
+        } else if (result.rol === 'municipalidad') {
+          router.push('/admin')
+        } else {
+          // Para postulantes (o por defecto), mandar directamente a las ofertas laborales
+          router.push('/ofertas')
+        }
+        router.refresh()
+      }
     })
   }
 
@@ -35,5 +52,13 @@ export default function LoginPage() {
         <LoginForm onSubmit={handleSubmit} pending={pending} error={error} />
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   )
 }

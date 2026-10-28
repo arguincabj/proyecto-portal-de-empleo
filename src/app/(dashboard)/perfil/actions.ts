@@ -26,6 +26,14 @@ function nombreSeguro(nombre: string) {
   return limpio || 'cv'
 }
 
+function datosCv(path: string) {
+  const archivo = path.split('/').pop() ?? ''
+  const match = archivo.match(/^(\d+)(?:-(.+))?\.(\w+)$/)
+  if (!match) return { nombre: archivo }
+  const [, , nombre, ext] = match
+  return { nombre: `${nombre ?? 'curriculum'}.${ext}` }
+}
+
 export async function actualizarPerfil(formData: FormData): Promise<ActionResult> {
   try {
     const supabase = await createSupabaseServerClient()
@@ -163,6 +171,25 @@ export async function subirCv(formData: FormData): Promise<ActionResult> {
     const { data: usuarioRol } = await supabase.from('usuarios').select('rol').eq('id', user.id).single()
     if (usuarioRol?.rol !== 'postulante') return { ok: false, error: 'Acción no disponible para tu tipo de cuenta' }
 
+    const { data: postulante } = await supabase
+      .from('postulantes')
+      .select('id, cv_url')
+      .eq('usuario_id', user.id)
+      .single()
+
+    if (!postulante) return { ok: false, error: 'Perfil de postulante no encontrado' }
+
+    // Verificar cuántos CVs tiene en la tabla curricula
+    const { data: listaCvs } = await supabaseAdmin
+      .from('curricula')
+      .select('id')
+      .eq('postulante_id', postulante.id)
+
+    const totalCvs = (listaCvs?.length || 0) + (postulante.cv_url && !listaCvs?.length ? 1 : 0)
+    if (totalCvs >= 3) {
+      return { ok: false, error: 'Podés tener un máximo de 3 currículums. Eliminá uno para subir otro.' }
+    }
+
     const archivo = formData.get('cv') as File | null
     if (!archivo || archivo.size === 0) return { ok: false, error: 'Seleccioná un archivo' }
     if (archivo.size > CV_MAX_BYTES) return { ok: false, error: 'El archivo no puede superar 20 MB' }
@@ -172,8 +199,9 @@ export async function subirCv(formData: FormData): Promise<ActionResult> {
       return { ok: false, error: 'Solo se aceptan archivos PDF, DOC o DOCX' }
     }
 
-    // Paso 1: subir nuevo archivo (antes de tocar la DB)
-    const nuevoPath = `${user.id}/${Date.now()}-${nombreSeguro(archivo.name)}.${ext}`
+    // Paso 1: subir nuevo archivo a storage
+    const nombreOriginal = archivo.name
+    const nuevoPath = `${user.id}/${Date.now()}-${nombreSeguro(nombreOriginal)}.${ext}`
     const bytes = await archivo.arrayBuffer()
     const { error: uploadError } = await supabaseAdmin.storage
       .from(CV_BUCKET)
@@ -181,36 +209,136 @@ export async function subirCv(formData: FormData): Promise<ActionResult> {
 
     if (uploadError) return { ok: false, error: 'No se pudo subir el archivo. Intentá de nuevo.' }
 
-    // Paso 2: leer el path anterior (para borrarlo después)
-    const { data: postulante } = await supabase
-      .from('postulantes')
-      .select('cv_url')
-      .eq('usuario_id', user.id)
-      .single()
-
-    const pathAnterior = postulante?.cv_url ?? null
-
-    // Paso 3: actualizar cv_url en la DB
-    const { error: updateError } = await supabase
-      .from('postulantes')
-      .update({ cv_url: nuevoPath })
-      .eq('usuario_id', user.id)
-
-    if (updateError) {
-      // Rollback: borrar el archivo recién subido para que cv_url siga siendo válido
-      await supabaseAdmin.storage.from(CV_BUCKET).remove([nuevoPath])
-      return { ok: false, error: 'No se pudo guardar el CV. El archivo fue eliminado.' }
+    // Paso 2: si el postulante tenía un CV viejo en postulantes.cv_url y aún no está en la tabla curricula, migrarlo primero
+    if (postulante.cv_url) {
+      const nombreLegacy = datosCv(postulante.cv_url).nombre
+      await supabaseAdmin.from('curricula').insert({
+        postulante_id: postulante.id,
+        url: postulante.cv_url,
+        nombre: nombreLegacy,
+      })
+      // Limpiar cv_url viejo ya migrado a la tabla curricula
+      await supabase.from('postulantes').update({ cv_url: null }).eq('id', postulante.id)
     }
 
-    // Paso 4: borrar archivo anterior (best-effort)
-    if (pathAnterior) {
-      await supabaseAdmin.storage.from(CV_BUCKET).remove([pathAnterior])
+    // Paso 3: registrar el nuevo CV en la tabla curricula
+    const { error: insertError } = await supabaseAdmin
+      .from('curricula')
+      .insert({
+        postulante_id: postulante.id,
+        url: nuevoPath,
+        nombre: nombreOriginal,
+      })
+
+    if (insertError) {
+      console.error('Error insertando en tabla curricula:', insertError)
+      // Fallback si la migración de la tabla curricula aún no se aplicó
+      const { error: fallbackUpdateError } = await supabase
+        .from('postulantes')
+        .update({ cv_url: nuevoPath })
+        .eq('usuario_id', user.id)
+
+      if (fallbackUpdateError) {
+        await supabaseAdmin.storage.from(CV_BUCKET).remove([nuevoPath])
+        return { ok: false, error: 'No se pudo guardar el CV. Por favor reintentá.' }
+      }
     }
 
     revalidatePath('/perfil')
     return { ok: true }
   } catch {
     return { ok: false, error: 'Error inesperado al subir el CV' }
+  }
+}
+
+export async function eliminarCvById(cvId: string): Promise<ActionResult> {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'No autenticado' }
+
+    const { data: usuarioRol } = await supabase.from('usuarios').select('rol').eq('id', user.id).single()
+    if (usuarioRol?.rol !== 'postulante') return { ok: false, error: 'Acción no disponible para tu tipo de cuenta' }
+
+    const { data: postulante } = await supabase
+      .from('postulantes')
+      .select('id, cv_url')
+      .eq('usuario_id', user.id)
+      .single()
+
+    if (!postulante) return { ok: false, error: 'Perfil de postulante no encontrado' }
+
+    // Caso A: es de la tabla curricula
+    const { data: cvItem } = await supabaseAdmin
+      .from('curricula')
+      .select('id, url')
+      .eq('id', cvId)
+      .eq('postulante_id', postulante.id)
+      .maybeSingle()
+
+    if (cvItem) {
+      await supabaseAdmin.storage.from(CV_BUCKET).remove([cvItem.url])
+      await supabaseAdmin.from('curricula').delete().eq('id', cvItem.id)
+      revalidatePath('/perfil')
+      return { ok: true }
+    }
+
+    // Caso B: es el CV legado en postulantes.cv_url
+    if (cvId === 'legacy' && postulante.cv_url) {
+      await supabaseAdmin.storage.from(CV_BUCKET).remove([postulante.cv_url])
+      await supabase.from('postulantes').update({ cv_url: null }).eq('id', postulante.id)
+      revalidatePath('/perfil')
+      return { ok: true }
+    }
+
+    return { ok: false, error: 'CV no encontrado' }
+  } catch {
+    return { ok: false, error: 'Error inesperado al eliminar el CV' }
+  }
+}
+
+export async function actualizarEstadoLaboral(
+  nuevoEstado: 'en_busqueda' | 'trabajando'
+): Promise<ActionResult> {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'No autenticado' }
+
+    const { data: usuarioRol } = await supabase.from('usuarios').select('rol').eq('id', user.id).single()
+    if (usuarioRol?.rol !== 'postulante') return { ok: false, error: 'Acción no disponible para tu tipo de cuenta' }
+
+    if (!['en_busqueda', 'trabajando'].includes(nuevoEstado)) {
+      return { ok: false, error: 'Estado laboral inválido' }
+    }
+
+    // Respaldar siempre en Auth Metadata para garantizar persistencia y disponibilidad inmediata
+    try {
+      await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...(user.user_metadata || {}),
+          estado_laboral: nuevoEstado,
+        },
+      })
+    } catch (authErr) {
+      console.error('Error al actualizar metadata de auth:', authErr)
+    }
+
+    const { error } = await supabaseAdmin
+      .from('postulantes')
+      .update({ estado_laboral: nuevoEstado })
+      .eq('usuario_id', user.id)
+
+    // Si la migración aún no se corrió en Supabase, el valor ya quedó seguro en user_metadata
+    if (error && !error.message?.includes('column') && error.code !== '42703' && error.code !== 'PGRST204') {
+      return { ok: false, error: 'No se pudo actualizar el estado laboral en la base de datos' }
+    }
+
+    revalidatePath('/perfil')
+    revalidatePath('/inicio')
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Error inesperado al actualizar el estado laboral' }
   }
 }
 
