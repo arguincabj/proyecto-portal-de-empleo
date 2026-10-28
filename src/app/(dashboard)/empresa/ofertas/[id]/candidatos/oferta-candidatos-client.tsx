@@ -94,6 +94,10 @@ const ESTADOS_MAP: Record<string, { label: string; badgeClass: string; icon: typ
 export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }: Props) {
   const [candidatos, setCandidatos] = useState<CandidatoDerivado[]>(initialCandidatos)
   const [perfilModal, setPerfilModal] = useState<CandidatoDerivado | null>(null)
+  const [modalConfirmacion, setModalConfirmacion] = useState<{
+    candidato: CandidatoDerivado
+    nuevoEstado: 'en_proceso' | 'contratado' | 'rechazado'
+  } | null>(null)
   const [isPending, startTransition] = useTransition()
   const [candidatoActualizando, setCandidatoActualizando] = useState<string | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'pendiente' | 'en_proceso' | 'contratado' | 'rechazado'>('todos')
@@ -351,50 +355,57 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
 
                   {/* Botones de Acción de Estado: ACEPTAR, DENEGAR, EN REVISIÓN */}
                   <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto pt-2 sm:pt-0">
-                    <button
-                      type="button"
-                      disabled={ocupado}
-                      onClick={() => cambiarEstado(c.derivacionId, 'contratado')}
-                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 ${
-                        estadoActual === 'contratado'
-                          ? 'bg-emerald-600 text-white ring-2 ring-emerald-600/30'
-                          : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
-                      }`}
-                      title="Aceptar este candidato para el puesto"
-                    >
-                      <CheckCircle2 className="size-3.5" />
-                      <span>Aceptar solicitud</span>
-                    </button>
+                    {estadoActual === 'contratado' ? (
+                      <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                        <CheckCircle2 className="size-4 text-emerald-600" />
+                        <span>Aceptado/a</span>
+                      </span>
+                    ) : estadoActual === 'en_proceso' ? (
+                      <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                        <Clock className="size-4 text-amber-600" />
+                        <span>En revisión / Entrevista</span>
+                      </span>
+                    ) : estadoActual === 'rechazado' ? (
+                      <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-red-100 text-red-800 border border-red-300 shadow-2xs">
+                        <XCircle className="size-4 text-red-600" />
+                        <span>Denegado/a</span>
+                      </span>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          disabled={ocupado}
+                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'contratado' })}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-600 hover:text-white"
+                          title="Aceptar este candidato para el puesto"
+                        >
+                          <CheckCircle2 className="size-3.5" />
+                          <span>Aceptar solicitud</span>
+                        </button>
 
-                    <button
-                      type="button"
-                      disabled={ocupado}
-                      onClick={() => cambiarEstado(c.derivacionId, 'en_proceso')}
-                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 ${
-                        estadoActual === 'en_proceso'
-                          ? 'bg-amber-600 text-white ring-2 ring-amber-600/30'
-                          : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
-                      }`}
-                      title="Poner al candidato en evaluación o entrevista"
-                    >
-                      <Clock className="size-3.5" />
-                      <span>En revisión</span>
-                    </button>
+                        <button
+                          type="button"
+                          disabled={ocupado}
+                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'en_proceso' })}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-600 hover:text-white"
+                          title="Poner al candidato en evaluación o entrevista"
+                        >
+                          <Clock className="size-3.5" />
+                          <span>En revisión</span>
+                        </button>
 
-                    <button
-                      type="button"
-                      disabled={ocupado}
-                      onClick={() => cambiarEstado(c.derivacionId, 'rechazado')}
-                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 ${
-                        estadoActual === 'rechazado'
-                          ? 'bg-red-600 text-white ring-2 ring-red-600/30'
-                          : 'bg-red-50 text-red-800 border border-red-200 hover:bg-red-100'
-                      }`}
-                      title="Denegar la postulación del candidato"
-                    >
-                      <XCircle className="size-3.5" />
-                      <span>Denegar solicitud</span>
-                    </button>
+                        <button
+                          type="button"
+                          disabled={ocupado}
+                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'rechazado' })}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-red-50 text-red-800 border border-red-200 hover:bg-red-600 hover:text-white"
+                          title="Denegar la postulación del candidato"
+                        >
+                          <XCircle className="size-3.5" />
+                          <span>Denegar solicitud</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -539,48 +550,52 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      cambiarEstado(perfilModal.derivacionId, 'contratado')
-                      setPerfilModal((prev) => prev ? { ...prev, estadoEmpresa: 'contratado' } : null)
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                      perfilModal.estadoEmpresa === 'contratado'
-                        ? 'bg-emerald-700 text-white ring-2 ring-emerald-500'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                    }`}
-                  >
-                    Aceptar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      cambiarEstado(perfilModal.derivacionId, 'en_proceso')
-                      setPerfilModal((prev) => prev ? { ...prev, estadoEmpresa: 'en_proceso' } : null)
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                      perfilModal.estadoEmpresa === 'en_proceso'
-                        ? 'bg-amber-700 text-white ring-2 ring-amber-500'
-                        : 'bg-amber-600 hover:bg-amber-700 text-white'
-                    }`}
-                  >
-                    En revisión
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      cambiarEstado(perfilModal.derivacionId, 'rechazado')
-                      setPerfilModal((prev) => prev ? { ...prev, estadoEmpresa: 'rechazado' } : null)
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                      perfilModal.estadoEmpresa === 'rechazado'
-                        ? 'bg-red-700 text-white ring-2 ring-red-500'
-                        : 'bg-red-600 hover:bg-red-700 text-white'
-                    }`}
-                  >
-                    Denegar
-                  </button>
+                  {perfilModal.estadoEmpresa === 'contratado' ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      <CheckCircle2 className="size-3.5 text-emerald-600" />
+                      <span>Aceptado/a</span>
+                    </span>
+                  ) : perfilModal.estadoEmpresa === 'en_proceso' ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                      <Clock className="size-3.5 text-amber-600" />
+                      <span>En revisión / Entrevista</span>
+                    </span>
+                  ) : perfilModal.estadoEmpresa === 'rechazado' ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-100 text-red-800 border border-red-300">
+                      <XCircle className="size-3.5 text-red-600" />
+                      <span>Denegado/a</span>
+                    </span>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'contratado' })
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        Aceptar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'en_proceso' })
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        En revisión
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'rechazado' })
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        Denegar
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -770,6 +785,107 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL DE CONFIRMACIÓN DE ACCIÓN (ACEPTAR, EN REVISIÓN, DENEGAR)         */}
+      {/* ========================================================================= */}
+      {modalConfirmacion && (() => {
+        const c = modalConfirmacion.candidato
+        const nombre = [c.postulante.nombre, c.postulante.apellido].filter(Boolean).join(' ') || 'este/a candidato/a'
+        const estado = modalConfirmacion.nuevoEstado
+
+        const infoConfig = {
+          contratado: {
+            titulo: '¿Confirmás aceptar esta solicitud?',
+            descripcion: `Estás a punto de aceptar la solicitud de ${nombre} para el puesto "${oferta.titulo}". Esta decisión quedará asentada y no podrás volver a cambiarla.`,
+            botonTexto: 'Sí, confirmar aceptación',
+            botonColor: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+            badge: 'Aceptado/a',
+            badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+            icono: CheckCircle2,
+          },
+          en_proceso: {
+            titulo: '¿Confirmás poner en revisión / entrevista?',
+            descripcion: `Estás a punto de pasar a ${nombre} a etapa de revisión y entrevista interna. Esta decisión quedará guardada como definitiva.`,
+            botonTexto: 'Sí, poner en revisión',
+            botonColor: 'bg-amber-600 hover:bg-amber-700 text-white',
+            badge: 'En revisión / Entrevista',
+            badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
+            icono: Clock,
+          },
+          rechazado: {
+            titulo: '¿Confirmás denegar esta solicitud?',
+            descripcion: `Estás a punto de denegar la postulación de ${nombre} para esta oferta. Esta acción no se puede deshacer.`,
+            botonTexto: 'Sí, denegar solicitud',
+            botonColor: 'bg-red-600 hover:bg-red-700 text-white',
+            badge: 'Denegado/a',
+            badgeClass: 'bg-red-100 text-red-800 border-red-300',
+            icono: XCircle,
+          },
+        }[estado]
+
+        const Icono = infoConfig.icono
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+            <div
+              className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className={`size-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                    estado === 'contratado'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : estado === 'en_proceso'
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    <Icono className="size-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      {infoConfig.titulo}
+                    </h3>
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border mt-1 ${infoConfig.badgeClass}`}>
+                      Quedará marcado como: {infoConfig.badge}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 p-3.5 rounded-xl border border-gray-100">
+                  {infoConfig.descripcion}
+                </p>
+
+                <div className="pt-2 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setModalConfirmacion(null)}
+                    disabled={isPending}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => {
+                      cambiarEstado(c.derivacionId, estado)
+                      if (perfilModal && perfilModal.derivacionId === c.derivacionId) {
+                        setPerfilModal({ ...perfilModal, estadoEmpresa: estado })
+                      }
+                      setModalConfirmacion(null)
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs ${infoConfig.botonColor}`}
+                  >
+                    {isPending ? 'Guardando...' : infoConfig.botonTexto}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

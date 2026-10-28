@@ -51,6 +51,8 @@ export type PostulanteData = {
   habilidades?: string | null
   horarios?: string | null
   estado_laboral?: string | null
+  cit_asignado?: boolean | null
+  cit_estado?: string | null
   usuario: {
     nombre: string
     apellido: string
@@ -334,6 +336,15 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
     nuevoResultado: 'aprobada' | 'no_asistio' | 'desfavorable'
   ) => {
     if (!postulacion.preentrevista?.id) return
+
+    // Validar que la fecha y hora de la preentrevista ya haya pasado
+    const fechaEntrevista = new Date(postulacion.preentrevista.fecha_hora)
+    const ahora = new Date()
+    if (fechaEntrevista.getTime() > ahora.getTime()) {
+      toast.error('Aún no pasó la fecha y hora de la preentrevista. Solo podés calificar la asistencia una vez transcurrida la cita pactada.')
+      return
+    }
+
     startTransition(async () => {
       const res = await actualizarEstadoPreentrevista(
         postulacion.preentrevista!.id,
@@ -742,6 +753,13 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                             No enviada a la empresa
                           </span>
                         )}
+
+                        {postulacion.postulante?.cit_asignado && (
+                          <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
+                            <GraduationCap className="size-3 text-amber-700" />
+                            Derivado a Curso CIT (3+ rechazos)
+                          </span>
+                        )}
                       </div>
 
                       {/* Datos de contacto y fecha */}
@@ -833,29 +851,40 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                             <span>Reprogramar / Editar</span>
                           </button>
 
-                          {/* Opciones rápidas de resultado si está pendiente de realizar */}
-                          {postulacion.preentrevista.resultado === 'pendiente' && (
-                            <div className="inline-flex items-center gap-1.5 ml-1">
-                              <button
-                                type="button"
-                                disabled={isPending}
-                                onClick={() => handleMarcarResultadoPreentrevista(postulacion, 'aprobada')}
-                                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors"
-                                title="Marcar como aprobada y realizada"
-                              >
-                                ✓ Asistió / Aprobó
-                              </button>
-                              <button
-                                type="button"
-                                disabled={isPending}
-                                onClick={() => handleMarcarResultadoPreentrevista(postulacion, 'no_asistio')}
-                                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 text-rose-800 hover:bg-rose-200 transition-colors"
-                                title="Marcar que no asistió para reprogramar"
-                              >
-                                ✕ No asistió
-                              </button>
-                            </div>
-                          )}
+                          {/* Opciones rápidas de resultado: SOLO si ya pasó la fecha y hora pactada */}
+                          {postulacion.preentrevista.resultado === 'pendiente' && (() => {
+                            const yaPasoFecha = new Date(postulacion.preentrevista.fecha_hora).getTime() <= Date.now()
+                            if (!yaPasoFecha) {
+                              return (
+                                <span className="text-[11px] text-gray-400 italic">
+                                  (Pendiente de realización)
+                                </span>
+                              )
+                            }
+
+                            return (
+                              <div className="inline-flex items-center gap-1.5 ml-1">
+                                <button
+                                  type="button"
+                                  disabled={isPending}
+                                  onClick={() => handleMarcarResultadoPreentrevista(postulacion, 'aprobada')}
+                                  className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors"
+                                  title="Marcar como aprobada y realizada"
+                                >
+                                  ✓ Asistió / Aprobó
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={isPending}
+                                  onClick={() => handleMarcarResultadoPreentrevista(postulacion, 'no_asistio')}
+                                  className="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 text-rose-800 hover:bg-rose-200 transition-colors"
+                                  title="Marcar que no asistió para reprogramar"
+                                >
+                                  ✕ No asistió
+                                </button>
+                              </div>
+                            )
+                          })()}
                         </div>
                       )}
 
@@ -1365,10 +1394,10 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
       {modalPreentrevista && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div
-            className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+            className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-6 py-4 border-b border-gray-100 flex items-start justify-between bg-blue-50/60">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-start justify-between bg-blue-50/60 shrink-0">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 flex items-center gap-1.5">
                   <CalendarCheck className="size-3.5" />
@@ -1391,7 +1420,7 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
                 <p className="font-semibold">💡 Recordá que la preentrevista no es obligatoria:</p>
                 <p>
@@ -1445,24 +1474,40 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                 />
               </div>
 
-              {/* Estado / Resultado si ya existía */}
-              {modalPreentrevista.preentrevista && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 block">
-                    Estado / Asistencia
-                  </label>
-                  <select
-                    value={formResultado}
-                    onChange={(e) => setFormResultado(e.target.value as any)}
-                    className="w-full text-xs rounded-xl border border-gray-300 px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  >
-                    <option value="pendiente">Pendiente de realizar</option>
-                    <option value="aprobada">Asistió y aprobó (Favorable)</option>
-                    <option value="no_asistio">No pudo asistir (Para reprogramar)</option>
-                    <option value="desfavorable">No favorable</option>
-                  </select>
-                </div>
-              )}
+              {/* Estado / Resultado si ya existía y si ya pasó la fecha pactada */}
+              {modalPreentrevista.preentrevista && (() => {
+                const fechaPactada = new Date(modalPreentrevista.preentrevista.fecha_hora)
+                const yaPasoFecha = fechaPactada.getTime() <= Date.now()
+
+                if (!yaPasoFecha) {
+                  return (
+                    <div className="bg-blue-50/60 border border-blue-200 rounded-xl p-3 text-xs text-blue-800">
+                      <p className="font-semibold">🕒 Entrevista programada a futuro</p>
+                      <p className="text-[11px] text-blue-700 mt-0.5">
+                        La fecha acordada es para el {fechaPactada.toLocaleString('es-AR')}. La calificación de asistencia o resultado se habilitará una vez transcurrido dicho horario. Si el postulante solicitó cambiar el día/horario, podés modificar la fecha arriba para reprogramarla.
+                      </p>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-700 block">
+                      Estado / Asistencia
+                    </label>
+                    <select
+                      value={formResultado}
+                      onChange={(e) => setFormResultado(e.target.value as any)}
+                      className="w-full text-xs rounded-xl border border-gray-300 px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    >
+                      <option value="pendiente">Pendiente de realizar</option>
+                      <option value="aprobada">Asistió y aprobó (Favorable)</option>
+                      <option value="no_asistio">No pudo asistir (Para reprogramar)</option>
+                      <option value="desfavorable">No favorable</option>
+                    </select>
+                  </div>
+                )
+              })()}
 
               {/* Observaciones o notas internas */}
               <div className="space-y-1.5">
@@ -1479,7 +1524,7 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
               </div>
             </div>
 
-            <div className="px-6 py-3.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+            <div className="px-6 py-3.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
               <button
                 type="button"
                 onClick={() => setModalPreentrevista(null)}

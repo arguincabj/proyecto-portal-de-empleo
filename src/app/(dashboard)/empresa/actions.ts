@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { verificarYAsignarCursoCIT } from '@/lib/verificar-cit'
 
 export async function crearOfertaEmpresa(data: {
   titulo: string
@@ -215,7 +216,28 @@ export async function actualizarEstadoDerivacion(
 
     if (error) return { ok: false, error: error.message }
 
+    // Si la empresa marcó como rechazado, verificar si el postulante acumula 3 rechazos para enviarlo al curso
+    if (estadoEmpresa === 'rechazado') {
+      try {
+        const { data: derivacion } = await supabaseAdmin
+          .from('derivaciones')
+          .select('postulacion:postulaciones(postulante_id)')
+          .eq('id', derivacionId)
+          .single()
+
+        const postulanteId = (derivacion?.postulacion as any)?.postulante_id
+        if (postulanteId) {
+          await verificarYAsignarCursoCIT(postulanteId)
+        }
+      } catch (citErr) {
+        console.error('Error al verificar CIT tras rechazo:', citErr)
+      }
+    }
+
     revalidatePath('/empresa')
+    revalidatePath('/admin')
+    revalidatePath('/admin/postulantes')
+    revalidatePath('/inicio')
     return { ok: true }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Error al actualizar la derivación'

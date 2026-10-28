@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { verificarYAsignarCursoCIT } from '@/lib/verificar-cit'
 
 export async function moderarOferta(
   ofertaId: string,
@@ -404,9 +405,28 @@ export async function actualizarEstadoPreentrevista(
       return { ok: false, error: `Error al actualizar: ${error.message}` }
     }
 
+    // Si el resultado es desfavorable, verificar si acumula 3 rechazos para derivar a CIT
+    if (resultado === 'desfavorable') {
+      try {
+        const { data: pre } = await supabaseAdmin
+          .from('preentrevistas')
+          .select('postulacion:postulaciones(postulante_id)')
+          .eq('id', preentrevistaId)
+          .single()
+
+        const postulanteId = (pre?.postulacion as any)?.postulante_id
+        if (postulanteId) {
+          await verificarYAsignarCursoCIT(postulanteId)
+        }
+      } catch (citErr) {
+        console.error('Error al verificar CIT en preentrevista:', citErr)
+      }
+    }
+
     revalidatePath('/admin')
     revalidatePath('/admin/postulantes')
     revalidatePath('/postulaciones')
+    revalidatePath('/inicio')
     return { ok: true }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Error al actualizar estado de preentrevista'

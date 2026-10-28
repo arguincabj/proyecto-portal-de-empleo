@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { UserRound, Briefcase, Send, ArrowRight } from 'lucide-react'
+import { UserRound, Briefcase, Send, ArrowRight, GraduationCap } from 'lucide-react'
 
 const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
@@ -43,11 +43,13 @@ export default async function InicioPage() {
     : 'Postulante'
 
   let estadoLaboral: 'en_busqueda' | 'trabajando' = 'en_busqueda'
+  let citAsignado = false
+  let citEstado: string | null = null
 
   if (!usuario?.rol || usuario.rol === 'postulante') {
     const { data: postulante } = await supabaseAdmin
       .from('postulantes')
-      .select('estado_laboral')
+      .select('estado_laboral, cit_asignado, cit_estado')
       .eq('usuario_id', user.id)
       .maybeSingle()
 
@@ -55,6 +57,10 @@ export default async function InicioPage() {
     const estado = postulante?.estado_laboral || meta.estado_laboral
     if (estado === 'trabajando') {
       estadoLaboral = 'trabajando'
+    }
+    if (postulante?.cit_asignado) {
+      citAsignado = true
+      citEstado = postulante.cit_estado || 'pendiente'
     }
   }
 
@@ -87,6 +93,32 @@ export default async function InicioPage() {
           Gestioná tu perfil laboral, postulate a ofertas y hacé seguimiento de tus postulaciones en el Portal de Empleo.
         </p>
       </div>
+
+      {citAsignado && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <GraduationCap className="size-5" />
+              </span>
+              <h3 className="font-bold text-amber-950 text-base">
+                Convocatoria a Curso de Introducción al Trabajo (CIT)
+              </h3>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-200/70 text-amber-900 border border-amber-300">
+                Oficina Municipal de Empleo
+              </span>
+            </div>
+            <p className="text-xs text-amber-900 leading-relaxed max-w-3xl pt-1">
+              Al no haber superado 3 entrevistas laborales, la Municipalidad te ha derivado al <strong>Curso de Introducción al Trabajo</strong> para fortalecer tu perfil, tus técnicas de entrevista y tus competencias para acceder a un empleo de calidad.
+            </p>
+          </div>
+          <div className="shrink-0 self-end sm:self-center">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-600 text-white shadow-xs">
+              Estado: {citEstado === 'en_curso' ? 'En curso' : citEstado === 'completado' ? 'Completado' : 'Asignado'}
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link

@@ -56,6 +56,8 @@ type PostulanteRow = {
   habilidades?: string | null
   horarios?: string | null
   estado_laboral?: string | null
+  cit_asignado?: boolean | null
+  cit_estado?: string | null
 }
 
 type UsuarioRow = {
@@ -391,6 +393,8 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
             habilidades: post?.habilidades || null,
             horarios: post?.horarios || null,
             estado_laboral: post?.estado_laboral || metaEstadoLaboral || null,
+            cit_asignado: post?.cit_asignado || false,
+            cit_estado: post?.cit_estado || null,
             usuario: rawUser
               ? {
                   nombre: rawUser.nombre,
