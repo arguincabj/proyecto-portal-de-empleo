@@ -225,7 +225,10 @@ export async function actualizarEstadoDerivacion(
           .eq('id', derivacionId)
           .single()
 
-        const postulanteId = (derivacion?.postulacion as any)?.postulante_id
+        const postulacionData = Array.isArray(derivacion?.postulacion)
+          ? derivacion.postulacion[0]
+          : derivacion?.postulacion
+        const postulanteId = (postulacionData as { postulante_id?: string } | null | undefined)?.postulante_id
         if (postulanteId) {
           await verificarYAsignarCursoCIT(postulanteId)
         }

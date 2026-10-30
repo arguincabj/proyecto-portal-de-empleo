@@ -414,7 +414,10 @@ export async function actualizarEstadoPreentrevista(
           .eq('id', preentrevistaId)
           .single()
 
-        const postulanteId = (pre?.postulacion as any)?.postulante_id
+        const postulacionData = Array.isArray(pre?.postulacion)
+          ? pre.postulacion[0]
+          : pre?.postulacion
+        const postulanteId = (postulacionData as { postulante_id?: string } | null | undefined)?.postulante_id
         if (postulanteId) {
           await verificarYAsignarCursoCIT(postulanteId)
         }

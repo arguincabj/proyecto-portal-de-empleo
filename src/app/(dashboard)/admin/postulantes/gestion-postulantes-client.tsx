@@ -111,6 +111,8 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
 
   // Modal Preentrevista
   const [modalPreentrevista, setModalPreentrevista] = useState<PostulacionItem | null>(null)
+  const [minFechaHora, setMinFechaHora] = useState('')
+  const [ahoraTimestamp, setAhoraTimestamp] = useState(0)
   const [formFechaHora, setFormFechaHora] = useState('')
   const [formLugar, setFormLugar] = useState('Presencial en Oficina de Empleo')
   const [formNotas, setFormNotas] = useState('')
@@ -263,6 +265,9 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
 
   // Preentrevista handlers
   const handleAbrirPreentrevista = (postulacion: PostulacionItem) => {
+    const now = new Date()
+    setAhoraTimestamp(now.getTime())
+    setMinFechaHora(new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16))
     setModalPreentrevista(postulacion)
     const existing = postulacion.preentrevista
     if (existing) {
@@ -278,10 +283,16 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
       }
       setFormLugar(existing.lugar_modalidad || 'Presencial en Oficina de Empleo')
       setFormNotas(existing.notas || '')
-      setFormResultado(existing.resultado as any || 'pendiente')
+      setFormResultado(
+        existing.resultado === 'aprobada' ||
+        existing.resultado === 'no_asistio' ||
+        existing.resultado === 'desfavorable'
+          ? existing.resultado
+          : 'pendiente'
+      )
     } else {
       // Valor por defecto: mañana a las 10:00 o la próxima hora
-      const d = new Date()
+      const d = new Date(now)
       d.setDate(d.getDate() + 1)
       d.setHours(10, 0, 0, 0)
       const pad = (n: number) => String(n).padStart(2, '0')
@@ -1450,7 +1461,7 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                 <input
                   type="datetime-local"
                   // min se establece en el instante actual para no permitir fechas pasadas
-                  min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                  min={minFechaHora}
                   value={formFechaHora}
                   onChange={(e) => setFormFechaHora(e.target.value)}
                   className="w-full text-xs rounded-xl border border-gray-300 px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
@@ -1477,7 +1488,7 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
               {/* Estado / Resultado si ya existía y si ya pasó la fecha pactada */}
               {modalPreentrevista.preentrevista && (() => {
                 const fechaPactada = new Date(modalPreentrevista.preentrevista.fecha_hora)
-                const yaPasoFecha = fechaPactada.getTime() <= Date.now()
+                const yaPasoFecha = ahoraTimestamp ? fechaPactada.getTime() <= ahoraTimestamp : false
 
                 if (!yaPasoFecha) {
                   return (
@@ -1497,7 +1508,7 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
                     </label>
                     <select
                       value={formResultado}
-                      onChange={(e) => setFormResultado(e.target.value as any)}
+                      onChange={(e) => setFormResultado(e.target.value as 'pendiente' | 'aprobada' | 'no_asistio' | 'desfavorable')}
                       className="w-full text-xs rounded-xl border border-gray-300 px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     >
                       <option value="pendiente">Pendiente de realizar</option>
