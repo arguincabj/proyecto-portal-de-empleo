@@ -71,7 +71,7 @@ export default async function AdminDashboardPage() {
     `)
     .order('created_at', { ascending: false })
 
-  const ofertas = (ofertasRaw ?? []) as unknown as OfertaAdminItem[]
+  const ofertas = (ofertasRaw ?? []) as unknown as Array<{ estado: string }>
 
   // 2. Obtener datos reales de empresas, postulaciones y postulantes para métricas y gráficos
   const [empresasRes, postulacionesRes, postulantesRes] = await Promise.all([

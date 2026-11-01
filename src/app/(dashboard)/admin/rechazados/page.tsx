@@ -52,7 +52,6 @@ export default async function AdminRechazadosPage({ searchParams }: PageProps) {
   const porPagina = 15
 
   // 1. Obtener count total de derivaciones rechazadas
-  const total = totalRechazadosCount ?? 0
   const from = (paginaActual - 1) * porPagina
   const to = from + porPagina - 1
 
@@ -335,9 +334,6 @@ export default async function AdminRechazadosPage({ searchParams }: PageProps) {
       {/* Listado con filtros */}
       <AdminRechazadosClient
         rechazados={rechazados}
-        totalCount={total}
-        paginaActual={paginaActual}
-        porPagina={porPagina}
       />
     </div>
   )

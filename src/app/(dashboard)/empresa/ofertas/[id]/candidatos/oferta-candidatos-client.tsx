@@ -47,6 +47,7 @@ export type CandidatoDerivado = {
     habilidades: string | null
     horarios: string | null
     estado_laboral: string | null
+    categorias_laborales?: string[] | null
   }
   cvs: Array<{
     nombre: string
