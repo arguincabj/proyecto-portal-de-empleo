@@ -1,11 +1,12 @@
 import Link from 'next/link'
-import { Briefcase, Building2, Users, UserSearch } from 'lucide-react'
+import { Briefcase, Building2, Users, UserX, UserSearch } from 'lucide-react'
 
 type Props = {
-  tabActivo: 'ofertas' | 'empresas' | 'postulantes' | 'buscador'
+  tabActivo: 'ofertas' | 'empresas' | 'postulantes' | 'rechazados' | 'buscador'
   pendientesOfertas?: number
   pendientesEmpresas?: number
   pendientesPostulantes?: number
+  totalRechazados?: number
 }
 
 export function AdminNavTabs({
@@ -13,6 +14,7 @@ export function AdminNavTabs({
   pendientesOfertas,
   pendientesEmpresas,
   pendientesPostulantes,
+  totalRechazados,
 }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 pb-2">
@@ -81,6 +83,29 @@ export function AdminNavTabs({
             }`}
           >
             {pendientesPostulantes}
+          </span>
+        )}
+      </Link>
+
+      <Link
+        href="/admin/rechazados"
+        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+          tabActivo === 'rechazados'
+            ? 'bg-rose-600 text-white shadow-sm'
+            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+        }`}
+      >
+        <UserX className="size-4" />
+        <span>Postulantes Rechazados</span>
+        {typeof totalRechazados === 'number' && totalRechazados > 0 && (
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+              tabActivo === 'rechazados'
+                ? 'bg-white/20 text-white'
+                : 'bg-rose-100 text-rose-800'
+            }`}
+          >
+            {totalRechazados}
           </span>
         )}
       </Link>

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import type { FileRejection } from 'react-dropzone'
@@ -12,14 +12,12 @@ import { CV_MAX_BYTES } from './cv-limites'
 
 const CV_ACCEPT = {
   'application/pdf': ['.pdf'],
-  'application/msword': ['.doc'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
 }
 
 function mensajeRechazo(rechazos: FileRejection[]) {
   const codigo = rechazos[0]?.errors[0]?.code
   if (codigo === 'file-too-large') return 'El archivo no puede superar 20 MB'
-  if (codigo === 'file-invalid-type') return 'Solo se aceptan archivos PDF, DOC o DOCX'
+  if (codigo === 'file-invalid-type') return 'Solo se aceptan archivos PDF'
   if (codigo === 'too-many-files') return 'Subí un solo archivo a la vez'
   return 'No se pudo cargar el archivo'
 }
@@ -188,7 +186,7 @@ export function CvUpload({ cvs }: Props) {
               <p className="text-xs text-foreground-secondary">
                 Arrastrá el archivo acá o hacé clic para seleccionarlo
               </p>
-              <p className="text-xs text-foreground-muted">PDF, DOC o DOCX — hasta 20 MB</p>
+              <p className="text-xs text-foreground-muted">PDF — hasta 20 MB</p>
             </div>
           </DropzoneEmptyState>
         </Dropzone>

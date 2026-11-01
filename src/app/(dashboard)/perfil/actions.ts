@@ -6,12 +6,8 @@ import { revalidatePath } from 'next/cache'
 import { CV_MAX_BYTES } from './cv-limites'
 
 const CV_BUCKET = 'curricula'
-const CV_ALLOWED_TYPES = new Set([
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-])
-const CV_ALLOWED_EXTS = new Set(['pdf', 'doc', 'docx'])
+const CV_ALLOWED_TYPES = new Set(['application/pdf'])
+const CV_ALLOWED_EXTS = new Set(['pdf'])
 
 type ActionResult = { ok: true } | { ok: false; error: string }
 

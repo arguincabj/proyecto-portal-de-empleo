@@ -52,6 +52,11 @@ export default async function AdminEmpresasPage() {
     .eq('estado', 'pendiente')
 
   // Contar postulaciones pendientes para el badge de la pestaña
+  const { count: countRechazados } = await supabaseAdmin
+    .from('derivaciones')
+    .select('id', { count: 'exact', head: true })
+    .eq('estado_empresa', 'rechazado')
+
   const { count: postulantesPendientesCount } = await supabaseAdmin
     .from('postulaciones')
     .select('id', { count: 'exact', head: true })
@@ -136,6 +141,7 @@ export default async function AdminEmpresasPage() {
 
       {/* Pestañas de navegación entre Ofertas, Empresas y Postulantes */}
       <AdminNavTabs
+        totalRechazados={countRechazados ?? 0}
         tabActivo="empresas"
         pendientesOfertas={ofertasPendientesCount ?? 0}
         pendientesEmpresas={empresasPendientes}

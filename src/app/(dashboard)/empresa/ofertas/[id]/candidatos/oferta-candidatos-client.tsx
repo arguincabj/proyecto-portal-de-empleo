@@ -353,47 +353,57 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                     </div>
                   </div>
 
-                  {/* Botones de Acción de Estado: ACEPTAR, DENEGAR, EN REVISIÓN */}
+                  {/* Botones de Acción de Estado */}
                   <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto pt-2 sm:pt-0">
                     {estadoActual === 'contratado' ? (
                       <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
                         <CheckCircle2 className="size-4 text-emerald-600" />
                         <span>Contratado</span>
                       </span>
-                    ) : estadoActual === 'en_proceso' ? (
-                      <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
-                        <Clock className="size-4 text-amber-600" />
-                        <span>En revisión</span>
-                      </span>
                     ) : estadoActual === 'rechazado' ? (
                       <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-red-100 text-red-800 border border-red-300 shadow-2xs">
                         <XCircle className="size-4 text-red-600" />
                         <span>Rechazado</span>
                       </span>
-                    ) : (
+                    ) : estadoActual === 'en_proceso' ? (
                       <>
+                        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                          <Clock className="size-4 text-amber-600" />
+                          <span>En revisión</span>
+                        </span>
                         <button
                           type="button"
                           disabled={ocupado}
                           onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'contratado' })}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-600 hover:text-white"
-                          title="Aceptar este candidato para el puesto"
+                          title="Marcar como contratado"
                         >
                           <CheckCircle2 className="size-3.5" />
                           <span>Contratado</span>
                         </button>
-
+                        <button
+                          type="button"
+                          disabled={ocupado}
+                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'rechazado' })}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-red-50 text-red-800 border border-red-200 hover:bg-red-600 hover:text-white"
+                          title="Denegar la postulación del candidato"
+                        >
+                          <XCircle className="size-3.5" />
+                          <span>Rechazado</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
                         <button
                           type="button"
                           disabled={ocupado}
                           onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'en_proceso' })}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-600 hover:text-white"
-                          title="Poner al candidato en evaluación o entrevista"
+                          title="Poner al candidato en revisión"
                         >
                           <Clock className="size-3.5" />
                           <span>En revisión</span>
                         </button>
-
                         <button
                           type="button"
                           disabled={ocupado}
@@ -525,14 +535,10 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                 <p className="text-teal-900 leading-relaxed">
                   Para coordinar o definir una entrevista con este postulante, seleccioná una de las siguientes opciones:
                 </p>
-                <ul className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2 pt-2 border-t border-teal-200/60 font-medium">
-                  <li className="flex items-start gap-1.5">
-                    <span className="size-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                    <span><strong className="text-emerald-900">Contratado:</strong> El postulante ha sido seleccionado e incorporado.</span>
-                  </li>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-teal-200/60 font-medium">
                   <li className="flex items-start gap-1.5">
                     <span className="size-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                    <span><strong className="text-amber-900">En revisión:</strong> Su perfil está bajo análisis interno para una posible entrevista.</span>
+                    <span><strong className="text-amber-900">En revisión:</strong> El perfil pasa a evaluación. Luego podrás marcarlo como Contratado o Rechazado.</span>
                   </li>
                   <li className="flex items-start gap-1.5">
                     <span className="size-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
@@ -555,18 +561,17 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                       <CheckCircle2 className="size-3.5 text-emerald-600" />
                       <span>Contratado</span>
                     </span>
-                  ) : perfilModal.estadoEmpresa === 'en_proceso' ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                      <Clock className="size-3.5 text-amber-600" />
-                      <span>En revisión</span>
-                    </span>
                   ) : perfilModal.estadoEmpresa === 'rechazado' ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-100 text-red-800 border border-red-300">
                       <XCircle className="size-3.5 text-red-600" />
                       <span>Rechazado</span>
                     </span>
-                  ) : (
+                  ) : perfilModal.estadoEmpresa === 'en_proceso' ? (
                     <>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                        <Clock className="size-3.5 text-amber-600" />
+                        <span>En revisión</span>
+                      </span>
                       <button
                         type="button"
                         onClick={() => {
@@ -576,6 +581,18 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                       >
                         Contratar
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'rechazado' })
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        Rechazar
+                      </button>
+                    </>
+                  ) : (
+                    <>
                       <button
                         type="button"
                         onClick={() => {
@@ -805,8 +822,8 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
             icono: CheckCircle2,
           },
           en_proceso: {
-            titulo: '¿Confirmás poner en revisión / entrevista?',
-            descripcion: `Estás a punto de pasar a ${nombre} a etapa de revisión y entrevista interna. Esta decisión quedará guardada como definitiva.`,
+            titulo: '¿Confirmás poner en revisión?',
+            descripcion: `Estás a punto de pasar a ${nombre} a etapa de revisión. Una vez evaluado/a, podrás definir si queda Contratado/a o Rechazado/a.`,
             botonTexto: 'Sí, poner en revisión',
             botonColor: 'bg-amber-600 hover:bg-amber-700 text-white',
             badge: 'En revisión',

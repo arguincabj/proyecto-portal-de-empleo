@@ -86,6 +86,11 @@ export default async function AdminDashboardPage() {
   const postulantesData = postulantesRes.data ?? []
 
   // Calcular métricas de ofertas
+  const { count: countRechazados } = await supabaseAdmin
+    .from('derivaciones')
+    .select('id', { count: 'exact', head: true })
+    .eq('estado_empresa', 'rechazado')
+
   const totalOfertas = ofertas.length
   const pendientes = ofertas.filter((o) => o.estado === 'pendiente').length
   const publicadas = ofertas.filter((o) => o.estado === 'publicada').length
@@ -205,6 +210,7 @@ export default async function AdminDashboardPage() {
 
       {/* Pestañas de navegación entre Ofertas, Empresas y Postulantes */}
       <AdminNavTabs
+        totalRechazados={countRechazados ?? 0}
         tabActivo="ofertas"
         pendientesOfertas={pendientes}
         pendientesEmpresas={empresasPendientesCount ?? 0}

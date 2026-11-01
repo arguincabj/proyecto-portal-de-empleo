@@ -237,6 +237,35 @@ export async function actualizarEstadoDerivacion(
       }
     }
 
+    // Si la empresa marcó como rechazado o contratado, notificar a administración
+    if (estadoEmpresa === 'rechazado' || estadoEmpresa === 'contratado') {
+      try {
+        const { data: adminUsers } = await supabaseAdmin
+          .from('usuarios')
+          .select('id')
+          .eq('rol', 'municipalidad')
+
+        if (adminUsers && adminUsers.length > 0) {
+          const esContratado = estadoEmpresa === 'contratado'
+          const titulo = esContratado
+            ? 'Postulante contratado por empresa'
+            : 'Postulante rechazado por empresa'
+          const mensaje = esContratado
+            ? 'Una empresa marcó un postulante como contratado. Revisá el panel de administración.'
+            : 'Una empresa rechazó a un postulante derivado. Revisá el panel de administración.'
+          const notificaciones = adminUsers.map((u: { id: string }) => ({
+            usuario_id: u.id,
+            titulo,
+            mensaje,
+            tipo: esContratado ? 'contratado' : 'rechazado_empresa',
+          }))
+          await supabaseAdmin.from('notificaciones').insert(notificaciones)
+        }
+      } catch (notifErr) {
+        console.error('Error al notificar a administración:', notifErr)
+      }
+    }
+
     revalidatePath('/empresa')
     revalidatePath('/admin')
     revalidatePath('/admin/postulantes')

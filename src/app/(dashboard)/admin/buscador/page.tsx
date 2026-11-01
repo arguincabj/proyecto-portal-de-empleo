@@ -31,7 +31,7 @@ export default async function BuscadorPerfilesPage() {
   }
 
   // 2. Contadores para los tabs de administración
-  const [{ count: countOfertas }, { count: countEmpresas }, { count: countPostulantes }] =
+  const [{ count: countOfertas }, { count: countEmpresas }, { count: countPostulantes }, { count: countRechazados }] =
     await Promise.all([
       supabaseAdmin
         .from('ofertas')
@@ -45,6 +45,10 @@ export default async function BuscadorPerfilesPage() {
         .from('postulaciones')
         .select('*', { count: 'exact', head: true })
         .in('estado', ['recibida', 'en_revision']),
+      supabaseAdmin
+        .from('derivaciones')
+        .select('*', { count: 'exact', head: true })
+        .eq('estado_empresa', 'rechazado'),
     ])
 
   // 3. Consultar todos los postulantes con su información completa
@@ -64,6 +68,7 @@ export default async function BuscadorPerfilesPage() {
     habilidades?: string | null
     horarios?: string | null
     estado_laboral?: string | null
+    categorias_laborales?: string[] | null
     created_at: string
   }> = []
 
@@ -285,6 +290,7 @@ export default async function BuscadorPerfilesPage() {
 
       {/* Navegación por pestañas de Administración */}
       <AdminNavTabs
+        totalRechazados={countRechazados ?? 0}
         tabActivo="buscador"
         pendientesOfertas={countOfertas ?? 0}
         pendientesEmpresas={countEmpresas ?? 0}

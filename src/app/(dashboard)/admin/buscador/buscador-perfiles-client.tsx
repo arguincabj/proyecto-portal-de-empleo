@@ -20,6 +20,7 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import { Paginacion } from '@/components/ui/paginacion'
+import { CATEGORIAS_LABORALES } from '@/constants/categorias-laborales'
 
 export type PostulanteBuscadorItem = {
   id: string
@@ -35,6 +36,7 @@ export type PostulanteBuscadorItem = {
   habilidades: string | null
   horarios: string | null
   estado_laboral: string | null
+  categorias_laborales?: string[] | null
   created_at: string
   usuario: {
     nombre: string
@@ -61,6 +63,7 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
   // Filtros
   const [textoBusqueda, setTextoBusqueda] = useState('')
   const [filtroHabilidad, setFiltroHabilidad] = useState('')
+  const [filtroCategoria, setFiltroCategoria] = useState('')
   const [filtroEstadoLaboral, setFiltroEstadoLaboral] = useState<'todos' | 'en_busqueda' | 'trabajando'>('todos')
   const [filtroConCv, setFiltroConCv] = useState<'todos' | 'con_cv' | 'sin_cv'>('todos')
   const [filtroLocalidad, setFiltroLocalidad] = useState('')
@@ -108,6 +111,12 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
         if (!coincide) return false
       }
 
+      // Filtro por Rubro / Categoría Laboral
+      if (filtroCategoria.trim()) {
+        const cats = p.categorias_laborales ?? []
+        if (!cats.includes(filtroCategoria.trim())) return false
+      }
+
       // Filtro específico por habilidad
       if (filtroHabilidad.trim()) {
         const habQuery = filtroHabilidad.trim().toLowerCase()
@@ -143,6 +152,7 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
     postulantes,
     textoBusqueda,
     filtroHabilidad,
+    filtroCategoria,
     filtroEstadoLaboral,
     filtroConCv,
     filtroLocalidad,
@@ -163,6 +173,7 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
   const limpiarFiltros = () => {
     setTextoBusqueda('')
     setFiltroHabilidad('')
+    setFiltroCategoria('')
     setFiltroEstadoLaboral('todos')
     setFiltroConCv('todos')
     setFiltroLocalidad('')
@@ -228,7 +239,29 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
 
         {/* Panel Desplegable de Filtros Avanzados */}
         {mostrarFiltrosAvanzados && (
-          <div className="pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fadeIn">
+          <div className="pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 animate-fadeIn">
+            {/* Rubro o Categoría Laboral */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Rubro o Categoría Laboral
+              </label>
+              <select
+                value={filtroCategoria}
+                onChange={(e) => {
+                  setFiltroCategoria(e.target.value)
+                  setPaginaActual(1)
+                }}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-teal-600 bg-white"
+              >
+                <option value="">Todos los rubros</option>
+                {CATEGORIAS_LABORALES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Habilidades clave */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">

@@ -166,6 +166,7 @@ export default async function OfertaCandidatosPage({ params }: PageProps) {
     habilidades?: string | null
     horarios?: string | null
     estado_laboral?: string | null
+    categorias_laborales?: string[] | null
   }
 
   type UsuarioRecord = {
@@ -396,6 +397,7 @@ export default async function OfertaCandidatosPage({ params }: PageProps) {
         habilidades: postulante?.habilidades ?? null,
         horarios: postulante?.horarios ?? null,
         estado_laboral: resolvedEstadoLaboral,
+        categorias_laborales: Array.isArray(postulante?.categorias_laborales) ? postulante.categorias_laborales : [],
       },
       cvs: cvsSigned,
     })

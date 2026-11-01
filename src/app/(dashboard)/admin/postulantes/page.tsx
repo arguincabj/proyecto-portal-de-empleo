@@ -58,6 +58,7 @@ type PostulanteRow = {
   estado_laboral?: string | null
   cit_asignado?: boolean | null
   cit_estado?: string | null
+  categorias_laborales?: string[] | null
 }
 
 type UsuarioRow = {
@@ -125,6 +126,11 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
     .from('postulaciones')
     .select('id', { count: 'exact', head: true })
     .in('estado', ['recibida', 'en_revision'])
+
+  const { count: countRechazados } = await supabaseAdmin
+    .from('derivaciones')
+    .select('id', { count: 'exact', head: true })
+    .eq('estado_empresa', 'rechazado')
 
   // 2. Obtener todas las postulaciones
   const { data: todasPostulaciones, error: errPost } = await supabaseAdmin
@@ -395,6 +401,7 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
             estado_laboral: post?.estado_laboral || metaEstadoLaboral || null,
             cit_asignado: post?.cit_asignado || false,
             cit_estado: post?.cit_estado || null,
+            categorias_laborales: Array.isArray(post?.categorias_laborales) ? post.categorias_laborales : [],
             usuario: rawUser
               ? {
                   nombre: rawUser.nombre,
@@ -438,6 +445,7 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
 
       {/* Pestañas de Navegación de Administración */}
       <AdminNavTabs
+        totalRechazados={countRechazados ?? 0}
         tabActivo="postulantes"
         pendientesOfertas={ofertasPendientesCount ?? 0}
         pendientesEmpresas={empresasPendientesCount ?? 0}
