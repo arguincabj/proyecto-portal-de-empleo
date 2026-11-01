@@ -133,8 +133,21 @@ export async function actualizarPerfilLaboral(formData: FormData): Promise<Actio
     const idiomas = (formData.get('idiomas') as string | null)?.trim() ?? ''
     const habilidades = (formData.get('habilidades') as string | null)?.trim() ?? ''
     const horarios = (formData.get('horarios') as string | null)?.trim() ?? ''
+    const categoriasRaw = formData.get('categorias') as string | null
+    let categorias: string[] = []
+    if (categoriasRaw) {
+      try {
+        const parsed = JSON.parse(categoriasRaw)
+        if (Array.isArray(parsed)) {
+          categorias = parsed.filter((item): item is string => typeof item === 'string')
+        }
+      } catch {
+        categorias = []
+      }
+    }
 
-    const { error: errorPostulante } = await supabaseAdmin
+    let errorPostulante: any = null
+    const resConCategorias = await supabaseAdmin
       .from('postulantes')
       .update({
         estudios,
@@ -143,8 +156,28 @@ export async function actualizarPerfilLaboral(formData: FormData): Promise<Actio
         idiomas,
         habilidades,
         horarios,
+        categorias_laborales: categorias,
       })
       .eq('usuario_id', user.id)
+
+    if (resConCategorias.error) {
+      if (resConCategorias.error.message?.includes('categorias_laborales')) {
+        const resFallback = await supabaseAdmin
+          .from('postulantes')
+          .update({
+            estudios,
+            cursos,
+            experiencia,
+            idiomas,
+            habilidades,
+            horarios,
+          })
+          .eq('usuario_id', user.id)
+        errorPostulante = resFallback.error
+      } else {
+        errorPostulante = resConCategorias.error
+      }
+    }
 
     if (errorPostulante) {
       return {

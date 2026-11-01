@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Menu, X, LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings } from 'lucide-react'
+import { Menu, X, LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
@@ -16,12 +16,13 @@ const ROL_LABEL: Record<string, string> = {
 
 type Props = {
   usuario: { nombre: string; apellido: string; rol: string; avatar_url?: string | null } | null
+  noLeidas?: number
 }
 
-export function MobileSidebar({ usuario }: Props) {
+export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
   const [open, setOpen] = useState(false)
 
-  const navItems =
+  const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number }[] =
     usuario?.rol === 'empresa'
       ? [
           { href: '/empresa', label: 'Panel de Empresa', icon: Building2 },
@@ -32,6 +33,7 @@ export function MobileSidebar({ usuario }: Props) {
       : usuario?.rol === 'municipalidad'
       ? [
           { href: '/admin', label: 'Gestión Municipal', icon: Shield },
+          { href: '/admin/buscador', label: 'Buscador de Perfiles', icon: UserSearch },
           { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
         ]
@@ -40,6 +42,7 @@ export function MobileSidebar({ usuario }: Props) {
           { href: '/perfil', label: 'Mi Perfil', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas', icon: Briefcase },
           { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
+          { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
         ]
 
   useEffect(() => {

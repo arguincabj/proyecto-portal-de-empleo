@@ -353,9 +353,61 @@ export async function agendarOActualizarPreentrevista(data: {
       }
     }
 
+    // Enviar notificación interna al postulante
+    try {
+      const fechaObj = new Date(data.fechaHora)
+      const fechaFormateada = fechaObj.toLocaleDateString('es-AR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'America/Argentina/Buenos_Aires',
+      })
+      const horaFormateada = fechaObj.toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Argentina/Buenos_Aires',
+      })
+      const lugar = data.lugarModalidad?.trim() || 'Presencial en Oficina de Empleo'
+      const esReprogramacion = !!data.preentrevistaId
+
+      const { data: postulacionData } = await supabaseAdmin
+        .from('postulaciones')
+        .select('postulante:postulantes(usuario_id)')
+        .eq('id', data.postulacionId)
+        .single()
+
+      const postulacion = postulacionData as {
+        postulante: { usuario_id: string } | { usuario_id: string }[] | null
+      } | null
+      const postulanteRaw = Array.isArray(postulacion?.postulante)
+        ? postulacion?.postulante[0]
+        : postulacion?.postulante
+      const usuarioId = postulanteRaw?.usuario_id
+
+      if (usuarioId) {
+        await supabaseAdmin.from('notificaciones').insert({
+          usuario_id: usuarioId,
+          titulo: esReprogramacion ? 'Entrevista reprogramada' : '📅 Nueva entrevista programada',
+          mensaje: esReprogramacion
+            ? `Tu entrevista fue reprogramada para el ${fechaFormateada} a las ${horaFormateada}. Lugar / Modalidad: ${lugar}.`
+            : `La Oficina de Empleo Municipal programó una entrevista para vos. Fecha: ${fechaFormateada} — Hora: ${horaFormateada}. Lugar / Modalidad: ${lugar}.`,
+          tipo: 'entrevista',
+          metadata: {
+            fecha_hora: data.fechaHora,
+            lugar_modalidad: lugar,
+            postulacion_id: data.postulacionId,
+          },
+        })
+      }
+    } catch (notifErr) {
+      console.error('Error al crear notificación de entrevista:', notifErr)
+    }
+
     revalidatePath('/admin')
     revalidatePath('/admin/postulantes')
     revalidatePath('/postulaciones')
+    revalidatePath('/notificaciones')
     return { ok: true }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Error inesperado al gestionar preentrevista'

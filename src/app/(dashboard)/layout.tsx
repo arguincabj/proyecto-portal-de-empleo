@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+// notificaciones se consultan aquí para el MobileSidebar (client component)
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileSidebar } from '@/components/layout/mobile-sidebar'
 
@@ -50,9 +51,22 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
   const avatarUrl = user.user_metadata?.avatar_url || (usuario as { avatar_url?: string | null })?.avatar_url || null
   const usuarioConAvatar = usuario ? { ...usuario, avatar_url: avatarUrl } : null
 
+  // Contar notificaciones no leídas para el MobileSidebar (client component)
+  let noLeidas = 0
+  if (usuario?.rol === 'postulante') {
+    try {
+      const { count } = await supabaseAdmin
+        .from('notificaciones')
+        .select('id', { count: 'exact', head: true })
+        .eq('usuario_id', user.id)
+        .eq('leida', false)
+      noLeidas = count ?? 0
+    } catch { /* silencioso */ }
+  }
+
   return (
     <div className="flex h-dvh flex-col bg-page lg:flex-row">
-      <MobileSidebar usuario={usuarioConAvatar} />
+      <MobileSidebar usuario={usuarioConAvatar} noLeidas={noLeidas} />
       <Sidebar usuario={usuarioConAvatar} />
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         {children}

@@ -84,6 +84,7 @@ export function PerfilForm({ defaultValues, retorno }: Props) {
           form.reset(values)
           setEditando(false)
           toast.success('Datos actualizados correctamente')
+          window.dispatchEvent(new CustomEvent('perfil-actualizado', { detail: values }))
           if (retorno) {
             router.push(retorno)
           } else {

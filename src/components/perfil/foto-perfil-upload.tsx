@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef, useTransition, useEffect } from 'react'
 import {
   Camera,
   Upload,
@@ -23,6 +23,7 @@ type Props = {
   nombre?: string
   apellido?: string
   rol?: 'postulante' | 'empresa' | 'municipalidad'
+  estadoLaboral?: 'en_busqueda' | 'trabajando'
 }
 
 export function FotoPerfilUpload({
@@ -30,9 +31,45 @@ export function FotoPerfilUpload({
   nombre = '',
   apellido = '',
   rol = 'postulante',
+  estadoLaboral = 'en_busqueda',
 }: Props) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(currentAvatarUrl ?? null)
   const [isPending, startTransition] = useTransition()
+  const [datosPersona, setDatosPersona] = useState({ nombre, apellido })
+  const [estado, setEstado] = useState<'en_busqueda' | 'trabajando'>(estadoLaboral)
+
+  useEffect(() => {
+    setEstado(estadoLaboral)
+  }, [estadoLaboral])
+
+  useEffect(() => {
+    function onEstadoLaboralActualizado(e: Event) {
+      const customEvent = e as CustomEvent<{ estado?: 'en_busqueda' | 'trabajando' }>
+      if (customEvent.detail?.estado) {
+        setEstado(customEvent.detail.estado)
+      }
+    }
+    window.addEventListener('estado-laboral-actualizado', onEstadoLaboralActualizado)
+    return () => window.removeEventListener('estado-laboral-actualizado', onEstadoLaboralActualizado)
+  }, [])
+
+  useEffect(() => {
+    setDatosPersona({ nombre, apellido })
+  }, [nombre, apellido])
+
+  useEffect(() => {
+    function onPerfilActualizado(e: Event) {
+      const customEvent = e as CustomEvent<{ nombre?: string; apellido?: string }>
+      if (customEvent.detail) {
+        setDatosPersona((prev) => ({
+          nombre: customEvent.detail.nombre ?? prev.nombre,
+          apellido: customEvent.detail.apellido ?? prev.apellido,
+        }))
+      }
+    }
+    window.addEventListener('perfil-actualizado', onPerfilActualizado)
+    return () => window.removeEventListener('perfil-actualizado', onPerfilActualizado)
+  }, [])
 
   // Modal de ajuste de imagen
   const [modalOpen, setModalOpen] = useState(false)
@@ -54,7 +91,7 @@ export function FotoPerfilUpload({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const iniciales =
-    (nombre ? nombre.charAt(0) : '') + (apellido ? apellido.charAt(0) : '') || 'U'
+    (datosPersona.nombre ? datosPersona.nombre.charAt(0) : '') + (datosPersona.apellido ? datosPersona.apellido.charAt(0) : '') || 'U'
 
   // Al seleccionar archivo desde el input
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,35 +324,47 @@ export function FotoPerfilUpload({
           </button>
         </div>
 
-        {/* Acciones y descripción */}
-        <div className="flex-1 text-center sm:text-left space-y-2">
+        {/* Información de usuario y acciones */}
+        <div className="flex-1 text-center sm:text-left flex flex-col justify-center">
+          {(datosPersona.nombre || datosPersona.apellido) && (
+            <div className="mb-3">
+              <h3 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+                {datosPersona.nombre} {datosPersona.apellido}
+              </h3>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isPending}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-700 hover:bg-emerald-600 text-white shadow-sm transition-all"
-            >
-              <Upload className="size-3.5 sm:size-4" />
-              <span>{avatarUrl ? 'Cambiar foto' : 'Subir foto'}</span>
-            </button>
+            {rol === 'postulante' ? (
+              <span
+                className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                  estado === 'trabajando'
+                    ? 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+                }`}
+              >
+                <span className="text-xs">
+                  {estado === 'trabajando' ? '🔵' : '🟢'}
+                </span>
+                <span>
+                  {estado === 'trabajando' ? 'Actualmente trabajando' : 'En búsqueda laboral'}
+                </span>
+              </span>
+            ) : null}
 
             {avatarUrl && (
               <button
                 type="button"
                 onClick={handleEliminar}
                 disabled={isPending}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 transition-all"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 transition-all"
+                title="Eliminar foto de perfil"
               >
-                <Trash2 className="size-3.5 sm:size-4" />
-                <span>Eliminar</span>
+                <Trash2 className="size-3" />
+                <span>Eliminar foto</span>
               </button>
             )}
           </div>
-
-          <p className="text-xs text-gray-500 leading-relaxed max-w-md">
-            Podés cargar una foto en formato JPG, PNG o WebP. Al subirla tendrás una herramienta interactiva para ajustar el tamaño, centrarla y recortarla en círculo a tu gusto.
-          </p>
         </div>
       </div>
 

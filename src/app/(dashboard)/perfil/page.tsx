@@ -70,12 +70,13 @@ export default async function PerfilPage({ searchParams }: PerfilPageProps) {
     habilidades?: string | null
     horarios?: string | null
     estado_laboral?: string | null
+    categorias_laborales?: string[] | null
   } | null = null
 
   // Intento de consulta completa con campos de perfil laboral y domicilio
   const { data: postData, error: postErr } = await supabaseAdmin
     .from('postulantes')
-    .select('id, dni, cv_url, localidad, direccion, codigo_postal, estudios, cursos, experiencia, idiomas, habilidades, horarios, estado_laboral')
+    .select('id, dni, cv_url, localidad, direccion, codigo_postal, estudios, cursos, experiencia, idiomas, habilidades, horarios, estado_laboral, categorias_laborales')
     .eq('usuario_id', user.id)
     .single()
 
@@ -83,12 +84,21 @@ export default async function PerfilPage({ searchParams }: PerfilPageProps) {
     postulante = postData
   } else {
     // Si la migración aún no se corrió, se consulta lo básico sin fallar
-    const { data: basicPost } = await supabaseAdmin
+    const { data: secondAttempt } = await supabaseAdmin
       .from('postulantes')
-      .select('id, dni, cv_url')
+      .select('id, dni, cv_url, localidad, direccion, codigo_postal, estudios, cursos, experiencia, idiomas, habilidades, horarios, estado_laboral')
       .eq('usuario_id', user.id)
       .single()
-    postulante = basicPost ?? null
+    if (secondAttempt) {
+      postulante = secondAttempt
+    } else {
+      const { data: basicPost } = await supabaseAdmin
+        .from('postulantes')
+        .select('id, dni, cv_url')
+        .eq('usuario_id', user.id)
+        .single()
+      postulante = basicPost ?? null
+    }
   }
 
   const meta = user.user_metadata || {}
@@ -190,30 +200,37 @@ export default async function PerfilPage({ searchParams }: PerfilPageProps) {
         )}
       </div>
 
-      {/* Foto de perfil */}
-      <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
-        <h2 className="mb-4 text-base font-semibold text-foreground">Foto de perfil</h2>
-        <FotoPerfilUpload
-          currentAvatarUrl={user.user_metadata?.avatar_url || (usuario as { avatar_url?: string | null })?.avatar_url || null}
-          nombre={usuario?.nombre ?? (meta.nombre as string) ?? ''}
-          apellido={usuario?.apellido ?? (meta.apellido as string) ?? ''}
-          rol="postulante"
-        />
-      </section>
+      {/* Encabezado de perfil y situación laboral en una sola tarjeta */}
+      <section className="rounded-2xl bg-surface p-5 shadow-card sm:p-6 border border-border/50 divide-y divide-border/60">
+        <div className="pb-5 sm:pb-6">
+          <FotoPerfilUpload
+            currentAvatarUrl={user.user_metadata?.avatar_url || (usuario as { avatar_url?: string | null })?.avatar_url || null}
+            nombre={usuario?.nombre ?? (meta.nombre as string) ?? ''}
+            apellido={usuario?.apellido ?? (meta.apellido as string) ?? ''}
+            rol="postulante"
+            estadoLaboral={
+              (postulante?.estado_laboral || meta.estado_laboral) === 'trabajando'
+                ? 'trabajando'
+                : 'en_busqueda'
+            }
+          />
+        </div>
 
-      {/* Situación laboral actual */}
-      <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
-        <h2 className="mb-1 text-base font-semibold text-foreground">Situación laboral actual</h2>
-        <p className="mb-4 text-xs text-foreground-secondary">
-          Indicá si te encontrás en búsqueda activa de empleo o si estás trabajando actualmente.
-        </p>
-        <EstadoLaboralToggle
-          defaultEstado={
-            (postulante?.estado_laboral || meta.estado_laboral) === 'trabajando'
-              ? 'trabajando'
-              : 'en_busqueda'
-          }
-        />
+        <div className="pt-5 sm:pt-6 space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Situación laboral actual</h2>
+            <p className="text-xs text-foreground-secondary">
+              Indicá si te encontrás en búsqueda activa de empleo o si estás trabajando actualmente.
+            </p>
+          </div>
+          <EstadoLaboralToggle
+            defaultEstado={
+              (postulante?.estado_laboral || meta.estado_laboral) === 'trabajando'
+                ? 'trabajando'
+                : 'en_busqueda'
+            }
+          />
+        </div>
       </section>
 
       {/* Datos personales y domicilio */}
@@ -238,7 +255,7 @@ export default async function PerfilPage({ searchParams }: PerfilPageProps) {
         <div className="mb-4">
           <h2 className="text-base font-semibold text-foreground">Perfil laboral</h2>
           <p className="text-xs text-foreground-secondary">
-            Completá tus estudios, cursos, experiencia, idiomas, habilidades y disponibilidad horaria.
+            Completá tus rubros de interés, estudios, cursos, experiencia, idiomas, habilidades y disponibilidad horaria.
           </p>
         </div>
         <PerfilLaboralForm
@@ -250,6 +267,7 @@ export default async function PerfilPage({ searchParams }: PerfilPageProps) {
             idiomas: postulante?.idiomas ?? '',
             habilidades: postulante?.habilidades ?? '',
             horarios: postulante?.horarios ?? '',
+            categorias: Array.isArray(postulante?.categorias_laborales) ? postulante.categorias_laborales : [],
           }}
         />
       </section>

@@ -47,6 +47,7 @@ export function EstadoLaboralToggle({ defaultEstado }: Props) {
       try {
         const result = await actualizarEstadoLaboral(nuevoEstado)
         if (result.ok) {
+          window.dispatchEvent(new CustomEvent('estado-laboral-actualizado', { detail: { estado: nuevoEstado } }))
           toast.success(
             nuevoEstado === 'en_busqueda'
               ? 'Estado actualizado: en búsqueda laboral'
@@ -65,21 +66,7 @@ export function EstadoLaboralToggle({ defaultEstado }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Badge de estado actual */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-foreground-secondary uppercase tracking-wider">
-          Estado actual:
-        </span>
-        <span
-          className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border ${estadoActual.badge}`}
-        >
-          <span>{estadoActual.badgeIcon}</span>
-          {estadoActual.label}
-          {isPending && (
-            <LoaderCircle className="size-3 motion-safe:animate-spin ml-1" aria-hidden />
-          )}
-        </span>
-      </div>
+
 
       {/* Selector de dos opciones */}
       <div className="flex flex-col sm:flex-row gap-3">

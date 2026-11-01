@@ -31,9 +31,8 @@ export interface AdminStatsData {
   postulantesEnBusqueda: number
   postulantesEmpleado: number
 
-  topOfertasPostuladas: Array<{
-    titulo: string
-    empresa: string
+  topCategoriasPostuladas: Array<{
+    categoria: string
     postulaciones: number
   }>
 }
@@ -53,8 +52,9 @@ export function AdminMetricasGraficos({ stats }: Props) {
   const pctPostRec = stats.totalPostulaciones ? Math.round((stats.postulacionesRecibidas / stats.totalPostulaciones) * 100) : 0
   const pctPostRech = stats.totalPostulaciones ? Math.round((stats.postulacionesRechazadas / stats.totalPostulaciones) * 100) : 0
 
-  // Máximo para barras de ofertas más demandadas
-  const maxPostulaciones = Math.max(...stats.topOfertasPostuladas.map((o) => o.postulaciones), 1)
+  // Máximo para barras de categorías más demandadas
+  const topCategorias = stats.topCategoriasPostuladas ?? []
+  const maxPostulaciones = Math.max(...topCategorias.map((c) => c.postulaciones), 1)
 
   return (
     <div className="space-y-6">
@@ -213,29 +213,29 @@ export function AdminMetricasGraficos({ stats }: Props) {
             </div>
           </div>
 
-          {/* Gráfico de Barras Horizontales: Top Ofertas con mayor demanda */}
+          {/* Gráfico de Barras Horizontales: Top Categorías con mayor demanda */}
           <div className="mt-6 pt-5 border-t border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700">
-                Vacantes con Mayor Demanda de Vecinos
+                Categorías con Mayor Demanda de Vecinos
               </h4>
               <span className="text-[11px] text-gray-400 font-medium">Postulaciones</span>
             </div>
 
-            {stats.topOfertasPostuladas.length === 0 ? (
+            {stats.topCategoriasPostuladas.length === 0 ? (
               <p className="text-xs text-gray-400 italic py-2">No hay postulaciones registradas aún.</p>
             ) : (
               <div className="space-y-3">
-                {stats.topOfertasPostuladas.slice(0, 3).map((item, idx) => {
+                {stats.topCategoriasPostuladas.slice(0, 5).map((item, idx) => {
                   const barWidth = Math.round((item.postulaciones / maxPostulaciones) * 100)
                   return (
                     <div key={idx} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-gray-800 truncate max-w-[280px]" title={item.titulo}>
-                          {item.titulo}
+                        <span className="font-semibold text-gray-800 truncate max-w-[280px]" title={item.categoria}>
+                          {item.categoria}
                         </span>
                         <span className="font-mono font-bold text-teal-700 shrink-0 ml-2">
-                          {item.postulaciones} {item.postulaciones === 1 ? 'postulante' : 'postulantes'}
+                          {item.postulaciones} {item.postulaciones === 1 ? 'postulación' : 'postulaciones'}
                         </span>
                       </div>
                       <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">

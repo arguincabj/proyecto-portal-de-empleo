@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import { Briefcase, Building2, Users } from 'lucide-react'
+import { Briefcase, Building2, Users, UserSearch } from 'lucide-react'
 
 type Props = {
-  tabActivo: 'ofertas' | 'empresas' | 'postulantes'
+  tabActivo: 'ofertas' | 'empresas' | 'postulantes' | 'buscador'
   pendientesOfertas?: number
   pendientesEmpresas?: number
   pendientesPostulantes?: number
@@ -83,6 +83,18 @@ export function AdminNavTabs({
             {pendientesPostulantes}
           </span>
         )}
+      </Link>
+
+      <Link
+        href="/admin/buscador"
+        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+          tabActivo === 'buscador'
+            ? 'bg-teal-600 text-white shadow-sm'
+            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+        }`}
+      >
+        <UserSearch className="size-4" />
+        <span>Buscador de Perfiles</span>
       </Link>
     </div>
   )

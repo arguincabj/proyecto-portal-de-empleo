@@ -105,7 +105,7 @@ export default async function AdminDashboardPage() {
   const postulantesEnBusqueda = postulantesData.filter((p) => p.estado_laboral !== 'empleado').length
   const postulantesEmpleado = postulantesData.filter((p) => p.estado_laboral === 'empleado').length
 
-  // Vacantes con mayor demanda
+  // Categorías con mayor demanda de postulaciones
   const conteoPostulacionesPorOferta = new Map<string, number>()
   postulacionesData.forEach((p) => {
     if (p.oferta_id) {
@@ -113,14 +113,43 @@ export default async function AdminDashboardPage() {
     }
   })
 
-  const topOfertasPostuladas = ofertas
-    .map((o) => ({
-      titulo: o.titulo,
-      empresa: o.empresa_nombre || 'Empresa local',
-      postulaciones: conteoPostulacionesPorOferta.get(o.id) || (o.postulaciones?.[0]?.count ?? 0),
-    }))
+  // Obtener categorías de cada oferta
+  const { data: ofertaCategoriasData } = await supabaseAdmin
+    .from('oferta_categorias')
+    .select('oferta_id, categoria:categorias(nombre)')
+
+  const conteoPorCategoria = new Map<string, number>()
+  if (ofertaCategoriasData) {
+    for (const oc of ofertaCategoriasData) {
+      const cat = Array.isArray(oc.categoria) ? oc.categoria[0] : oc.categoria
+      const nombre = (cat as { nombre?: string } | null)?.nombre
+      if (!nombre) continue
+      const ofertaId = oc.oferta_id as string
+      const postCount = conteoPostulacionesPorOferta.get(ofertaId) || 0
+      if (postCount > 0) {
+        conteoPorCategoria.set(nombre, (conteoPorCategoria.get(nombre) || 0) + postCount)
+      }
+    }
+  }
+
+  // Ofertas sin categoría asignada
+  const ofertaIdsConCategoria = new Set(
+    (ofertaCategoriasData ?? []).map((oc) => oc.oferta_id as string)
+  )
+  let sinCategoria = 0
+  conteoPostulacionesPorOferta.forEach((count, ofertaId) => {
+    if (!ofertaIdsConCategoria.has(ofertaId)) {
+      sinCategoria += count
+    }
+  })
+  if (sinCategoria > 0) {
+    conteoPorCategoria.set('Sin categoría', (conteoPorCategoria.get('Sin categoría') || 0) + sinCategoria)
+  }
+
+  const topCategoriasPostuladas = Array.from(conteoPorCategoria.entries())
+    .map(([categoria, postulaciones]) => ({ categoria, postulaciones }))
     .sort((a, b) => b.postulaciones - a.postulaciones)
-    .filter((o) => o.postulaciones > 0)
+    .filter((c) => c.postulaciones > 0)
 
   const adminStats: AdminStatsData = {
     totalOfertas,
@@ -142,7 +171,7 @@ export default async function AdminDashboardPage() {
     postulantesEnBusqueda,
     postulantesEmpleado,
 
-    topOfertasPostuladas,
+    topCategoriasPostuladas,
   }
 
   return (

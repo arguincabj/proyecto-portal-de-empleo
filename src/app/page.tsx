@@ -18,6 +18,9 @@ import {
   FileText,
   CheckCircle2,
   MapPin,
+  Sparkles,
+  ShieldCheck,
+  TrendingUp,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -38,22 +41,22 @@ export default async function HomePage() {
       {/* Barra superior de navegación */}
       <header className="w-full bg-sidebar text-sidebar-foreground border-b border-white/10 px-4 sm:px-8 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-90 group" title="Ir al inicio">
             <Image
               src={escudoFunes}
               alt="Escudo de Funes"
               width={40}
               height={40}
               priority
-              className="size-9 shrink-0"
+              className="size-9 shrink-0 group-hover:scale-105 transition-transform"
             />
             <div className="flex flex-col">
-              <span className="text-xs font-bold uppercase tracking-wider text-sidebar-foreground">
+              <span className="text-xs font-bold uppercase tracking-wider text-sidebar-foreground group-hover:text-emerald-300 transition-colors">
                 Municipalidad de Funes
               </span>
               <span className="text-xs text-sidebar-muted">Portal Público de Empleo</span>
             </div>
-          </div>
+          </Link>
 
           <div className="flex items-center gap-3">
             <Link
@@ -130,10 +133,8 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* Círculos decorativos institucionales en el fondo */}
         {/* Elementos e íconos flotantes traslúcidos en el fondo */}
         <div aria-hidden className="pointer-events-none select-none absolute inset-0 overflow-hidden z-0">
-          {/* Marca de agua institucional del Escudo de Funes */}
           <div className="absolute -top-10 left-[35%] -translate-x-1/2 opacity-[0.06] animate-float-1">
             <Image
               src={escudoFunes}
@@ -145,122 +146,159 @@ export default async function HomePage() {
             />
           </div>
 
-          {/* Maletín de Trabajo - Arriba a la izquierda */}
           <div className="absolute top-10 left-[6%] text-emerald-300/15 animate-float-1">
             <Briefcase className="size-16 sm:size-20" strokeWidth={1.4} />
           </div>
 
-          {/* Palacio / Municipalidad - Centro-izquierda detrás del titular */}
           <div className="absolute top-[48%] left-[3%] text-white/10 animate-float-2">
             <Landmark className="size-14 sm:size-18" strokeWidth={1.4} />
           </div>
 
-          {/* Empresas / Comercios locales - Abajo a la izquierda */}
           <div className="absolute bottom-8 left-[24%] text-emerald-200/10 animate-float-3">
             <Building2 className="size-16 sm:size-20" strokeWidth={1.4} />
           </div>
 
-          {/* CV / Postulaciones - Arriba al centro */}
           <div className="absolute top-8 left-[48%] text-white/10 animate-float-4">
             <FileText className="size-12 sm:size-14" strokeWidth={1.4} />
           </div>
 
-          {/* Capacitación / Oficios - Abajo al centro */}
           <div className="absolute bottom-6 left-[46%] text-emerald-300/15 animate-float-2">
             <GraduationCap className="size-14 sm:size-16" strokeWidth={1.4} />
           </div>
 
-          {/* Oportunidad / Respaldo oficial - Arriba a la derecha */}
           <div className="absolute top-8 right-[7%] text-emerald-200/10 animate-float-3">
             <Award className="size-16 sm:size-20" strokeWidth={1.4} />
           </div>
 
-          {/* Ubicación / Territorio Funes - Abajo a la derecha */}
           <div className="absolute bottom-10 right-[10%] text-white/10 animate-float-1">
             <MapPin className="size-12 sm:size-16" strokeWidth={1.4} />
           </div>
 
-          {/* Match / Postulación exitosa - Lateral derecho */}
           <div className="absolute top-[48%] right-[2%] text-emerald-300/10 animate-float-4">
             <CheckCircle2 className="size-14 sm:size-16" strokeWidth={1.4} />
           </div>
         </div>
 
-        {/* Círculos decorativos institucionales en el fondo */}
         <div aria-hidden className="pointer-events-none absolute -right-24 -bottom-36 size-96 rounded-full border border-white/5 opacity-50" />
       </section>
 
-      {/* Sección Selección de Registro / Tipos de Cuenta */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-8 py-16 w-full flex-1">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-            Registro en el Portal
-          </span>
-          <h2 className="text-3xl font-extrabold text-gray-900 mt-3 tracking-tight">
-            Elegí cómo querés participar
-          </h2>
-          <p className="text-sm text-gray-600 mt-2">
-            Seleccioná tu perfil para registrarte y acceder a las herramientas correspondientes.
-          </p>
-        </div>
-
-        {/* Las 2 Tarjetas de Perfil */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          {/* 1. Postulante */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-7 shadow-sm hover:shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between group">
-            <div className="space-y-4">
-              <div className="size-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <UserCheck className="size-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Soy Postulante</h3>
-                <p className="text-xs font-medium text-emerald-700 mt-0.5">Busco empleo o nuevas oportunidades</p>
-              </div>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                Cargá tu currículum vitae, postulate con un solo clic a las vacantes publicadas y hacé seguimiento en vivo de tus derivaciones.
-              </p>
-            </div>
-
-            <div className="pt-6 mt-6 border-t border-gray-100">
-              <Link
-                href="/auth/registro/postulante"
-                className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2.5 px-4 rounded-xl transition-colors shadow-sm"
-              >
-                <span>Registrarme como postulante</span>
-                <ArrowRight className="size-3.5" />
-              </Link>
-            </div>
+      {/* Sección Selección de Registro / Tipos de Cuenta - Distribuida a lo ancho */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-8 py-14 sm:py-20 w-full flex-1 space-y-16">
+        <div>
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              Registro en el Portal
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mt-3 tracking-tight">
+              Elegí cómo querés participar
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 mt-2">
+              Seleccioná tu perfil para registrarte y acceder a las herramientas correspondientes.
+            </p>
           </div>
 
-          {/* 2. Empresa */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-7 shadow-sm hover:shadow-md hover:border-teal-500/50 transition-all flex flex-col justify-between group">
-            <div className="space-y-4">
-              <div className="size-12 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Building2 className="size-6" />
+          {/* Las 2 Tarjetas de Perfil con ancho completo y balanceado */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 w-full">
+            {/* 1. Postulante */}
+            <div className="bg-white rounded-3xl border border-gray-200/90 p-8 sm:p-10 shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-all flex flex-col justify-between group">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div className="size-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
+                    <UserCheck className="size-7" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50/80 px-2.5 py-1 rounded-full border border-emerald-100">
+                    Búsqueda laboral
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
+                    Soy Postulante
+                  </h3>
+                  <p className="text-sm font-semibold text-emerald-700 mt-1">Busco empleo o nuevas oportunidades</p>
+                </div>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Cargá tu currículum vitae, postulate con un solo clic a las vacantes publicadas de la ciudad y hacé seguimiento en vivo del estado de tus derivaciones con el equipo municipal.
+                </p>
+
+                <div className="pt-2 space-y-2 text-xs text-gray-500 border-t border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+                    <span>Hasta 3 currículums especializados por perfil</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+                    <span>Notificaciones directas de entrevistas acordadas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+                    <span>Acompañamiento y capacitaciones de empleo</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Soy Empresa</h3>
-                <p className="text-xs font-medium text-teal-700 mt-0.5">Comercio, PyME o profesional local</p>
+
+              <div className="pt-8 mt-6 border-t border-gray-100">
+                <Link
+                  href="/auth/registro/postulante"
+                  className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3.5 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg hover:scale-[1.01]"
+                >
+                  <span>Registrarme como postulante</span>
+                  <ArrowRight className="size-4" />
+                </Link>
               </div>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                Publicá búsquedas laborales, recibí postulantes filtrados por el equipo municipal y gestioná tus selecciones en tu propio panel.
-              </p>
             </div>
 
-            <div className="pt-6 mt-6 border-t border-gray-100">
-              <Link
-                href="/auth/registro/empresa"
-                className="w-full inline-flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs py-2.5 px-4 rounded-xl transition-colors shadow-sm"
-              >
-                <span>Registrar mi empresa</span>
-                <ArrowRight className="size-3.5" />
-              </Link>
+            {/* 2. Empresa */}
+            <div className="bg-white rounded-3xl border border-gray-200/90 p-8 sm:p-10 shadow-sm hover:shadow-xl hover:border-teal-500/50 transition-all flex flex-col justify-between group">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div className="size-14 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
+                    <Building2 className="size-7" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-teal-700 bg-teal-50/80 px-2.5 py-1 rounded-full border border-teal-100">
+                    Contrataciones
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 group-hover:text-teal-700 transition-colors">
+                    Soy Empresa
+                  </h3>
+                  <p className="text-sm font-semibold text-teal-700 mt-1">Comercio, PyME o profesional local</p>
+                </div>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Publicá búsquedas laborales para tu negocio, recibí postulantes preseleccionados y filtrados por el equipo municipal, y gestioná el proceso de contratación en tu propio panel exclusivo.
+                </p>
+
+                <div className="pt-2 space-y-2 text-xs text-gray-500 border-t border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 text-teal-600 shrink-0" />
+                    <span>Publicación y difusión de ofertas sin costo</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 text-teal-600 shrink-0" />
+                    <span>Preselección de candidatos idóneos por la Oficina de Empleo</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 text-teal-600 shrink-0" />
+                    <span>Panel privado de gestión de candidatos y derivaciones</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-8 mt-6 border-t border-gray-100">
+                <Link
+                  href="/auth/registro/empresa"
+                  className="w-full inline-flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm py-3.5 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg hover:scale-[1.01]"
+                >
+                  <span>Registrar mi empresa</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Carrusel Ciudad de Funes e Instagram Oficial */}
-        <div className="mt-16 max-w-4xl mx-auto">
+        {/* Carrusel Ciudad de Funes e Instagram Oficial - Ocupando el contenedor completo */}
+        <div className="w-full">
           <FunesCiudadCarousel />
         </div>
       </section>

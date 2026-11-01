@@ -12,10 +12,12 @@ import {
   Pencil,
   Save,
   LoaderCircle,
+  Tag,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { actualizarPerfilLaboral } from './actions'
+import { MultiSelectCategorias } from '@/components/perfil/multi-select-categorias'
 
 export type PerfilLaboralValues = {
   estudios: string
@@ -24,6 +26,7 @@ export type PerfilLaboralValues = {
   idiomas: string
   habilidades: string
   horarios: string
+  categorias?: string[]
 }
 
 type Props = {
@@ -35,17 +38,23 @@ export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
   const router = useRouter()
   const [editando, setEditando] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const [valores, setValores] = useState<PerfilLaboralValues>(defaultValues)
+  const [valores, setValores] = useState<PerfilLaboralValues>({
+    ...defaultValues,
+    categorias: defaultValues.categorias ?? [],
+  })
 
   function handleChange(
     campo: keyof PerfilLaboralValues,
-    valor: string
+    valor: string | string[]
   ) {
     setValores((prev) => ({ ...prev, [campo]: valor }))
   }
 
   function handleCancelar() {
-    setValores(defaultValues)
+    setValores({
+      ...defaultValues,
+      categorias: defaultValues.categorias ?? [],
+    })
     setEditando(false)
   }
 
@@ -58,6 +67,7 @@ export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
     fd.append('idiomas', valores.idiomas)
     fd.append('habilidades', valores.habilidades)
     fd.append('horarios', valores.horarios)
+    fd.append('categorias', JSON.stringify(valores.categorias ?? []))
 
     startTransition(async () => {
       try {
@@ -77,9 +87,38 @@ export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
     })
   }
 
+  const categoriasSeleccionadas = valores.categorias ?? []
+
   if (!editando) {
     return (
       <div className="space-y-6">
+        {/* Categorías laborales en modo visualización */}
+        <div className="rounded-xl border border-border/70 bg-background/50 p-4">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary-600">
+            <Tag className="size-4" aria-hidden />
+            <span>Categorías laborales de interés</span>
+          </div>
+          <div className="mt-2.5">
+            {categoriasSeleccionadas.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {categoriasSeleccionadas.map((cat) => (
+                  <span
+                    key={cat}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700 dark:bg-primary-950/60 dark:text-primary-300 border border-primary-200/60 dark:border-primary-800/60"
+                  >
+                    <Briefcase className="size-3 text-primary-600 dark:text-primary-400" />
+                    <span>{cat}</span>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                Sin categorías seleccionadas (elegí las áreas o rubros donde buscás trabajo para recibir mejores ofertas).
+              </p>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <ItemPerfilLaboral
             icon={GraduationCap}
@@ -136,6 +175,29 @@ export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Selector múltiple de Categorías Laborales */}
+      <div>
+        <label
+          className="mb-1.5 flex items-center justify-between text-sm font-semibold text-foreground"
+        >
+          <span className="flex items-center gap-2">
+            <Tag className="size-4 text-primary-600" aria-hidden />
+            Categorías laborales de tu interés
+          </span>
+          <span className="text-xs font-normal text-muted-foreground">
+            Podés seleccionar varias
+          </span>
+        </label>
+        <MultiSelectCategorias
+          selected={categoriasSeleccionadas}
+          onChange={(nuevas) => handleChange('categorias', nuevas)}
+          disabled={isPending}
+        />
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          Elegí los rubros y áreas en las que te interesa postularte o tenés experiencia.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <div>
           <label

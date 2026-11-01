@@ -1,0 +1,27 @@
+export const CATEGORIAS_LABORALES = [
+  'Administración y Gestión',
+  'Atención al Cliente y Call Center',
+  'Comercio y Ventas',
+  'Construcción y Obras',
+  'Educación, Docencia y Capacitación',
+  'Gastronomía y Cocina',
+  'Hotelería, Turismo y Recreación',
+  'Informática, Software y Sistemas',
+  'Logística, Transporte y Distribución',
+  'Mantenimiento, Oficios e Instalaciones',
+  'Producción, Fábrica y Manufactura',
+  'Salud, Enfermería y Cuidado de Personas',
+  'Seguridad y Vigilancia',
+  'Servicios Generales y Limpieza',
+  'Contabilidad, Finanzas y Legales',
+  'Recursos Humanos y Selección',
+  'Marketing, Publicidad y Redes Sociales',
+  'Diseño Gráfico, Audiovisual y Multimedia',
+  'Agro, Jardinería y Espacios Verdes',
+  'Estética, Belleza y Cuidado Personal',
+  'Reparación Técnica y Electromecánica',
+  'Cadetería, Reparto y Mensajería',
+  'Otro',
+] as const
+
+export type CategoriaLaboral = (typeof CATEGORIAS_LABORALES)[number]
