@@ -18,9 +18,6 @@ import {
   FileText,
   CheckCircle2,
   MapPin,
-  Sparkles,
-  ShieldCheck,
-  TrendingUp,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'

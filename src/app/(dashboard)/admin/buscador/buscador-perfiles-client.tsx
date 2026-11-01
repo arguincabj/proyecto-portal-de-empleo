@@ -18,8 +18,6 @@ import {
   IdCard,
   Sparkles,
   ChevronDown,
-  UserCheck,
-  Building,
 } from 'lucide-react'
 import { Paginacion } from '@/components/ui/paginacion'
 

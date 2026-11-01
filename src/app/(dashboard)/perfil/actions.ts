@@ -146,7 +146,7 @@ export async function actualizarPerfilLaboral(formData: FormData): Promise<Actio
       }
     }
 
-    let errorPostulante: any = null
+    let errorPostulante: unknown = null
     const resConCategorias = await supabaseAdmin
       .from('postulantes')
       .update({

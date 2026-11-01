@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Check, ChevronsUpDown, X, Briefcase, Search } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { CATEGORIAS_LABORALES, type CategoriaLaboral } from '@/constants/categorias-laborales'
+import { CATEGORIAS_LABORALES } from '@/constants/categorias-laborales'
 
 interface MultiSelectCategoriasProps {
   selected: string[]

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Search, Briefcase, LoaderCircle } from 'lucide-react'
+import { Search, Briefcase } from 'lucide-react'
 import { toast } from 'sonner'
 import { actualizarEstadoLaboral } from './actions'
 
@@ -35,8 +35,6 @@ const ESTADOS = {
 export function EstadoLaboralToggle({ defaultEstado }: Props) {
   const [estado, setEstado] = useState<EstadoLaboral>(defaultEstado)
   const [isPending, startTransition] = useTransition()
-
-  const estadoActual = ESTADOS[estado]
 
   function handleCambiar(nuevoEstado: EstadoLaboral) {
     if (nuevoEstado === estado || isPending) return

@@ -3,7 +3,6 @@
 import { useState, useRef, useTransition, useEffect } from 'react'
 import {
   Camera,
-  Upload,
   Trash2,
   ZoomIn,
   ZoomOut,
@@ -38,9 +37,19 @@ export function FotoPerfilUpload({
   const [datosPersona, setDatosPersona] = useState({ nombre, apellido })
   const [estado, setEstado] = useState<'en_busqueda' | 'trabajando'>(estadoLaboral)
 
-  useEffect(() => {
+  const [prevNombre, setPrevNombre] = useState(nombre)
+  const [prevApellido, setPrevApellido] = useState(apellido)
+  if (prevNombre !== nombre || prevApellido !== apellido) {
+    setPrevNombre(nombre)
+    setPrevApellido(apellido)
+    setDatosPersona({ nombre, apellido })
+  }
+
+  const [prevEstadoLaboral, setPrevEstadoLaboral] = useState(estadoLaboral)
+  if (prevEstadoLaboral !== estadoLaboral) {
+    setPrevEstadoLaboral(estadoLaboral)
     setEstado(estadoLaboral)
-  }, [estadoLaboral])
+  }
 
   useEffect(() => {
     function onEstadoLaboralActualizado(e: Event) {
@@ -52,10 +61,6 @@ export function FotoPerfilUpload({
     window.addEventListener('estado-laboral-actualizado', onEstadoLaboralActualizado)
     return () => window.removeEventListener('estado-laboral-actualizado', onEstadoLaboralActualizado)
   }, [])
-
-  useEffect(() => {
-    setDatosPersona({ nombre, apellido })
-  }, [nombre, apellido])
 
   useEffect(() => {
     function onPerfilActualizado(e: Event) {

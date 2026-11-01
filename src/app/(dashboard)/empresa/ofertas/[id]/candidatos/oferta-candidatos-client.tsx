@@ -75,17 +75,17 @@ const ESTADOS_MAP: Record<string, { label: string; badgeClass: string; icon: typ
     icon: Clock,
   },
   en_proceso: {
-    label: 'En revisión / Entrevista',
+    label: 'En revisión',
     badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
     icon: Clock,
   },
   contratado: {
-    label: 'Solicitud aceptada',
+    label: 'Contratado',
     badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
     icon: CheckCircle2,
   },
   rechazado: {
-    label: 'Solicitud denegada',
+    label: 'Rechazado',
     badgeClass: 'bg-red-50 text-red-800 border-red-200',
     icon: XCircle,
   },
@@ -122,8 +122,8 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
             )
           )
           const labels: Record<string, string> = {
-            contratado: 'Solicitud aceptada exitosamente',
-            rechazado: 'Solicitud denegada',
+            contratado: 'Candidato marcado como contratado',
+            rechazado: 'Candidato marcado como rechazado',
             en_proceso: 'Candidato puesto en revisión',
             pendiente: 'Estado restablecido a pendiente',
           }
@@ -143,8 +143,8 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
     total: candidatos.length,
     pendientes: candidatos.filter((c) => (c.estadoEmpresa || 'pendiente') === 'pendiente').length,
     en_proceso: candidatos.filter((c) => c.estadoEmpresa === 'en_proceso').length,
-    aceptados: candidatos.filter((c) => c.estadoEmpresa === 'contratado').length,
-    denegados: candidatos.filter((c) => c.estadoEmpresa === 'rechazado').length,
+    contratados: candidatos.filter((c) => c.estadoEmpresa === 'contratado').length,
+    rechazados: candidatos.filter((c) => c.estadoEmpresa === 'rechazado').length,
   }
 
   return (
@@ -215,12 +215,12 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
             <span className="text-xl font-bold text-amber-900">{conteo.en_proceso}</span>
           </div>
           <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100">
-            <span className="text-xs text-emerald-800 block">Aceptados</span>
-            <span className="text-xl font-bold text-emerald-900">{conteo.aceptados}</span>
+            <span className="text-xs text-emerald-800 block">Contratados</span>
+            <span className="text-xl font-bold text-emerald-900">{conteo.contratados}</span>
           </div>
           <div className="p-3 rounded-xl bg-red-50/60 border border-red-100">
-            <span className="text-xs text-red-800 block">Denegados</span>
-            <span className="text-xl font-bold text-red-900">{conteo.denegados}</span>
+            <span className="text-xs text-red-800 block">Rechazados</span>
+            <span className="text-xl font-bold text-red-900">{conteo.rechazados}</span>
           </div>
         </div>
       </div>
@@ -270,7 +270,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
               : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
           }`}
         >
-          Aceptados ({conteo.aceptados})
+          Contratados ({conteo.contratados})
         </button>
         <button
           type="button"
@@ -281,7 +281,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
               : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
           }`}
         >
-          Denegados ({conteo.denegados})
+          Rechazados ({conteo.rechazados})
         </button>
       </div>
 
@@ -358,17 +358,17 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                     {estadoActual === 'contratado' ? (
                       <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
                         <CheckCircle2 className="size-4 text-emerald-600" />
-                        <span>Aceptado/a</span>
+                        <span>Contratado</span>
                       </span>
                     ) : estadoActual === 'en_proceso' ? (
                       <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
                         <Clock className="size-4 text-amber-600" />
-                        <span>En revisión / Entrevista</span>
+                        <span>En revisión</span>
                       </span>
                     ) : estadoActual === 'rechazado' ? (
                       <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-red-100 text-red-800 border border-red-300 shadow-2xs">
                         <XCircle className="size-4 text-red-600" />
-                        <span>Denegado/a</span>
+                        <span>Rechazado</span>
                       </span>
                     ) : (
                       <>
@@ -380,7 +380,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                           title="Aceptar este candidato para el puesto"
                         >
                           <CheckCircle2 className="size-3.5" />
-                          <span>Aceptar solicitud</span>
+                          <span>Contratado</span>
                         </button>
 
                         <button
@@ -402,7 +402,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                           title="Denegar la postulación del candidato"
                         >
                           <XCircle className="size-3.5" />
-                          <span>Denegar solicitud</span>
+                          <span>Rechazado</span>
                         </button>
                       </>
                     )}
@@ -528,7 +528,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                 <ul className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2 pt-2 border-t border-teal-200/60 font-medium">
                   <li className="flex items-start gap-1.5">
                     <span className="size-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                    <span><strong className="text-emerald-900">Aceptar:</strong> El perfil es adecuado y se lo convoca a entrevista o incorporación.</span>
+                    <span><strong className="text-emerald-900">Contratado:</strong> El postulante ha sido seleccionado e incorporado.</span>
                   </li>
                   <li className="flex items-start gap-1.5">
                     <span className="size-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
@@ -536,7 +536,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                   </li>
                   <li className="flex items-start gap-1.5">
                     <span className="size-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
-                    <span><strong className="text-red-900">Denegar:</strong> No cumple con el perfil requerido y no se avanzará con entrevista.</span>
+                    <span><strong className="text-red-900">Rechazado:</strong> No cumple con el perfil requerido y no se continuará con el proceso.</span>
                   </li>
                 </ul>
               </div>
@@ -553,17 +553,17 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                   {perfilModal.estadoEmpresa === 'contratado' ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                       <CheckCircle2 className="size-3.5 text-emerald-600" />
-                      <span>Aceptado/a</span>
+                      <span>Contratado</span>
                     </span>
                   ) : perfilModal.estadoEmpresa === 'en_proceso' ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
                       <Clock className="size-3.5 text-amber-600" />
-                      <span>En revisión / Entrevista</span>
+                      <span>En revisión</span>
                     </span>
                   ) : perfilModal.estadoEmpresa === 'rechazado' ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-100 text-red-800 border border-red-300">
                       <XCircle className="size-3.5 text-red-600" />
-                      <span>Denegado/a</span>
+                      <span>Rechazado</span>
                     </span>
                   ) : (
                     <>
@@ -574,7 +574,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-emerald-600 hover:bg-emerald-700 text-white"
                       >
-                        Aceptar
+                        Contratar
                       </button>
                       <button
                         type="button"
@@ -592,7 +592,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-red-600 hover:bg-red-700 text-white"
                       >
-                        Denegar
+                        Rechazar
                       </button>
                     </>
                   )}
@@ -796,11 +796,11 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
 
         const infoConfig = {
           contratado: {
-            titulo: '¿Confirmás aceptar esta solicitud?',
-            descripcion: `Estás a punto de aceptar la solicitud de ${nombre} para el puesto "${oferta.titulo}". Esta decisión quedará asentada y no podrás volver a cambiarla.`,
-            botonTexto: 'Sí, confirmar aceptación',
+            titulo: '¿Confirmás marcar como contratado?',
+            descripcion: `Estás a punto de confirmar como contratado/a a ${nombre} para el puesto "${oferta.titulo}". Esta decisión quedará asentada y no podrás volver a cambiarla.`,
+            botonTexto: 'Sí, confirmar contratación',
             botonColor: 'bg-emerald-600 hover:bg-emerald-700 text-white',
-            badge: 'Aceptado/a',
+            badge: 'Contratado',
             badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
             icono: CheckCircle2,
           },
@@ -809,16 +809,16 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
             descripcion: `Estás a punto de pasar a ${nombre} a etapa de revisión y entrevista interna. Esta decisión quedará guardada como definitiva.`,
             botonTexto: 'Sí, poner en revisión',
             botonColor: 'bg-amber-600 hover:bg-amber-700 text-white',
-            badge: 'En revisión / Entrevista',
+            badge: 'En revisión',
             badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
             icono: Clock,
           },
           rechazado: {
-            titulo: '¿Confirmás denegar esta solicitud?',
-            descripcion: `Estás a punto de denegar la postulación de ${nombre} para esta oferta. Esta acción no se puede deshacer.`,
-            botonTexto: 'Sí, denegar solicitud',
+            titulo: '¿Confirmás rechazar a este candidato?',
+            descripcion: `Estás a punto de rechazar la postulación de ${nombre} para esta oferta. Esta acción no se puede deshacer.`,
+            botonTexto: 'Sí, rechazar candidato',
             botonColor: 'bg-red-600 hover:bg-red-700 text-white',
-            badge: 'Denegado/a',
+            badge: 'Rechazado',
             badgeClass: 'bg-red-100 text-red-800 border-red-300',
             icono: XCircle,
           },
