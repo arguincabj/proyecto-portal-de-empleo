@@ -30,29 +30,32 @@ export default async function BuscadorPerfilesPage() {
     redirect('/inicio')
   }
 
-  // 2. Contadores para los tabs de administración
-  const [{ count: countOfertas }, { count: countEmpresas }, { count: countPostulantes }, { count: countRechazados }] =
-    await Promise.all([
-      supabaseAdmin
-        .from('ofertas')
-        .select('*', { count: 'exact', head: true })
-        .eq('estado', 'borrador'),
-      supabaseAdmin
-        .from('empresas')
-        .select('*', { count: 'exact', head: true })
-        .eq('estado_aprobacion', 'pendiente'),
-      supabaseAdmin
-        .from('postulaciones')
-        .select('*', { count: 'exact', head: true })
-        .in('estado', ['recibida', 'en_revision']),
-      supabaseAdmin
-        .from('derivaciones')
-        .select('*', { count: 'exact', head: true })
-        .eq('estado_empresa', 'rechazado'),
-    ])
+  // 2. Contadores para los tabs de administración (idénticos a los de gestión de postulantes)
+  const [
+    { count: ofertasPendientesCount },
+    { count: empresasPendientesCount },
+    { count: postulantesPendientesCount },
+    { count: totalRechazadosCount },
+  ] = await Promise.all([
+    supabaseAdmin
+      .from('ofertas')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'pendiente'),
+    supabaseAdmin
+      .from('empresas')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado_aprobacion', 'pendiente'),
+    supabaseAdmin
+      .from('postulaciones')
+      .select('id', { count: 'exact', head: true })
+      .in('estado', ['recibida', 'en_revision']),
+    supabaseAdmin
+      .from('derivaciones')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado_empresa', 'rechazado'),
+  ])
 
   // 3. Consultar todos los postulantes con su información completa
-  // Se intenta con los campos completos (incluye localidad, direccion, codigo_postal si existen)
   let listaPostulantes: Array<{
     id: string
     usuario_id: string
@@ -127,15 +130,15 @@ export default async function BuscadorPerfilesPage() {
     }
   }
 
-  const usuarioIds = listaPostulantes.map((p) => p.usuario_id).filter(Boolean) as string[]
+  const usuarioIds = Array.from(new Set(listaPostulantes.map((p) => p.usuario_id).filter(Boolean) as string[]))
   const postulanteIds = listaPostulantes.map((p) => p.id)
 
   // 4. Consultar datos de usuario (nombre, apellido, email, telefono)
-  const usuariosMap = new Map<string, { nombre: string; apellido: string; email: string | null; telefono: string | null }>()
+  const usuariosMap = new Map<string, { nombre: string; apellido: string; email: string | null; telefono: string | null; dni?: string | null }>()
   if (usuarioIds.length > 0) {
     const { data: usuariosData } = await supabaseAdmin
       .from('usuarios')
-      .select('id, nombre, apellido, email, telefono')
+      .select('id, nombre, apellido, email, telefono, dni')
       .in('id', usuarioIds)
 
     if (usuariosData) {
@@ -145,10 +148,29 @@ export default async function BuscadorPerfilesPage() {
           apellido: u.apellido,
           email: u.email ?? null,
           telefono: u.telefono ?? null,
+          dni: u.dni ?? null,
         })
       })
     }
   }
+
+  // 4.1. Auth metadata y emails de respaldo mediante Auth Admin
+  const authEmailMap = new Map<string, string>()
+  const authMetadataMap = new Map<string, Record<string, unknown>>()
+
+  await Promise.all(
+    usuarioIds.map(async (uid) => {
+      try {
+        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(uid)
+        if (authUser?.user) {
+          if (authUser.user.email) authEmailMap.set(uid, authUser.user.email)
+          if (authUser.user.user_metadata) authMetadataMap.set(uid, authUser.user.user_metadata)
+        }
+      } catch {
+        // ignora
+      }
+    })
+  )
 
   // 5. Consultar CVs de la tabla curricula
   type CurriculaRow = {
@@ -194,9 +216,10 @@ export default async function BuscadorPerfilesPage() {
   await Promise.all(
     Array.from(todosLosCvPaths).map(async (path) => {
       try {
+        const cleanPath = path.startsWith('curricula/') ? path.replace('curricula/', '') : path
         const { data } = await supabaseAdmin.storage
           .from(CV_BUCKET)
-          .createSignedUrl(path, 3600)
+          .createSignedUrl(cleanPath, 3600)
         if (data?.signedUrl) {
           signedUrlsMap[path] = data.signedUrl
         }
@@ -228,7 +251,39 @@ export default async function BuscadorPerfilesPage() {
 
   // 8. Modelar la lista consolidada de postulantes para el cliente
   const postulantesParaCliente: PostulanteBuscadorItem[] = listaPostulantes.map((p) => {
-    const usuarioInfo = p.usuario_id ? usuariosMap.get(p.usuario_id) ?? null : null
+    const rawUser = p.usuario_id ? usuariosMap.get(p.usuario_id) ?? null : null
+    const userMeta = (p.usuario_id ? authMetadataMap.get(p.usuario_id) : null) || {}
+
+    const metaNombre =
+      (typeof userMeta.nombre === 'string' && userMeta.nombre.trim()) ||
+      (typeof userMeta.full_name === 'string' && userMeta.full_name.trim().split(' ')[0]) ||
+      (typeof userMeta.name === 'string' && userMeta.name.trim().split(' ')[0]) ||
+      null
+
+    const metaApellido =
+      (typeof userMeta.apellido === 'string' && userMeta.apellido.trim()) ||
+      (typeof userMeta.full_name === 'string' && userMeta.full_name.trim().split(' ').slice(1).join(' ')) ||
+      null
+
+    const userEmailRaw = rawUser?.email || (p.usuario_id ? authEmailMap.get(p.usuario_id) : null) || (typeof userMeta.email === 'string' ? userMeta.email : null)
+    let fallbackNombre = ''
+    if (!rawUser?.nombre && !metaNombre && userEmailRaw) {
+      const emailUsername = userEmailRaw.split('@')[0]
+      fallbackNombre = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1)
+    }
+
+    const resolvedNombre = rawUser?.nombre || metaNombre || fallbackNombre || ''
+    const resolvedApellido = rawUser?.apellido || metaApellido || ''
+    const resolvedDni = p.dni || rawUser?.dni || (typeof userMeta.dni === 'string' ? userMeta.dni : null)
+    const resolvedTelefono = rawUser?.telefono ?? (typeof userMeta.telefono === 'string' ? userMeta.telefono : null)
+
+    const usuarioInfo = {
+      nombre: resolvedNombre,
+      apellido: resolvedApellido,
+      email: userEmailRaw,
+      telefono: resolvedTelefono,
+    }
+
     const curriculaDelPostulante = curriculaMap.get(p.id) || []
 
     const curriculaFormateadas = curriculaDelPostulante.map((c) => ({
@@ -250,7 +305,7 @@ export default async function BuscadorPerfilesPage() {
 
     return {
       id: p.id,
-      dni: p.dni,
+      dni: resolvedDni,
       cv_url: p.cv_url,
       localidad: p.localidad ?? null,
       direccion: p.direccion ?? null,
@@ -288,13 +343,13 @@ export default async function BuscadorPerfilesPage() {
         </div>
       </div>
 
-      {/* Navegación por pestañas de Administración */}
+      {/* Navegación por pestañas de Administración con contadores correctos */}
       <AdminNavTabs
-        totalRechazados={countRechazados ?? 0}
         tabActivo="buscador"
-        pendientesOfertas={countOfertas ?? 0}
-        pendientesEmpresas={countEmpresas ?? 0}
-        pendientesPostulantes={countPostulantes ?? 0}
+        pendientesOfertas={ofertasPendientesCount ?? 0}
+        pendientesEmpresas={empresasPendientesCount ?? 0}
+        pendientesPostulantes={postulantesPendientesCount ?? 0}
+        totalRechazados={totalRechazadosCount ?? 0}
       />
 
       {/* Componente Cliente Interactivo con Buscador y Filtros */}

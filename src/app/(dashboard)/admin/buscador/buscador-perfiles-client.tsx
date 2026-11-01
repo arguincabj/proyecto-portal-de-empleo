@@ -84,8 +84,21 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
     return Array.from(locs).sort((a, b) => a.localeCompare(b))
   }, [postulantes])
 
-  // Filtrado reactivo
+  // Detectar si el usuario escribió en el buscador o aplicó algún filtro
+  const hayBusquedaActiva =
+    textoBusqueda.trim() !== '' ||
+    filtroHabilidad.trim() !== '' ||
+    filtroCategoria.trim() !== '' ||
+    filtroEstadoLaboral !== 'todos' ||
+    filtroConCv !== 'todos' ||
+    filtroLocalidad.trim() !== ''
+
+  // Filtrado reactivo: NO muestra postulantes hasta escribir algo en el buscador o aplicar un filtro
   const postulantesFiltrados = useMemo(() => {
+    if (!hayBusquedaActiva) {
+      return []
+    }
+
     return postulantes.filter((p) => {
       const q = textoBusqueda.trim().toLowerCase()
       if (q) {
@@ -150,6 +163,7 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
     })
   }, [
     postulantes,
+    hayBusquedaActiva,
     textoBusqueda,
     filtroHabilidad,
     filtroCategoria,
@@ -343,10 +357,14 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
 
         {/* Resumen de resultados */}
         <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
-          <span>
-            Mostrando <strong className="text-gray-900">{postulantesFiltrados.length}</strong> postulantes
-            {hayFiltrosActivos && ` (filtrados de un total de ${postulantes.length})`}
-          </span>
+          {hayBusquedaActiva ? (
+            <span>
+              Mostrando <strong className="text-gray-900">{postulantesFiltrados.length}</strong> postulantes encontrados
+              {hayFiltrosActivos && ` (de un total de ${postulantes.length})`}
+            </span>
+          ) : (
+            <span>Ingresá un término de búsqueda para consultar la base de perfiles ({postulantes.length} postulantes registrados)</span>
+          )}
           {hayFiltrosActivos && (
             <span className="text-teal-700 font-medium">Filtros aplicados</span>
           )}
@@ -354,23 +372,31 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
       </div>
 
       {/* Listado de Tarjetas de Postulantes */}
-      {postulantesFiltrados.length === 0 ? (
+      {!hayBusquedaActiva ? (
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-xs">
           <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-700 mb-4">
+            <Search className="size-7" />
+          </div>
+          <h3 className="text-base font-bold text-gray-900">Escribí en el buscador para ver postulantes</h3>
+          <p className="mt-1 text-sm text-gray-500 max-w-md mx-auto">
+            Ingresá un nombre, apellido, DNI, habilidades o seleccioná un filtro avanzado para consultar perfiles.
+          </p>
+        </div>
+      ) : postulantesFiltrados.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-xs">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-4">
             <Users className="size-7" />
           </div>
           <h3 className="text-base font-bold text-gray-900">No se encontraron postulantes</h3>
           <p className="mt-1 text-sm text-gray-500 max-w-md mx-auto">
-            Probá modificando los términos de búsqueda o limpiando los filtros para ver todos los candidatos registrados.
+            No hay candidatos que coincidan con los términos de búsqueda ingresados.
           </p>
-          {hayFiltrosActivos && (
-            <button
-              onClick={limpiarFiltros}
-              className="mt-4 px-4 py-2 rounded-xl bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors"
-            >
-              Limpiar todos los filtros
-            </button>
-          )}
+          <button
+            onClick={limpiarFiltros}
+            className="mt-4 px-4 py-2 rounded-xl bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors"
+          >
+            Limpiar búsqueda y filtros
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

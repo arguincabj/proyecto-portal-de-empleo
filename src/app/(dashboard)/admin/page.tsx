@@ -4,8 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from './admin-nav-tabs'
 import { ListaOfertasAdmin, OfertaAdminItem } from './lista-ofertas-admin'
-import { AdminMetricasGraficos, type AdminStatsData } from './admin-metricas-graficos'
-import { Shield, AlertTriangle, ExternalLink } from 'lucide-react'
+import { Shield, AlertTriangle, ExternalLink, Clock, CheckCircle2, XCircle, Briefcase } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,16 +73,7 @@ export default async function AdminDashboardPage() {
 
   const ofertas = (ofertasRaw ?? []) as unknown as OfertaAdminItem[]
 
-  // 2. Obtener datos reales de empresas, postulaciones y postulantes para métricas y gráficos
-  const [empresasRes, postulacionesRes, postulantesRes] = await Promise.all([
-    supabaseAdmin.from('empresas').select('id, estado_aprobacion, rubro'),
-    supabaseAdmin.from('postulaciones').select('id, oferta_id, estado'),
-    supabaseAdmin.from('postulantes').select('id, estado_laboral'),
-  ])
 
-  const empresasData = empresasRes.data ?? []
-  const postulacionesData = postulacionesRes.data ?? []
-  const postulantesData = postulantesRes.data ?? []
 
   // Calcular métricas de ofertas
   const { count: countRechazados } = await supabaseAdmin
@@ -95,89 +85,6 @@ export default async function AdminDashboardPage() {
   const pendientes = ofertas.filter((o) => o.estado === 'pendiente').length
   const publicadas = ofertas.filter((o) => o.estado === 'publicada').length
   const cerradas = ofertas.filter((o) => o.estado === 'cerrada').length
-
-  // Métricas de empresas
-  const empresasAprobadas = empresasData.filter((e) => e.estado_aprobacion === 'aprobada').length
-  const empresasPendientes = empresasData.filter((e) => e.estado_aprobacion === 'pendiente').length
-  const empresasRechazadas = empresasData.filter((e) => e.estado_aprobacion === 'rechazada').length
-
-  // Métricas de postulaciones
-  const postDerivadas = postulacionesData.filter((p) => p.estado === 'derivada').length
-  const postRecibidas = postulacionesData.filter((p) => p.estado === 'recibida' || p.estado === 'en_revision').length
-  const postRechazadas = postulacionesData.filter((p) => p.estado === 'rechazada_municipalidad').length
-
-  // Métricas de postulantes
-  const postulantesEnBusqueda = postulantesData.filter((p) => p.estado_laboral !== 'empleado').length
-  const postulantesEmpleado = postulantesData.filter((p) => p.estado_laboral === 'empleado').length
-
-  // Categorías con mayor demanda de postulaciones
-  const conteoPostulacionesPorOferta = new Map<string, number>()
-  postulacionesData.forEach((p) => {
-    if (p.oferta_id) {
-      conteoPostulacionesPorOferta.set(p.oferta_id, (conteoPostulacionesPorOferta.get(p.oferta_id) || 0) + 1)
-    }
-  })
-
-  // Obtener categorías de cada oferta
-  const { data: ofertaCategoriasData } = await supabaseAdmin
-    .from('oferta_categorias')
-    .select('oferta_id, categoria:categorias(nombre)')
-
-  const conteoPorCategoria = new Map<string, number>()
-  if (ofertaCategoriasData) {
-    for (const oc of ofertaCategoriasData) {
-      const cat = Array.isArray(oc.categoria) ? oc.categoria[0] : oc.categoria
-      const nombre = (cat as { nombre?: string } | null)?.nombre
-      if (!nombre) continue
-      const ofertaId = oc.oferta_id as string
-      const postCount = conteoPostulacionesPorOferta.get(ofertaId) || 0
-      if (postCount > 0) {
-        conteoPorCategoria.set(nombre, (conteoPorCategoria.get(nombre) || 0) + postCount)
-      }
-    }
-  }
-
-  // Ofertas sin categoría asignada
-  const ofertaIdsConCategoria = new Set(
-    (ofertaCategoriasData ?? []).map((oc) => oc.oferta_id as string)
-  )
-  let sinCategoria = 0
-  conteoPostulacionesPorOferta.forEach((count, ofertaId) => {
-    if (!ofertaIdsConCategoria.has(ofertaId)) {
-      sinCategoria += count
-    }
-  })
-  if (sinCategoria > 0) {
-    conteoPorCategoria.set('Sin categoría', (conteoPorCategoria.get('Sin categoría') || 0) + sinCategoria)
-  }
-
-  const topCategoriasPostuladas = Array.from(conteoPorCategoria.entries())
-    .map(([categoria, postulaciones]) => ({ categoria, postulaciones }))
-    .sort((a, b) => b.postulaciones - a.postulaciones)
-    .filter((c) => c.postulaciones > 0)
-
-  const adminStats: AdminStatsData = {
-    totalOfertas,
-    ofertasPendientes: pendientes,
-    ofertasPublicadas: publicadas,
-    ofertasCerradas: cerradas,
-
-    totalPostulaciones: postulacionesData.length,
-    postulacionesRecibidas: postRecibidas,
-    postulacionesDerivadas: postDerivadas,
-    postulacionesRechazadas: postRechazadas,
-
-    totalEmpresas: empresasData.length,
-    empresasAprobadas,
-    empresasPendientes,
-    empresasRechazadas,
-
-    totalPostulantes: postulantesData.length,
-    postulantesEnBusqueda,
-    postulantesEmpleado,
-
-    topCategoriasPostuladas,
-  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
@@ -205,9 +112,6 @@ export default async function AdminDashboardPage() {
         </Link>
       </div>
 
-      {/* Panel Superior de Estadísticas y Gráficos con Datos Reales */}
-      <AdminMetricasGraficos stats={adminStats} />
-
       {/* Pestañas de navegación entre Ofertas, Empresas y Postulantes */}
       <AdminNavTabs
         totalRechazados={countRechazados ?? 0}
@@ -216,6 +120,45 @@ export default async function AdminDashboardPage() {
         pendientesEmpresas={empresasPendientesCount ?? 0}
         pendientesPostulantes={postulantesPendientesCount ?? 0}
       />
+
+      {/* Tarjetas de Métricas de Ofertas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">Pendientes de Aprobación</p>
+            <Clock className="size-4 text-amber-600" />
+          </div>
+          <p className="text-3xl font-black text-amber-900 mt-3">{pendientes}</p>
+          <p className="text-xs text-amber-700 mt-1">Requieren revisión</p>
+        </div>
+
+        <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Ofertas Publicadas</p>
+            <CheckCircle2 className="size-4 text-emerald-600" />
+          </div>
+          <p className="text-3xl font-black text-emerald-900 mt-3">{publicadas}</p>
+          <p className="text-xs text-emerald-700 mt-1">Habilitadas en cartelera</p>
+        </div>
+
+        <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ofertas Cerradas</p>
+            <XCircle className="size-4 text-gray-400" />
+          </div>
+          <p className="text-3xl font-black text-gray-700 mt-3">{cerradas}</p>
+          <p className="text-xs text-gray-500 mt-1">Finalizadas o vencidas</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total de Ofertas</p>
+            <Briefcase className="size-4 text-teal-600" />
+          </div>
+          <p className="text-3xl font-black text-gray-900 mt-3">{totalOfertas}</p>
+          <p className="text-xs text-gray-500 mt-1">Cargadas en el portal</p>
+        </div>
+      </div>
 
       {/* Listado y Moderación de Ofertas con paginación de 15 por página */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">

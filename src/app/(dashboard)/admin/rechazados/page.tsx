@@ -1,76 +1,77 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { Shield, ExternalLink } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from '../admin-nav-tabs'
-import { AdminRechazadosClient, PostulanteRechazadoItem } from './admin-rechazados-client'
-import { Shield, ExternalLink } from 'lucide-react'
+import { AdminRechazadosClient } from './admin-rechazados-client'
+import type { PostulanteRechazadoItem } from './admin-rechazados-client'
 
 export const dynamic = 'force-dynamic'
 
 const CV_BUCKET = 'curricula'
 
-export default async function AdminRechazadosPage() {
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function AdminRechazadosPage({ searchParams }: PageProps) {
   const supabase = await createSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/auth/login')
-  }
+  if (!user) redirect('/auth/login')
 
-  // 1. Validar rol municipalidad
   const { data: usuario } = await supabase
     .from('usuarios')
     .select('nombre, apellido, rol')
     .eq('id', user.id)
     .single()
 
-  if (!usuario || usuario.rol !== 'municipalidad') {
+  if (usuario?.rol !== 'municipalidad') {
     redirect('/inicio')
   }
 
-  // 2. Contadores para los tabs
+  // Conteos para tabs de navegación superior (idénticos a admin/postulantes)
   const [
-    { count: countOfertas },
-    { count: countEmpresas },
-    { count: countPostulantes },
-    { count: countRechazados },
+    { count: ofertasPendientesCount },
+    { count: empresasPendientesCount },
+    { count: postulantesPendientesCount },
+    { count: totalRechazadosCount },
   ] = await Promise.all([
-    supabaseAdmin
-      .from('ofertas')
-      .select('*', { count: 'exact', head: true })
-      .eq('estado', 'borrador'),
-    supabaseAdmin
-      .from('empresas')
-      .select('*', { count: 'exact', head: true })
-      .eq('estado_aprobacion', 'pendiente'),
-    supabaseAdmin
-      .from('postulaciones')
-      .select('*', { count: 'exact', head: true })
-      .in('estado', ['recibida', 'en_revision']),
-    supabaseAdmin
-      .from('derivaciones')
-      .select('*', { count: 'exact', head: true })
-      .eq('estado_empresa', 'rechazado'),
+    supabaseAdmin.from('ofertas').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
+    supabaseAdmin.from('empresas').select('id', { count: 'exact', head: true }).eq('estado_aprobacion', 'pendiente'),
+    supabaseAdmin.from('postulaciones').select('id', { count: 'exact', head: true }).in('estado', ['recibida', 'en_revision']),
+    supabaseAdmin.from('derivaciones').select('id', { count: 'exact', head: true }).eq('estado_empresa', 'rechazado'),
   ])
 
-  // 3. Obtener todas las derivaciones con estado 'rechazado'
-  const { data: derivacionesRechazadas, error: dErr } = await supabaseAdmin
+  // Paginación server-side
+  const resolvedSearchParams = await searchParams
+  const paginaActual = Math.max(1, Number(resolvedSearchParams.page) || 1)
+  const porPagina = 15
+
+  // 1. Obtener count total de derivaciones rechazadas
+  const total = totalRechazadosCount ?? 0
+  const from = (paginaActual - 1) * porPagina
+  const to = from + porPagina - 1
+
+  // 2. Obtener lote paginado de derivaciones rechazadas
+  const { data: derivacionesData, error: derErr } = await supabaseAdmin
     .from('derivaciones')
-    .select('id, postulacion_id, nota_empresa, created_at, updated_at')
+    .select('id, postulacion_id, nota_municipalidad, estado_empresa, nota_empresa, created_at, updated_at')
     .eq('estado_empresa', 'rechazado')
     .order('updated_at', { ascending: false })
+    .range(from, to)
 
-  if (dErr) {
-    console.error('Error al consultar derivaciones rechazadas:', dErr)
+  if (derErr) {
+    console.error('Error al obtener derivaciones rechazadas:', derErr)
   }
 
-  const derivaciones = derivacionesRechazadas ?? []
-  const postulacionIds = Array.from(new Set(derivaciones.map((d) => d.postulacion_id).filter(Boolean)))
+  const derivaciones = derivacionesData ?? []
 
-  // 4. Obtener postulaciones
+  // 3. Postulaciones vinculadas
+  const postulacionIds = Array.from(new Set(derivaciones.map((d) => d.postulacion_id).filter(Boolean)))
   let listaPostulaciones: Array<{
     id: string
     oferta_id: string
@@ -90,7 +91,7 @@ export default async function AdminRechazadosPage() {
   const postulacionesMap = new Map<string, (typeof listaPostulaciones)[0]>()
   listaPostulaciones.forEach((p) => postulacionesMap.set(p.id, p))
 
-  // 5. Ofertas
+  // 4. Ofertas
   const ofertaIds = Array.from(new Set(listaPostulaciones.map((p) => p.oferta_id).filter(Boolean)))
   const ofertasMap = new Map<string, { id: string; titulo: string; empresa_nombre: string; empresa_id?: string | null }>()
   if (ofertaIds.length > 0) {
@@ -101,7 +102,7 @@ export default async function AdminRechazadosPage() {
     ;(oData ?? []).forEach((o) => ofertasMap.set(o.id, o))
   }
 
-  // 6. Postulantes
+  // 5. Postulantes
   const postulanteIds = Array.from(new Set(listaPostulaciones.map((p) => p.postulante_id).filter(Boolean)))
   type PostulanteRecord = {
     id: string
@@ -137,20 +138,12 @@ export default async function AdminRechazadosPage() {
     })
   }
 
-  // 7. Usuarios (nombres, contacto)
-  // Incluir tanto los IDs directos como los usuario_id de los postulantes encontrados
-  const usuarioIdsDesdPostulantes = Array.from(postulantesMap.values())
-    .map((p) => p.usuario_id)
-    .filter(Boolean)
-  const usuarioIdsDesdPostulantesByUid = Array.from(postulantesByUserIdMap.values())
-    .map((p) => p.usuario_id)
-    .filter(Boolean)
-
+  // 6. Recolectar usuario_ids e información de auth
   const usuarioIds = Array.from(
     new Set([
-      ...usuarioIdsDesdPostulantes,
-      ...usuarioIdsDesdPostulantesByUid,
-      ...postulanteIds, // fallback: a veces postulante_id == usuario_id
+      ...Array.from(postulantesMap.values()).map((p) => p.usuario_id).filter(Boolean),
+      ...Array.from(postulantesByUserIdMap.values()).map((p) => p.usuario_id).filter(Boolean),
+      ...postulanteIds,
     ])
   )
 
@@ -163,7 +156,25 @@ export default async function AdminRechazadosPage() {
     ;(uData ?? []).forEach((u) => usuariosMap.set(u.id, u))
   }
 
-  // 8. CVs
+  // Auth metadata y emails de respaldo
+  const authEmailMap = new Map<string, string>()
+  const authMetadataMap = new Map<string, Record<string, unknown>>()
+
+  await Promise.all(
+    usuarioIds.map(async (uid) => {
+      try {
+        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(uid)
+        if (authUser?.user) {
+          if (authUser.user.email) authEmailMap.set(uid, authUser.user.email)
+          if (authUser.user.user_metadata) authMetadataMap.set(uid, authUser.user.user_metadata)
+        }
+      } catch {
+        // ignora
+      }
+    })
+  )
+
+  // 7. CVs
   const { data: curriculaData } = await supabaseAdmin
     .from('curricula')
     .select('id, postulante_id, url, nombre')
@@ -191,7 +202,8 @@ export default async function AdminRechazadosPage() {
   await Promise.all(
     Array.from(new Set(allCvUrls)).map(async (path) => {
       try {
-        const { data } = await supabaseAdmin.storage.from(CV_BUCKET).createSignedUrl(path, 60 * 60)
+        const cleanPath = path.startsWith('curricula/') ? path.replace('curricula/', '') : path
+        const { data } = await supabaseAdmin.storage.from(CV_BUCKET).createSignedUrl(cleanPath, 60 * 60)
         if (data?.signedUrl) signedUrlsMap.set(path, data.signedUrl)
       } catch {
         // ignora
@@ -199,7 +211,7 @@ export default async function AdminRechazadosPage() {
     })
   )
 
-  // 9. Construir items de la lista
+  // 8. Construir items de la lista
   const rechazados: PostulanteRechazadoItem[] = []
 
   for (const der of derivaciones) {
@@ -209,11 +221,33 @@ export default async function AdminRechazadosPage() {
     const oferta = ofertasMap.get(postu.oferta_id)
     const postulante = postulantesMap.get(postu.postulante_id) || postulantesByUserIdMap.get(postu.postulante_id)
 
-    // Buscar el usuario por múltiples caminos posibles
-    const rawUser =
-      (postulante?.usuario_id ? usuariosMap.get(postulante.usuario_id) : null) ??
-      usuariosMap.get(postu.postulante_id) ??
+    const userId = postulante?.usuario_id || postu.postulante_id
+    const userMeta = (userId ? authMetadataMap.get(userId) : null) || {}
+    const rawUser = (postulante?.usuario_id ? usuariosMap.get(postulante.usuario_id) : null) || usuariosMap.get(postu.postulante_id)
+
+    const metaNombre =
+      (typeof userMeta.nombre === 'string' && userMeta.nombre.trim()) ||
+      (typeof userMeta.full_name === 'string' && userMeta.full_name.trim().split(' ')[0]) ||
+      (typeof userMeta.name === 'string' && userMeta.name.trim().split(' ')[0]) ||
       null
+
+    const metaApellido =
+      (typeof userMeta.apellido === 'string' && userMeta.apellido.trim()) ||
+      (typeof userMeta.full_name === 'string' && userMeta.full_name.trim().split(' ').slice(1).join(' ')) ||
+      null
+
+    const userEmailRaw = rawUser?.email || (userId ? authEmailMap.get(userId) : null) || (typeof userMeta.email === 'string' ? userMeta.email : null)
+    let fallbackNombre = ''
+    if (!rawUser?.nombre && !metaNombre && userEmailRaw) {
+      const emailUsername = userEmailRaw.split('@')[0]
+      fallbackNombre = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1)
+    }
+
+    const resolvedNombre = rawUser?.nombre || metaNombre || fallbackNombre || 'Postulante'
+    const resolvedApellido = rawUser?.apellido || metaApellido || ''
+    const resolvedDni = postulante?.dni ?? rawUser?.dni ?? (typeof userMeta.dni === 'string' ? userMeta.dni : null)
+    const resolvedEmail = userEmailRaw
+    const resolvedTelefono = rawUser?.telefono ?? (typeof userMeta.telefono === 'string' ? userMeta.telefono : null)
 
     let cvSigned: string | null = null
     let cvNombre: string | null = null
@@ -245,11 +279,11 @@ export default async function AdminRechazadosPage() {
       },
       postulante: {
         id: postulante?.id ?? postu.postulante_id,
-        nombre: rawUser?.nombre ?? '(Sin nombre)',
-        apellido: rawUser?.apellido ?? '',
-        dni: postulante?.dni ?? rawUser?.dni ?? null,
-        email: rawUser?.email ?? null,
-        telefono: rawUser?.telefono ?? null,
+        nombre: resolvedNombre,
+        apellido: resolvedApellido,
+        dni: resolvedDni,
+        email: resolvedEmail,
+        telefono: resolvedTelefono,
         localidad: postulante?.localidad ?? null,
         direccion: postulante?.direccion ?? null,
         estudios: postulante?.estudios ?? null,
@@ -265,10 +299,10 @@ export default async function AdminRechazadosPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
-      {/* Encabezado */}
+      {/* Encabezado idéntico al resto de las pantallas admin */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-6">
         <div>
-          <div className="flex items-center gap-2 text-rose-700 font-semibold text-xs tracking-wider uppercase mb-1">
+          <div className="flex items-center gap-2 text-teal-700 font-semibold text-xs tracking-wider uppercase mb-1">
             <Shield className="size-4" />
             <span>Gestión Municipal de Empleo</span>
           </div>
@@ -289,17 +323,22 @@ export default async function AdminRechazadosPage() {
         </Link>
       </div>
 
-      {/* Pestañas de Navegación de Administración */}
+      {/* Tabs con contadores de notificaciones */}
       <AdminNavTabs
         tabActivo="rechazados"
-        pendientesOfertas={countOfertas ?? 0}
-        pendientesEmpresas={countEmpresas ?? 0}
-        pendientesPostulantes={countPostulantes ?? 0}
-        totalRechazados={countRechazados ?? 0}
+        pendientesOfertas={ofertasPendientesCount ?? 0}
+        pendientesEmpresas={empresasPendientesCount ?? 0}
+        pendientesPostulantes={postulantesPendientesCount ?? 0}
+        totalRechazados={totalRechazadosCount ?? 0}
       />
 
-      {/* Contenido interactivo */}
-      <AdminRechazadosClient rechazados={rechazados} />
+      {/* Listado con filtros */}
+      <AdminRechazadosClient
+        rechazados={rechazados}
+        totalCount={total}
+        paginaActual={paginaActual}
+        porPagina={porPagina}
+      />
     </div>
   )
 }
