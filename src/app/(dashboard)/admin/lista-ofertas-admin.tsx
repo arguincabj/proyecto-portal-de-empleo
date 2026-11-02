@@ -2,15 +2,17 @@
 
 import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { Briefcase, Users } from 'lucide-react'
+import { Briefcase, Users, Banknote } from 'lucide-react'
 import { BotonModerarOferta } from './boton-moderar'
 import { Paginacion } from '@/components/ui/paginacion'
+import { formatearSalario } from '@/lib/utils'
 
 const ESTADO_BADGE: Record<string, { label: string; class: string }> = {
   publicada: { label: 'Publicada', class: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   pendiente: { label: 'Pendiente de revisión', class: 'bg-amber-50 text-amber-700 border-amber-200 font-bold' },
   cerrada: { label: 'Cerrada', class: 'bg-gray-100 text-gray-600 border-gray-200' },
   rechazada: { label: 'Rechazada', class: 'bg-red-50 text-red-700 border-red-200' },
+  borrador: { label: 'Borrador (con observaciones)', class: 'bg-rose-50 text-rose-700 border-rose-200' },
 }
 
 export type OfertaAdminItem = {
@@ -20,6 +22,7 @@ export type OfertaAdminItem = {
   descripcion: string
   estado: string
   created_at: string
+  salario?: number | null
   postulaciones?: { count: number }[] | null
 }
 
@@ -95,8 +98,18 @@ export function ListaOfertasAdmin({ ofertas }: Props) {
 
                 <p className="text-xs text-gray-500 line-clamp-2">{oferta.descripcion}</p>
 
-                <div className="flex items-center gap-4 text-xs text-gray-400 pt-1 font-mono">
+                <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 pt-1 font-mono">
                   <span>Cargada: {new Date(oferta.created_at).toLocaleDateString('es-AR')}</span>
+                  {oferta.salario ? (
+                    <span className="text-emerald-800 font-semibold font-sans bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                      <Banknote className="size-3 text-emerald-600" />
+                      <span>{formatearSalario(oferta.salario)}</span>
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 font-normal font-sans">
+                      Salario: A convenir
+                    </span>
+                  )}
                   <Link
                     href={`/admin/postulantes?oferta=${oferta.id}`}
                     className="hover:text-teal-700 hover:underline transition-colors flex items-center gap-1 font-semibold text-teal-800"

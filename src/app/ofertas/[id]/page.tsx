@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { BotonPostular } from './boton-postular'
-import { ArrowLeft, Building2, Calendar, ShieldCheck, Briefcase, Clock } from 'lucide-react'
+import { ArrowLeft, Building2, Calendar, ShieldCheck, Briefcase, Clock, Banknote } from 'lucide-react'
+import { formatearSalario } from '@/lib/utils'
 
 // Forzar renderizado dinámico para que siempre evalúe el usuario logueado, su perfil y sus CVs actualizados
 export const dynamic = 'force-dynamic'
@@ -232,6 +233,17 @@ export default async function OfertaDetallePage({ params }: PageProps) {
             <Clock className="size-3.5 text-teal-600" />
             Selección: {duracionDias} días {fechaFinTexto ? `(hasta el ${fechaFinTexto})` : ''}
           </span>
+          {oferta.salario ? (
+            <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              <Banknote className="size-3.5 text-emerald-600" />
+              Salario: {formatearSalario(oferta.salario)}
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-gray-500 font-medium bg-gray-50 px-2.5 py-0.5 rounded-full border border-gray-200">
+              <Banknote className="size-3.5 text-gray-400" />
+              Salario: A convenir
+            </span>
+          )}
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="size-3.5 text-primary-600" />
             Portal Municipal de Empleo de Funes

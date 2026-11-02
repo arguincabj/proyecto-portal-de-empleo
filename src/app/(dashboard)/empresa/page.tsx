@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { CambiarEstadoBoton } from './cambiar-estado-boton'
 import { DerivacionesEmpresaClient } from './derivaciones-empresa-client'
 import type { DerivacionPostulante } from './derivaciones-empresa-client'
+import { formatearSalario } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,7 +50,9 @@ export default async function EmpresaDashboardPage() {
       descripcion,
       estado,
       created_at,
-      empresa_nombre
+      empresa_nombre,
+      salario,
+      motivo_rechazo
     `)
 
   if (empresaId) {
@@ -58,10 +61,22 @@ export default async function EmpresaDashboardPage() {
     queryOfertas = queryOfertas.ilike('empresa_nombre', razonSocial)
   }
 
-  const { data: ofertasData, error: errOfEmpresa } = await queryOfertas.order('created_at', { ascending: false })
+  let { data: ofertasData, error: errOfEmpresa } = await queryOfertas.order('created_at', { ascending: false })
 
   if (errOfEmpresa) {
-    console.error('Error al consultar ofertas de la empresa:', errOfEmpresa)
+    // Si falla (por ejemplo, si 'salario' o 'motivo_rechazo' aún no existen), reintentamos básico
+    let retryQuery = supabaseAdmin
+      .from('ofertas')
+      .select('id, titulo, descripcion, estado, created_at, empresa_nombre')
+
+    if (empresaId) {
+      retryQuery = retryQuery.or(`empresa_nombre.eq."${razonSocial}",empresa_id.eq.${empresaId}`)
+    } else {
+      retryQuery = retryQuery.ilike('empresa_nombre', razonSocial)
+    }
+
+    const { data: retryData } = await retryQuery.order('created_at', { ascending: false })
+    ofertasData = retryData as unknown as typeof ofertasData
   }
 
   // Si no encontró con filtro combinado, fallback a ilike por si hay mayúsculas/minúsculas diferentes
@@ -72,7 +87,7 @@ export default async function EmpresaDashboardPage() {
       .select('id, titulo, descripcion, estado, created_at, empresa_nombre')
       .ilike('empresa_nombre', razonSocial)
       .order('created_at', { ascending: false })
-    ofertas = fallbackOf ?? []
+    ofertas = (fallbackOf ?? []) as unknown as typeof ofertas
   }
 
   // 4. Calcular métricas
@@ -498,6 +513,8 @@ export default async function EmpresaDashboardPage() {
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : oferta.estado === 'pendiente'
                             ? 'bg-amber-50 text-amber-700 border-amber-200 font-semibold'
+                            : oferta.estado === 'borrador'
+                            ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold'
                             : 'bg-gray-100 text-gray-600 border-gray-200'
                         }`}
                       >
@@ -505,25 +522,58 @@ export default async function EmpresaDashboardPage() {
                           ? 'Publicada'
                           : oferta.estado === 'pendiente'
                           ? 'Pendiente de aprobación'
+                          : oferta.estado === 'borrador'
+                          ? 'Borrador (requiere correcciones)'
                           : oferta.estado === 'cerrada'
                           ? 'Cerrada'
                           : oferta.estado}
                       </span>
                     </div>
 
+                    {'motivo_rechazo' in oferta && (oferta as { motivo_rechazo?: string }).motivo_rechazo && oferta.estado === 'borrador' && (
+                      <div className="mt-2 p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900">
+                        <p className="font-bold flex items-center gap-1.5 text-amber-800">
+                          <span>⚠️ Observación de la Municipalidad:</span>
+                        </p>
+                        <p className="mt-1 text-amber-950 font-medium bg-white/70 p-2 rounded border border-amber-100">
+                          "{(oferta as { motivo_rechazo?: string }).motivo_rechazo}"
+                        </p>
+                        <p className="mt-1 text-amber-700 text-[11px]">
+                          Podés hacer clic en <strong>"Editar oferta"</strong> para corregir lo solicitado y volver a enviarla a revisión.
+                        </p>
+                      </div>
+                    )}
+
                     <p className="text-xs text-gray-500 line-clamp-2">
                       {oferta.descripcion}
                     </p>
 
-                    <div className="flex items-center gap-4 text-xs text-gray-400 pt-1 font-mono">
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 pt-1 font-mono">
                       <span>Publicado: {new Date(oferta.created_at).toLocaleDateString('es-AR')}</span>
+                      {'salario' in oferta && oferta.salario ? (
+                        <span className="text-emerald-800 font-semibold font-sans bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
+                          💵 Salario: {formatearSalario(oferta.salario as number)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500 font-normal font-sans bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200">
+                          Salario: A convenir
+                        </span>
+                      )}
                       <span className="text-teal-700 font-semibold font-sans">
                         👥 {cantDerivados} {cantDerivados === 1 ? 'postulante derivado' : 'postulantes derivados'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                    {oferta.estado === 'borrador' && (
+                      <Link
+                        href={`/ofertas/${oferta.id}/editar`}
+                        className="text-xs font-semibold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-2xs"
+                      >
+                        ✏️ Corregir oferta
+                      </Link>
+                    )}
                     <Link
                       href={`/empresa/ofertas/${oferta.id}/candidatos`}
                       className="text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"

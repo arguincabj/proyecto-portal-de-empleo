@@ -136,3 +136,233 @@ export async function postularAOferta(ofertaId: string, cvId?: string | null) {
     return { ok: false, error: message }
   }
 }
+
+export async function obtenerOfertaParaEditar(ofertaId: string) {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { ok: false, error: 'Iniciá sesión para ver esta oferta.' }
+    }
+
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('rol')
+      .eq('id', user.id)
+      .single()
+
+    const { data: oferta, error } = await supabaseAdmin
+      .from('ofertas')
+      .select('*')
+      .eq('id', ofertaId)
+      .single()
+
+    if (error || !oferta) {
+      return { ok: false, error: 'Oferta no encontrada.' }
+    }
+
+    // Si es empresa, verificar que sea la dueña
+    if (usuario?.rol === 'empresa') {
+      const { data: empresa } = await supabase
+        .from('empresas')
+        .select('id, razon_social')
+        .eq('usuario_id', user.id)
+        .single()
+
+      const esDuenia =
+        (oferta.empresa_id && empresa?.id && oferta.empresa_id === empresa.id) ||
+        (empresa?.razon_social &&
+          oferta.empresa_nombre?.trim().toLowerCase() === empresa.razon_social.trim().toLowerCase())
+
+      if (!esDuenia) {
+        return { ok: false, error: 'No tenés permisos para editar esta oferta.' }
+      }
+    } else if (usuario?.rol !== 'municipalidad') {
+      return { ok: false, error: 'No tenés permisos para editar esta oferta.' }
+    }
+
+    // Obtener categoría asociada a la oferta
+    let categoriaId: string | null = null
+    const { data: catRel } = await supabaseAdmin
+      .from('oferta_categorias')
+      .select('categoria_id')
+      .eq('oferta_id', ofertaId)
+      .maybeSingle()
+
+    if (catRel?.categoria_id) {
+      categoriaId = catRel.categoria_id
+    }
+
+    // Obtener lista completa de categorías para el dropdown
+    const { data: categorias } = await supabaseAdmin
+      .from('categorias')
+      .select('id, nombre')
+      .order('nombre', { ascending: true })
+
+    return {
+      ok: true,
+      oferta,
+      categoriaId,
+      categorias: categorias ?? [],
+    }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Error al obtener la oferta.'
+    return { ok: false, error: message }
+  }
+}
+
+export async function actualizarOferta(
+  ofertaId: string,
+  data: {
+    titulo: string
+    descripcion: string
+    categoriaId?: string | null
+    modalidad?: string | null
+    fechaInicioSeleccion?: string | null
+    duracionDias?: number | null
+    salario?: number | null
+  }
+) {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { ok: false, error: 'Iniciá sesión para realizar esta acción.' }
+    }
+
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('rol')
+      .eq('id', user.id)
+      .single()
+
+    const { data: ofertaExistente } = await supabaseAdmin
+      .from('ofertas')
+      .select('*')
+      .eq('id', ofertaId)
+      .single()
+
+    if (!ofertaExistente) {
+      return { ok: false, error: 'La oferta no existe.' }
+    }
+
+    // Permisos
+    if (usuario?.rol === 'empresa') {
+      const { data: empresa } = await supabase
+        .from('empresas')
+        .select('id, razon_social')
+        .eq('usuario_id', user.id)
+        .single()
+
+      const esDuenia =
+        (ofertaExistente.empresa_id && empresa?.id && ofertaExistente.empresa_id === empresa.id) ||
+        (empresa?.razon_social &&
+          ofertaExistente.empresa_nombre?.trim().toLowerCase() === empresa.razon_social.trim().toLowerCase())
+
+      if (!esDuenia) {
+        return { ok: false, error: 'No tenés permisos para modificar esta oferta.' }
+      }
+    } else if (usuario?.rol !== 'municipalidad') {
+      return { ok: false, error: 'Permisos insuficientes.' }
+    }
+
+    // Si estaba en borrador u observada por el municipio, al editarla pasa a 'pendiente' para moderación
+    const nuevoEstado = ofertaExistente.estado === 'borrador' ? 'pendiente' : ofertaExistente.estado
+
+    // Calcular fechas si se proporcionó duración o fechaInicio
+    let fechaFinStr: string | null = null
+    const duracionFinal = data.duracionDias
+      ? Math.min(Math.max(Number(data.duracionDias) || 30, 30), 60)
+      : (ofertaExistente.duracion_dias || 30)
+
+    const fechaInicioFinal = data.fechaInicioSeleccion || ofertaExistente.fecha_inicio_seleccion
+
+    if (fechaInicioFinal) {
+      const fechaInicioObj = new Date(fechaInicioFinal + 'T00:00:00')
+      const fechaFinObj = new Date(fechaInicioObj)
+      fechaFinObj.setDate(fechaFinObj.getDate() + duracionFinal)
+      fechaFinStr = fechaFinObj.toISOString().split('T')[0]
+    }
+
+    // Limpiar textos y descripción
+    let descripcionFinal = data.descripcion.trim()
+
+    // Si la descripción no contiene la modalidad y se especificó, añadir o actualizar
+    if (data.modalidad && data.modalidad !== 'no_especificada') {
+      const modTexto = `Modalidad: ${data.modalidad.charAt(0).toUpperCase() + data.modalidad.slice(1)}`
+      if (!descripcionFinal.toLowerCase().includes('modalidad:')) {
+        descripcionFinal += `\n\n${modTexto}`
+      }
+    }
+
+    const payload: Record<string, unknown> = {
+      titulo: data.titulo.trim(),
+      descripcion: descripcionFinal,
+      estado: nuevoEstado,
+    }
+
+    if (data.salario !== undefined) {
+      payload.salario = data.salario
+    }
+    if (data.duracionDias !== undefined) {
+      payload.duracion_dias = duracionFinal
+    }
+    if (fechaInicioFinal) {
+      payload.fecha_inicio_seleccion = fechaInicioFinal
+    }
+    if (fechaFinStr) {
+      payload.fecha_fin_seleccion = fechaFinStr
+    }
+
+    let { error: updateError } = await supabaseAdmin
+      .from('ofertas')
+      .update(payload)
+      .eq('id', ofertaId)
+
+    // Fallbacks si columnas como duracion_dias, fecha_* o salario no existen aún
+    if (updateError && (updateError.message?.includes('column') || updateError.code === '42703')) {
+      // Reintentar sin columnas opcionales/migración reciente
+      delete payload.duracion_dias
+      delete payload.fecha_inicio_seleccion
+      delete payload.fecha_fin_seleccion
+      delete payload.salario
+
+      const fallback = await supabaseAdmin
+        .from('ofertas')
+        .update(payload)
+        .eq('id', ofertaId)
+      updateError = fallback.error
+    }
+
+    if (updateError) {
+      return { ok: false, error: `Error al guardar los cambios: ${updateError.message}` }
+    }
+
+    // Actualizar categoría asociada
+    if (data.categoriaId !== undefined) {
+      await supabaseAdmin.from('oferta_categorias').delete().eq('oferta_id', ofertaId)
+      if (data.categoriaId) {
+        await supabaseAdmin.from('oferta_categorias').insert({
+          oferta_id: ofertaId,
+          categoria_id: data.categoriaId,
+        })
+      }
+    }
+
+    revalidatePath('/empresa')
+    revalidatePath('/admin')
+    revalidatePath('/ofertas')
+    revalidatePath(`/ofertas/${ofertaId}`)
+
+    return { ok: true }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Error al actualizar la oferta.'
+    return { ok: false, error: message }
+  }
+}

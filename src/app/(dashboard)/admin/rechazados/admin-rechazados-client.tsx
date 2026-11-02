@@ -17,6 +17,7 @@ import {
   X,
   User,
   GraduationCap,
+  History,
 } from 'lucide-react'
 import { Paginacion } from '@/components/ui/paginacion'
 
@@ -65,10 +66,58 @@ export function AdminRechazadosClient({ rechazados }: Props) {
   const [paginaActual, setPaginaActual] = useState(1)
   const [perfilModal, setPerfilModal] = useState<PostulanteRechazadoItem | null>(null)
 
-  // Cantidad de candidatos que cumplen la condición de 3 rechazos
-  const conTresRechazosCount = useMemo(() => {
-    return rechazados.filter((r) => r.tieneTresRechazos).length
+  // Agrupar items por postulante para el apartado de 3 rechazos (1 sola card por persona)
+  const gruposConTresRechazos = useMemo(() => {
+    const mapa = new Map<
+      string,
+      {
+        representante: PostulanteRechazadoItem
+        historialRechazos: Array<{
+          id: string
+          ofertaTitulo: string
+          empresaNombre: string
+          ofertaId: string
+          motivo: string | null
+          fecha: string
+        }>
+        total: number
+      }
+    >()
+
+    rechazados.forEach((item) => {
+      if (!item.tieneTresRechazos) return
+
+      const postuId = item.postulante.id
+      const existente = mapa.get(postuId)
+
+      const rechazoDetalle = {
+        id: item.id,
+        ofertaTitulo: item.oferta.titulo,
+        empresaNombre: item.oferta.empresaNombre,
+        ofertaId: item.oferta.id,
+        motivo: item.motivoRechazo,
+        fecha: item.fechaRechazo,
+      }
+
+      if (!existente) {
+        mapa.set(postuId, {
+          representante: item,
+          historialRechazos: [rechazoDetalle],
+          total: item.totalRechazados || 3,
+        })
+      } else {
+        existente.historialRechazos.push(rechazoDetalle)
+        if ((item.totalRechazados || 0) > existente.total) {
+          existente.total = item.totalRechazados!
+        }
+      }
+    })
+
+    return Array.from(mapa.values())
   }, [rechazados])
+
+  // Cantidad de personas únicas en el apartado con 3 rechazos
+  const personasConTresRechazosCount = gruposConTresRechazos.length
 
   // Lista única de empresas
   const empresasDisponibles = useMemo(() => {
@@ -79,20 +128,48 @@ export function AdminRechazadosClient({ rechazados }: Props) {
     return Array.from(set).sort((a, b) => a.localeCompare(b))
   }, [rechazados])
 
-  // Filtrado
+  // Filtrado según el apartado activo
   const filtrados = useMemo(() => {
-    return rechazados.filter((item) => {
-      // Filtro de apartado: todos vs únicamente con 3 rechazos
-      if (filtroApartado === 'tres_rechazos' && !item.tieneTresRechazos) {
-        return false
-      }
+    const q = busqueda.trim().toLowerCase()
 
+    if (filtroApartado === 'tres_rechazos') {
+      // Filtrar sobre los grupos agrupados por postulante (1 sola card por persona)
+      return gruposConTresRechazos.filter((grupo) => {
+        const item = grupo.representante
+
+        if (empresaFiltro) {
+          const participoEmpresa = grupo.historialRechazos.some(
+            (h) => h.empresaNombre === empresaFiltro
+          )
+          if (!participoEmpresa) return false
+        }
+
+        if (q) {
+          const nombreCompleto = `${item.postulante.nombre} ${item.postulante.apellido}`.toLowerCase()
+          const dni = (item.postulante.dni ?? '').toLowerCase()
+          const coincideHistorial = grupo.historialRechazos.some(
+            (h) =>
+              h.ofertaTitulo.toLowerCase().includes(q) ||
+              h.empresaNombre.toLowerCase().includes(q) ||
+              (h.motivo ?? '').toLowerCase().includes(q)
+          )
+
+          if (!nombreCompleto.includes(q) && !dni.includes(q) && !coincideHistorial) {
+            return false
+          }
+        }
+
+        return true
+      })
+    }
+
+    // Modo 'todos': listado normal de cada derivación rechazada
+    return rechazados.filter((item) => {
       if (empresaFiltro && item.oferta.empresaNombre !== empresaFiltro) {
         return false
       }
 
-      if (busqueda.trim()) {
-        const q = busqueda.trim().toLowerCase()
+      if (q) {
         const nombreCompleto = `${item.postulante.nombre} ${item.postulante.apellido}`.toLowerCase()
         const dni = (item.postulante.dni ?? '').toLowerCase()
         const ofertaTitulo = item.oferta.titulo.toLowerCase()
@@ -111,7 +188,7 @@ export function AdminRechazadosClient({ rechazados }: Props) {
 
       return true
     })
-  }, [rechazados, filtroApartado, busqueda, empresaFiltro])
+  }, [rechazados, gruposConTresRechazos, filtroApartado, busqueda, empresaFiltro])
 
   const totalPaginas = Math.ceil(filtrados.length / ITEMS_POR_PAGINA) || 1
   const paginaValida = Math.min(paginaActual, totalPaginas)
@@ -130,7 +207,7 @@ export function AdminRechazadosClient({ rechazados }: Props) {
             setFiltroApartado('todos')
             setPaginaActual(1)
           }}
-          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             filtroApartado === 'todos'
               ? 'bg-rose-600 text-white shadow-sm'
               : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
@@ -146,14 +223,14 @@ export function AdminRechazadosClient({ rechazados }: Props) {
             setFiltroApartado('tres_rechazos')
             setPaginaActual(1)
           }}
-          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             filtroApartado === 'tres_rechazos'
               ? 'bg-rose-600 text-white shadow-sm'
               : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
           }`}
         >
           <GraduationCap className="size-4" />
-          <span>Apartado: Con 3 rechazos / Derivados a Cursos ({conTresRechazosCount})</span>
+          <span>Apartado: Con 3 rechazos / Derivados a Cursos ({personasConTresRechazosCount})</span>
         </button>
       </div>
 
@@ -162,9 +239,11 @@ export function AdminRechazadosClient({ rechazados }: Props) {
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 flex items-start gap-3">
           <GraduationCap className="size-5 text-amber-700 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="font-bold text-sm text-amber-950">Apartado de Postulantes con 3 Rechazos</p>
+            <p className="font-bold text-sm text-amber-950">
+              Apartado de Postulantes con 3 Rechazos (Vista Unificada)
+            </p>
             <p className="text-amber-800 leading-relaxed">
-              En este apartado se listan los postulantes que alcanzaron 3 o más rechazos en sus búsquedas laborales. Cada uno de estos perfiles ha sido notificado automáticamente y derivado al espacio de <strong>Cursos y Videos</strong> formativos de la Municipalidad para potenciar su inserción profesional.
+              En este apartado cada postulante aparece <strong>una única vez</strong> con la insignia destacada de sus <strong>3 o más rechazos</strong> acumulados, junto con el desglose de las búsquedas en las que participó, para no duplicar filas y gestionar ágilmente su derivación formativa.
             </p>
           </div>
         </div>
@@ -225,7 +304,7 @@ export function AdminRechazadosClient({ rechazados }: Props) {
                 setEmpresaFiltro('')
                 setPaginaActual(1)
               }}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors border border-rose-200 self-end sm:self-center"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors border border-rose-200 self-end sm:self-center cursor-pointer"
             >
               <X className="size-3.5" />
               <span>Restablecer</span>
@@ -234,7 +313,7 @@ export function AdminRechazadosClient({ rechazados }: Props) {
         </div>
       </div>
 
-      {/* Lista de Rechazados */}
+      {/* Listado */}
       {visibles.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-xs border border-gray-200 p-12 text-center">
           <UserX className="size-10 text-gray-300 mx-auto mb-3" />
@@ -247,13 +326,168 @@ export function AdminRechazadosClient({ rechazados }: Props) {
             {busqueda || empresaFiltro
               ? 'No hay registros que coincidan con los filtros aplicados.'
               : filtroApartado === 'tres_rechazos'
-              ? 'Los postulantes aparecerán en este apartado automáticamente cuando alcancen su tercer rechazo para gestionar su derivación a Cursos y Videos formativos.'
+              ? 'Los postulantes aparecerán en este apartado automáticamente (1 sola vez por persona) cuando alcancen su tercer rechazo.'
               : 'Ninguna empresa ha reportado rechazos de candidatos hasta el momento.'}
           </p>
         </div>
-      ) : (
+      ) : filtroApartado === 'tres_rechazos' ? (
+        /* VISTA UNIFICADA: 1 sola card por postulante con sus 3 rechazos */
         <div className="space-y-4">
-          {visibles.map((item) => {
+          {(visibles as typeof gruposConTresRechazos).map((grupo) => {
+            const item = grupo.representante
+            const nombre = `${item.postulante.nombre} ${item.postulante.apellido}`.trim() || 'Postulante'
+
+            return (
+              <div
+                key={item.postulante.id}
+                className="bg-white rounded-2xl shadow-xs border-2 border-rose-200 p-5 space-y-4 hover:border-rose-300 transition-all"
+              >
+                {/* Cabecera unificada del Postulante */}
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="size-11 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-base shrink-0">
+                        {item.postulante.nombre?.charAt(0)?.toUpperCase()}
+                        {item.postulante.apellido?.charAt(0)?.toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-base text-gray-900">{nombre}</h3>
+                          {/* Badge destacado de 3 o más rechazos */}
+                          <span className="text-xs px-3 py-1 rounded-full font-extrabold bg-rose-600 text-white shadow-xs flex items-center gap-1.5">
+                            <AlertCircle className="size-3.5" />
+                            <span>Alcanzó los {grupo.total} rechazos</span>
+                          </span>
+                          <span className="text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <GraduationCap className="size-3" />
+                            <span>Derivado a Cursos y Videos</span>
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 mt-1 font-mono">
+                          {item.postulante.dni && <span>DNI: {item.postulante.dni}</span>}
+                          {item.postulante.telefono && (
+                            <span className="flex items-center gap-1 font-sans">
+                              <Phone className="size-3 text-gray-400" />
+                              {item.postulante.telefono}
+                            </span>
+                          )}
+                          {item.postulante.email && (
+                            <span className="flex items-center gap-1 font-sans">
+                              <Mail className="size-3 text-gray-400" />
+                              {item.postulante.email}
+                            </span>
+                          )}
+                          {item.postulante.localidad && (
+                            <span className="flex items-center gap-1 font-sans">
+                              <MapPin className="size-3 text-gray-400" />
+                              {item.postulante.localidad}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="flex items-center gap-2 self-end md:self-start shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setPerfilModal(item)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-teal-800 hover:bg-teal-50 hover:border-teal-300 transition-colors shadow-2xs cursor-pointer"
+                    >
+                      <User className="size-3.5" />
+                      <span>Ver ficha</span>
+                    </button>
+
+                    {item.cv_signed_url && (
+                      <a
+                        href={item.cv_signed_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-teal-800 hover:bg-teal-50 hover:border-teal-300 transition-colors shadow-2xs"
+                      >
+                        <FileText className="size-3.5" />
+                        <span>Ver CV</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Desglose de los rechazos acumulados */}
+                <div className="space-y-2 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+                    <History className="size-3.5 text-rose-600" />
+                    <span>Historial de búsquedas rechazadas ({grupo.historialRechazos.length}):</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2">
+                    {grupo.historialRechazos.map((rechazo, idx) => (
+                      <div
+                        key={rechazo.id}
+                        className="bg-gray-50/90 border border-gray-200/80 rounded-xl p-3 text-xs space-y-1.5"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="size-5 rounded-full bg-rose-100 text-rose-800 font-bold text-[11px] flex items-center justify-center shrink-0">
+                              #{idx + 1}
+                            </span>
+                            <span className="font-bold text-gray-900">{rechazo.ofertaTitulo}</span>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-gray-600 font-medium">{rechazo.empresaNombre}</span>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            {rechazo.fecha && (
+                              <span className="text-[11px] text-gray-400 font-mono flex items-center gap-1">
+                                <Calendar className="size-3" />
+                                {new Date(rechazo.fecha).toLocaleDateString('es-AR')}
+                              </span>
+                            )}
+                            <Link
+                              href={`/ofertas/${rechazo.ofertaId}`}
+                              target="_blank"
+                              className="text-teal-700 hover:text-teal-800 font-semibold inline-flex items-center gap-0.5 text-[11px]"
+                            >
+                              <span>Ver oferta</span>
+                              <ExternalLink className="size-2.5" />
+                            </Link>
+                          </div>
+                        </div>
+
+                        {/* Motivo informado */}
+                        <div className="pl-7 text-gray-700">
+                          <span className="text-[11px] font-semibold text-rose-800">Motivo: </span>
+                          <span className="italic">
+                            {rechazo.motivo ? `"${rechazo.motivo}"` : 'Sin nota detallada por la empresa.'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Paginación */}
+          <Paginacion
+            paginaActual={paginaValida}
+            totalPaginas={totalPaginas}
+            totalItems={filtrados.length}
+            itemsPorPagina={ITEMS_POR_PAGINA}
+            nombreItems="postulantes con 3 rechazos"
+            onCambiarPagina={(p) => {
+              setPaginaActual(p)
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+            className="bg-white p-4 rounded-2xl shadow-xs border border-gray-200"
+          />
+        </div>
+      ) : (
+        /* VISTA 'TODOS': listado completo de todas las derivaciones rechazadas */
+        <div className="space-y-4">
+          {(visibles as PostulanteRechazadoItem[]).map((item) => {
             const nombre = `${item.postulante.nombre} ${item.postulante.apellido}`.trim() || 'Postulante'
 
             return (
@@ -275,6 +509,11 @@ export function AdminRechazadosClient({ rechazados }: Props) {
                           <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800 border border-rose-200">
                             Rechazado por la Empresa
                           </span>
+                          {item.tieneTresRechazos && (
+                            <span className="text-xs px-2.5 py-0.5 rounded-full font-extrabold bg-rose-600 text-white">
+                              {item.totalRechazados} rechazos acumulados
+                            </span>
+                          )}
                         </div>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 mt-0.5 font-mono">
                           {item.postulante.dni && <span>DNI: {item.postulante.dni}</span>}
@@ -333,7 +572,7 @@ export function AdminRechazadosClient({ rechazados }: Props) {
                     <button
                       type="button"
                       onClick={() => setPerfilModal(item)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-teal-800 hover:bg-teal-50 hover:border-teal-300 transition-colors shadow-2xs"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-teal-800 hover:bg-teal-50 hover:border-teal-300 transition-colors shadow-2xs cursor-pointer"
                     >
                       <User className="size-3.5" />
                       <span>Ver ficha</span>
@@ -419,7 +658,7 @@ export function AdminRechazadosClient({ rechazados }: Props) {
               <button
                 type="button"
                 onClick={() => setPerfilModal(null)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
               >
                 <X className="size-5 text-gray-500" />
               </button>
@@ -429,70 +668,52 @@ export function AdminRechazadosClient({ rechazados }: Props) {
               <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs space-y-1">
                 <p className="font-bold text-rose-900">Motivo del rechazo de la empresa:</p>
                 <p className="text-rose-950 font-medium">
-                  {perfilModal.motivoRechazo || 'Sin motivo adicional detallado.'}
+                  {perfilModal.motivoRechazo || 'Sin nota de motivo especificada.'}
                 </p>
               </div>
 
-              {/* Rubros */}
-              {Array.isArray(perfilModal.postulante.categorias_laborales) && perfilModal.postulante.categorias_laborales.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
-                    Rubros o Categorías Laborales
-                  </h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {perfilModal.postulante.categorias_laborales.map((c) => (
-                      <span key={c} className="text-xs px-2.5 py-1 rounded-lg bg-teal-50 text-teal-800 border border-teal-200">
-                        {c}
-                      </span>
-                    ))}
-                  </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <span className="text-gray-400 font-bold block mb-0.5">DNI</span>
+                  <span className="font-semibold text-gray-800">{perfilModal.postulante.dni || 'No cargado'}</span>
                 </div>
-              )}
-
-              {/* Habilidades */}
-              {perfilModal.postulante.habilidades && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
-                    Habilidades
-                  </h4>
-                  <p className="text-xs text-gray-700 bg-gray-50 p-3 rounded-xl border border-gray-100 whitespace-pre-line">
-                    {perfilModal.postulante.habilidades}
-                  </p>
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <span className="text-gray-400 font-bold block mb-0.5">Teléfono</span>
+                  <span className="font-semibold text-gray-800">{perfilModal.postulante.telefono || 'No cargado'}</span>
                 </div>
-              )}
-
-              {/* Experiencia */}
-              {perfilModal.postulante.experiencia && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
-                    Experiencia
-                  </h4>
-                  <p className="text-xs text-gray-700 bg-gray-50 p-3 rounded-xl border border-gray-100 whitespace-pre-line">
-                    {perfilModal.postulante.experiencia}
-                  </p>
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <span className="text-gray-400 font-bold block mb-0.5">Email</span>
+                  <span className="font-semibold text-gray-800 truncate block">{perfilModal.postulante.email || 'No cargado'}</span>
                 </div>
-              )}
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <span className="text-gray-400 font-bold block mb-0.5">Localidad</span>
+                  <span className="font-semibold text-gray-800">{perfilModal.postulante.localidad || 'Funes'}</span>
+                </div>
+              </div>
 
-              {/* Estudios */}
               {perfilModal.postulante.estudios && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
-                    Estudios
-                  </h4>
-                  <p className="text-xs text-gray-700 bg-gray-50 p-3 rounded-xl border border-gray-100 whitespace-pre-line">
+                <div className="text-xs space-y-1">
+                  <p className="font-bold text-gray-700">Estudios cursados:</p>
+                  <p className="text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100 whitespace-pre-line">
                     {perfilModal.postulante.estudios}
                   </p>
                 </div>
               )}
 
-              {/* Cursos */}
-              {perfilModal.postulante.cursos && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
-                    Cursos y Certificaciones
-                  </h4>
-                  <p className="text-xs text-gray-700 bg-gray-50 p-3 rounded-xl border border-gray-100 whitespace-pre-line">
-                    {perfilModal.postulante.cursos}
+              {perfilModal.postulante.experiencia && (
+                <div className="text-xs space-y-1">
+                  <p className="font-bold text-gray-700">Experiencia laboral:</p>
+                  <p className="text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100 whitespace-pre-line">
+                    {perfilModal.postulante.experiencia}
+                  </p>
+                </div>
+              )}
+
+              {perfilModal.postulante.habilidades && (
+                <div className="text-xs space-y-1">
+                  <p className="font-bold text-gray-700">Habilidades destacadas:</p>
+                  <p className="text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100 whitespace-pre-line">
+                    {perfilModal.postulante.habilidades}
                   </p>
                 </div>
               )}

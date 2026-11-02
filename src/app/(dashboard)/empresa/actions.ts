@@ -13,6 +13,7 @@ export async function crearOfertaEmpresa(data: {
   estado?: 'publicada' | 'pendiente'
   fechaInicioSeleccion?: string
   duracionDias?: number
+  salario?: number | string | null
 }) {
   try {
     const supabase = await createSupabaseServerClient()
@@ -85,9 +86,21 @@ export async function crearOfertaEmpresa(data: {
       descripcionFinal += periodoTexto
     }
 
-    // 2. Insertar la oferta en estado pendiente (con fallback si las columnas aún no existen en la BD)
+    // 2. Procesar salario opcional
+    const salarioValido =
+      data.salario !== undefined &&
+      data.salario !== null &&
+      data.salario !== '' &&
+      !isNaN(Number(data.salario)) &&
+      Number(data.salario) > 0
+        ? Number(data.salario)
+        : null
+
+    // 3. Insertar la oferta en estado pendiente
     let nuevaOferta: { id: string } | null = null
-    const insertPayloadConColumnas = {
+
+    // Payload completo (con columnas de duración y salario si están disponibles)
+    const insertPayloadBase = {
       empresa_id: empresa.id,
       empresa_nombre: empresa.razon_social,
       titulo: data.titulo.trim(),
@@ -98,36 +111,77 @@ export async function crearOfertaEmpresa(data: {
       fecha_fin_seleccion: fechaFinStr,
     }
 
-    const { data: resConCol, error: errConCol } = await supabaseAdmin
+    // Payload mínimo (solo columnas base que siempre existen)
+    const insertPayloadMinimo = {
+      empresa_id: empresa.id,
+      empresa_nombre: empresa.razon_social,
+      titulo: data.titulo.trim(),
+      descripcion: descripcionFinal,
+      estado: 'pendiente',
+    }
+
+    const insertPayload: Record<string, unknown> = { ...insertPayloadBase }
+    if (salarioValido !== null) {
+      insertPayload.salario = salarioValido
+    }
+
+    // Helper para detectar errores de columna faltante (migración pendiente)
+    const esErrorColumnaFaltante = (msg?: string | null) =>
+      (msg?.includes('column') && msg?.includes('schema cache')) ||
+      msg?.toLowerCase().includes('could not find') ||
+      msg?.toLowerCase().includes('duracion_dias') ||
+      msg?.toLowerCase().includes('fecha_inicio_seleccion') ||
+      msg?.toLowerCase().includes('fecha_fin_seleccion') ||
+      msg?.toLowerCase().includes('salario')
+
+    const { data: resInsert, error: errInsert } = await supabaseAdmin
       .from('ofertas')
-      .insert(insertPayloadConColumnas)
+      .insert(insertPayload)
       .select('id')
       .single()
 
-    if (errConCol) {
-      // Fallback si la migración de columnas en la BD aún no fue ejecutada en Supabase
-      const { data: resFallback, error: errFallback } = await supabaseAdmin
+    if (!errInsert) {
+      // Intento 1 exitoso (todas las columnas disponibles)
+      nuevaOferta = resInsert
+    } else if (esErrorColumnaFaltante(errInsert.message)) {
+      // Intento 2: sin salario pero con columnas de duración
+      console.warn('[crearOfertaEmpresa] Columna faltante en intento 1, reintentando sin salario:', errInsert.message)
+      const { data: resIntento2, error: errIntento2 } = await supabaseAdmin
         .from('ofertas')
-        .insert({
-          empresa_id: empresa.id,
-          empresa_nombre: empresa.razon_social,
-          titulo: data.titulo.trim(),
-          descripcion: descripcionFinal,
-          estado: 'pendiente',
-        })
+        .insert(insertPayloadBase)
         .select('id')
         .single()
 
-      if (errFallback || !resFallback) {
-        return { ok: false, error: `Error al guardar la oferta: ${errFallback?.message}` }
+      if (!errIntento2) {
+        nuevaOferta = resIntento2
+        console.warn('[crearOfertaEmpresa] Intento 2 exitoso (sin salario). Ejecutá migration_020_salario_ofertas.sql.')
+      } else if (esErrorColumnaFaltante(errIntento2.message)) {
+        // Intento 3: payload mínimo (sin columnas de duración ni salario)
+        console.warn('[crearOfertaEmpresa] Columna faltante en intento 2, reintentando con payload mínimo:', errIntento2.message)
+        const { data: resIntento3, error: errIntento3 } = await supabaseAdmin
+          .from('ofertas')
+          .insert(insertPayloadMinimo)
+          .select('id')
+          .single()
+
+        if (!errIntento3) {
+          nuevaOferta = resIntento3
+          console.warn('[crearOfertaEmpresa] Intento 3 exitoso (payload mínimo). Ejecutá migration_014 y migration_020 en Supabase.')
+        } else {
+          return { ok: false, error: `Error al guardar la oferta: ${errIntento3.message}` }
+        }
+      } else {
+        return { ok: false, error: `Error al guardar la oferta: ${errIntento2.message}` }
       }
-      nuevaOferta = resFallback
     } else {
-      nuevaOferta = resConCol
+      return { ok: false, error: `Error al guardar la oferta: ${errInsert.message}` }
     }
 
     // 3. Vincular categoría si fue seleccionada
     if (data.categoriaId) {
+      if (!nuevaOferta) {
+        return { ok: false, error: 'Error inesperado: no se obtuvo el ID de la oferta creada.' }
+      }
       await supabaseAdmin.from('oferta_categorias').insert({
         oferta_id: nuevaOferta.id,
         categoria_id: data.categoriaId,
@@ -136,6 +190,9 @@ export async function crearOfertaEmpresa(data: {
 
     revalidatePath('/empresa')
     revalidatePath('/ofertas')
+    if (!nuevaOferta) {
+      return { ok: false, error: 'Error inesperado: no se pudo recuperar el ID de la oferta.' }
+    }
     return { ok: true, id: nuevaOferta.id }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Error inesperado al crear la oferta'
@@ -273,6 +330,17 @@ export async function actualizarEstadoDerivacion(
     const ofertaTitulo = ofertaObj?.titulo || 'la búsqueda laboral'
     const empresaNombre = ofertaObj?.empresa_nombre || 'La empresa'
 
+    // Obtener postulante_id de forma directa y confiable (fallback si el join anidado falló)
+    let postulanteIdConfiable: string | null = postulanteId || null
+    if (!postulanteIdConfiable && derivacionInfo?.postulacion_id) {
+      const { data: postulacionDirecta } = await supabaseAdmin
+        .from('postulaciones')
+        .select('postulante_id')
+        .eq('id', derivacionInfo.postulacion_id)
+        .single()
+      postulanteIdConfiable = postulacionDirecta?.postulante_id || null
+    }
+
     // Si la empresa marcó como rechazado (no contrata):
     if (estadoEmpresa === 'rechazado') {
       const motivoRegistrado = notaEmpresa?.trim() || 'No especificado'
@@ -334,7 +402,27 @@ export async function actualizarEstadoDerivacion(
 
     // Si la empresa marcó como contratado:
     if (estadoEmpresa === 'contratado') {
-      // 1. Notificar al candidato de la contratación
+      // 1. Actualizar estado_laboral del postulante a 'trabajando' automáticamente
+      if (postulanteIdConfiable) {
+        try {
+          const { error: estadoErr } = await supabaseAdmin
+            .from('postulantes')
+            .update({ estado_laboral: 'trabajando' })
+            .eq('id', postulanteIdConfiable)
+
+          if (estadoErr) {
+            console.error('[contratado] Error al actualizar estado_laboral:', estadoErr.message)
+          } else {
+            console.log('[contratado] estado_laboral → "trabajando" para postulante:', postulanteIdConfiable)
+          }
+        } catch (estadoEx) {
+          console.error('[contratado] Excepción al actualizar estado_laboral:', estadoEx)
+        }
+      } else {
+        console.warn('[contratado] No se pudo determinar el postulanteId para actualizar estado_laboral')
+      }
+
+      // 2. Notificar al candidato de la contratación
       if (postulanteUsuarioId) {
         try {
           await supabaseAdmin.from('notificaciones').insert({
@@ -352,7 +440,7 @@ export async function actualizarEstadoDerivacion(
         }
       }
 
-      // 2. Notificar a administración municipal
+      // 3. Notificar a administración municipal
       try {
         const { data: adminUsers } = await supabaseAdmin
           .from('usuarios')

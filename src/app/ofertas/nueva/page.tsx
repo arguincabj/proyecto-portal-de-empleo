@@ -7,6 +7,7 @@ export default function NuevaOfertaPage() {
   const router = useRouter()
   const [titulo, setTitulo] = useState('')
   const [empresaNombre, setEmpresaNombre] = useState('')
+  const [salario, setSalario] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -16,12 +17,17 @@ export default function NuevaOfertaPage() {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.from('ofertas').insert({
+    const payload: Record<string, unknown> = {
       titulo,
       empresa_nombre: empresaNombre,
       descripcion,
       estado: 'pendiente',
-    })
+    }
+    if (salario && !isNaN(Number(salario)) && Number(salario) > 0) {
+      payload.salario = Number(salario)
+    }
+
+    const { error } = await supabase.from('ofertas').insert(payload)
 
     if (error) {
       setError(error.message)
@@ -54,6 +60,25 @@ export default function NuevaOfertaPage() {
             required
             className="border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label htmlFor="salario-input" className="text-xs font-semibold text-gray-600">
+                Salario ofrecido ($ ARS)
+              </label>
+              <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+                Opcional
+              </span>
+            </div>
+            <input
+              id="salario-input"
+              type="number"
+              min="0"
+              placeholder="Ej: 750000 (Opcional - dejar en blanco si es a convenir)"
+              value={salario}
+              onChange={(e) => setSalario(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
           <textarea
             placeholder="Descripción del puesto, requisitos, condiciones…"
             value={descripcion}
