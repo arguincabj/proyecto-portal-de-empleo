@@ -32,7 +32,7 @@ export default async function EmpresaDashboardPage() {
     redirect('/inicio')
   }
 
-  // 2. Obtener datos de la empresa (con soporte de estado de aprobaciÃ³n)
+  // 2. Obtener datos de la empresa (con soporte de estado de aprobación)
   const { data: empresaInicial, error: errorEmpresa } = await supabase
     .from('empresas')
     .select('id, razon_social, cuit, rubro, descripcion, email, estado_aprobacion, motivo_rechazo, created_at')
@@ -52,7 +52,7 @@ export default async function EmpresaDashboardPage() {
 
   const estadoAprobacion = (empresa?.estado_aprobacion ?? 'pendiente') as 'pendiente' | 'aprobada' | 'rechazada'
 
-  // Si estÃ¡ en espera de aprobaciÃ³n por la administraciÃ³n municipal
+  // Si está en espera de aprobación por la administración municipal
   if (estadoAprobacion === 'pendiente') {
     return (
       <EmpresaEnEspera
@@ -74,7 +74,7 @@ export default async function EmpresaDashboardPage() {
     )
   }
 
-  // Si fue observada / rechazada por la administraciÃ³n municipal
+  // Si fue observada / rechazada por la administración municipal
   if (estadoAprobacion === 'rechazada') {
     return (
       <EmpresaRechazadaForm
@@ -124,7 +124,7 @@ export default async function EmpresaDashboardPage() {
   let ofertasData = ofertasDataInit
 
   if (errOfEmpresa) {
-    // Si falla (por ejemplo, si 'salario' o 'motivo_rechazo' aÃºn no existen), reintentamos bÃ¡sico
+    // Si falla (por ejemplo, si 'salario' o 'motivo_rechazo' aún no existen), reintentamos básico
     let retryQuery = supabaseAdmin
       .from('ofertas')
       .select('id, titulo, descripcion, estado, created_at, empresa_nombre')
@@ -139,7 +139,7 @@ export default async function EmpresaDashboardPage() {
     ofertasData = retryData as unknown as typeof ofertasData
   }
 
-  // Si no encontrÃ³ con filtro combinado, fallback a ilike por si hay mayÃºsculas/minÃºsculas diferentes
+  // Si no encontró con filtro combinado, fallback a ilike por si hay mayúsculas/minúsculas diferentes
   let ofertas = ofertasData ?? []
   if (ofertas.length === 0 && razonSocial) {
     const { data: fallbackOf } = await supabaseAdmin
@@ -150,7 +150,7 @@ export default async function EmpresaDashboardPage() {
     ofertas = (fallbackOf ?? []) as unknown as typeof ofertas
   }
 
-  // 4. Calcular mÃ©tricas
+  // 4. Calcular métricas
   const totalOfertas = ofertas.length
   const ofertasPublicadas = ofertas.filter((o) => o.estado === 'publicada').length
 
@@ -355,7 +355,7 @@ export default async function EmpresaDashboardPage() {
             const cvItem = curriculaById.get(postu.cv_id)
             if (cvItem && signedUrlsMap.has(cvItem.url)) {
               cvsSigned.push({
-                nombre: cvItem.nombre || 'CurrÃ­culum adjunto',
+                nombre: cvItem.nombre || 'Currículum adjunto',
                 signedUrl: signedUrlsMap.get(cvItem.url)!,
               })
             }
@@ -366,13 +366,13 @@ export default async function EmpresaDashboardPage() {
             cvsPost.forEach((c) => {
               if (signedUrlsMap.has(c.url)) {
                 cvsSigned.push({
-                  nombre: c.nombre || 'CurrÃ­culum',
+                  nombre: c.nombre || 'Currículum',
                   signedUrl: signedUrlsMap.get(c.url)!,
                 })
               }
             })
             if (cvsSigned.length === 0 && post.cv_url && signedUrlsMap.has(post.cv_url)) {
-              const nombre = post.cv_url.split('/').pop()?.replace(/^\d+-/, '') || 'CurrÃ­culum'
+              const nombre = post.cv_url.split('/').pop()?.replace(/^\d+-/, '') || 'Currículum'
               cvsSigned.push({
                 nombre,
                 signedUrl: signedUrlsMap.get(post.cv_url)!,
@@ -477,7 +477,7 @@ export default async function EmpresaDashboardPage() {
             {razonSocial || 'Panel de Empresa'}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            GestionÃ¡ tus bÃºsquedas laborales y revisÃ¡ los postulantes derivados por la DirecciÃ³n de Empleo.
+            Gestioná tus búsquedas laborales y revisá los postulantes derivados por la Dirección de Empleo.
           </p>
         </div>
 
@@ -489,7 +489,7 @@ export default async function EmpresaDashboardPage() {
         </Link>
       </div>
 
-      {/* Tarjetas de MÃ©tricas */}
+      {/* Tarjetas de Métricas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ofertas Activas</p>
@@ -516,13 +516,13 @@ export default async function EmpresaDashboardPage() {
         </div>
       </div>
 
-      {/* SecciÃ³n 1: Mis Ofertas Laborales */}
+      {/* Sección 1: Mis Ofertas Laborales */}
       <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-gray-900">Mis Ofertas Laborales</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              BÃºsquedas laborales registradas por tu empresa en el sistema municipal.
+              Búsquedas laborales registradas por tu empresa en el sistema municipal.
             </p>
           </div>
 
@@ -530,16 +530,16 @@ export default async function EmpresaDashboardPage() {
             href="/empresa/nueva-oferta"
             className="text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 px-3.5 py-2 rounded-xl transition-colors"
           >
-            + Nueva bÃºsqueda
+            + Nueva búsqueda
           </Link>
         </div>
 
         {ofertas.length === 0 ? (
           <div className="p-12 text-center space-y-3">
-            <span className="text-4xl block">ðŸ“‹</span>
-            <h3 className="font-semibold text-gray-800">TodavÃ­a no publicaste ninguna oferta</h3>
+            <span className="text-4xl block">📋</span>
+            <h3 className="font-semibold text-gray-800">Todavía no publicaste ninguna oferta</h3>
             <p className="text-sm text-gray-500 max-w-md mx-auto">
-              ComenzÃ¡ a reclutar talento publicando tu primera oferta de empleo para los vecinos de la ciudad.
+              Comenzá a reclutar talento publicando tu primera oferta de empleo para los vecinos de la ciudad.
             </p>
             <div className="pt-2">
               <Link
@@ -581,7 +581,7 @@ export default async function EmpresaDashboardPage() {
                         {oferta.estado === 'publicada'
                           ? 'Publicada'
                           : oferta.estado === 'pendiente'
-                          ? 'Pendiente de aprobaciÃ³n'
+                          ? 'Pendiente de aprobación'
                           : oferta.estado === 'borrador'
                           ? 'Borrador (requiere correcciones)'
                           : oferta.estado === 'cerrada'
@@ -593,13 +593,13 @@ export default async function EmpresaDashboardPage() {
                     {'motivo_rechazo' in oferta && (oferta as { motivo_rechazo?: string }).motivo_rechazo && oferta.estado === 'borrador' && (
                       <div className="mt-2 p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900">
                         <p className="font-bold flex items-center gap-1.5 text-amber-800">
-                          <span>âš ï¸ ObservaciÃ³n de la Municipalidad:</span>
+                          <span>⚠️ Observación de la Municipalidad:</span>
                         </p>
                         <p className="mt-1 text-amber-950 font-medium bg-white/70 p-2 rounded border border-amber-100">
                           &quot;{(oferta as { motivo_rechazo?: string }).motivo_rechazo}&quot;
                         </p>
                         <p className="mt-1 text-amber-700 text-[11px]">
-                          PodÃ©s hacer clic en <strong>&quot;Editar oferta&quot;</strong> para corregir lo solicitado y volver a enviarla a revisiÃ³n.
+                          Podés hacer clic en <strong>&quot;Editar oferta&quot;</strong> para corregir lo solicitado y volver a enviarla a revisión.
                         </p>
                       </div>
                     )}
@@ -612,7 +612,7 @@ export default async function EmpresaDashboardPage() {
                       <span>Publicado: {new Date(oferta.created_at).toLocaleDateString('es-AR')}</span>
                       {'salario' in oferta && oferta.salario ? (
                         <span className="text-emerald-800 font-semibold font-sans bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
-                          ðŸ’µ Salario: {formatearSalario(oferta.salario as number)}
+                          💵 Salario: {formatearSalario(oferta.salario as number)}
                         </span>
                       ) : (
                         <span className="text-gray-500 font-normal font-sans bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200">
@@ -620,7 +620,7 @@ export default async function EmpresaDashboardPage() {
                         </span>
                       )}
                       <span className="text-teal-700 font-semibold font-sans">
-                        ðŸ‘¥ {cantDerivados} {cantDerivados === 1 ? 'postulante derivado' : 'postulantes derivados'}
+                        👥 {cantDerivados} {cantDerivados === 1 ? 'postulante derivado' : 'postulantes derivados'}
                       </span>
                     </div>
                   </div>
@@ -638,7 +638,7 @@ export default async function EmpresaDashboardPage() {
                       href={`/empresa/ofertas/${oferta.id}/candidatos`}
                       className="text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
                     >
-                      <span>ðŸ‘¥ Ver candidatos ({cantDerivados})</span>
+                      <span>👥 Ver candidatos ({cantDerivados})</span>
                     </Link>
                     <Link
                       href={`/ofertas/${oferta.id}`}
@@ -655,12 +655,12 @@ export default async function EmpresaDashboardPage() {
         )}
       </section>
 
-      {/* SecciÃ³n 2: Candidatos Derivados por la Municipalidad */}
+      {/* Sección 2: Candidatos Derivados por la Municipalidad */}
       <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-900">Postulantes Derivados por la Municipalidad</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Candidatos preseleccionados y recomendados por el equipo de intermediaciÃ³n laboral del municipio. PodÃ©s ver su perfil completo, CV y datos de contacto.
+            Candidatos preseleccionados y recomendados por el equipo de intermediación laboral del municipio. Podés ver su perfil completo, CV y datos de contacto.
           </p>
         </div>
 
