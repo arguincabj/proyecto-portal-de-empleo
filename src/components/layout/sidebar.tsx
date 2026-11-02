@@ -18,9 +18,9 @@ type Props = {
 }
 
 export async function Sidebar({ usuario }: Props) {
-  // Contar notificaciones no leídas para postulantes
+  // Contar notificaciones no leídas para postulantes y administradores
   let noLeidas = 0
-  if (usuario?.rol === 'postulante') {
+  if (usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad') {
     try {
       const supabase = await createSupabaseServerClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -48,6 +48,7 @@ export async function Sidebar({ usuario }: Props) {
           { href: '/admin', label: 'Gestión Municipal', icon: Shield },
           { href: '/admin/buscador', label: 'Buscador de Perfiles', icon: UserSearch },
           { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
+          { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
           { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
         ]
       : [

@@ -51,9 +51,9 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
   const avatarUrl = user.user_metadata?.avatar_url || (usuario as { avatar_url?: string | null })?.avatar_url || null
   const usuarioConAvatar = usuario ? { ...usuario, avatar_url: avatarUrl } : null
 
-  // Contar notificaciones no leídas para el MobileSidebar (client component)
+  // Contar notificaciones no leídas para postulante o municipalidad
   let noLeidas = 0
-  if (usuario?.rol === 'postulante') {
+  if (usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad') {
     try {
       const { count } = await supabaseAdmin
         .from('notificaciones')

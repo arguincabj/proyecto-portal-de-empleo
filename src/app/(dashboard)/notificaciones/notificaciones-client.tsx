@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import Link from 'next/link'
-import { Bell, CheckCheck, CalendarClock, Info, AlertCircle, Check, GraduationCap, ArrowRight } from 'lucide-react'
+import { Bell, CheckCheck, CalendarClock, Info, AlertCircle, Check, GraduationCap, ArrowRight, CheckCircle2, XCircle } from 'lucide-react'
 import { marcarNotificacionLeida, marcarTodasLeidas } from './actions'
 
 type Notificacion = {
@@ -15,6 +15,10 @@ type Notificacion = {
     fecha_hora?: string
     lugar_modalidad?: string
     postulacion_id?: string
+    derivacion_id?: string
+    oferta_id?: string
+    postulante_id?: string
+    motivo_rechazo?: string
     link?: string
     link_texto?: string
     total_rechazos?: number
@@ -23,8 +27,9 @@ type Notificacion = {
 }
 
 function IconoTipo({ tipo }: { tipo: string }) {
+  if (tipo === 'contratado') return <CheckCircle2 className="size-5 text-emerald-600 shrink-0 mt-0.5" />
   if (tipo === 'entrevista') return <CalendarClock className="size-5 text-blue-600 shrink-0 mt-0.5" />
-  if (tipo === 'alerta' || tipo === 'alerta_3_rechazos') return <AlertCircle className="size-5 text-amber-500 shrink-0 mt-0.5" />
+  if (tipo === 'alerta' || tipo === 'alerta_3_rechazos') return <AlertCircle className="size-5 text-rose-500 shrink-0 mt-0.5" />
   if (tipo === 'cursos') return <GraduationCap className="size-5 text-emerald-600 shrink-0 mt-0.5" />
   return <Info className="size-5 text-teal-600 shrink-0 mt-0.5" />
 }

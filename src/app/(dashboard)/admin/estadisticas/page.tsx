@@ -74,16 +74,33 @@ export default async function AdminDashboardPage() {
 
   const ofertas = (ofertasRaw ?? []) as unknown as Array<{ estado: string }>
 
-  // 2. Obtener datos reales de empresas, postulaciones y postulantes para métricas y gráficos
-  const [empresasRes, postulacionesRes, postulantesRes] = await Promise.all([
+  // 2. Obtener datos reales de empresas, postulaciones, derivaciones y postulantes para métricas y gráficos
+  const [empresasRes, postulacionesRes, postulantesRes, derivacionesContratadasRes] = await Promise.all([
     supabaseAdmin.from('empresas').select('id, estado_aprobacion, rubro'),
-    supabaseAdmin.from('postulaciones').select('id, oferta_id, estado'),
+    supabaseAdmin.from('postulaciones').select('id, oferta_id, postulante_id, estado'),
     supabaseAdmin.from('postulantes').select('id, estado_laboral'),
+    supabaseAdmin
+      .from('derivaciones')
+      .select('id, postulacion:postulaciones(postulante_id)')
+      .eq('estado_empresa', 'contratado'),
   ])
 
   const empresasData = empresasRes.data ?? []
   const postulacionesData = postulacionesRes.data ?? []
   const postulantesData = postulantesRes.data ?? []
+
+  // Postulantes únicos que han sido contratados/empleados por alguna empresa
+  const contratacionesDerivadas = derivacionesContratadasRes.data ?? []
+  const idsPostulantesEmpleados = new Set<string>()
+  contratacionesDerivadas.forEach((d) => {
+    const postu = Array.isArray(d.postulacion) ? d.postulacion[0] : d.postulacion
+    const pId = (postu as { postulante_id?: string } | null)?.postulante_id
+    if (pId) {
+      idsPostulantesEmpleados.add(pId)
+    }
+  })
+  const postulantesEmpleadosPorEmpresa = idsPostulantesEmpleados.size
+  const totalContrataciones = contratacionesDerivadas.length
 
   // Calcular métricas de ofertas
   const { count: countRechazados } = await supabaseAdmin
@@ -175,6 +192,8 @@ export default async function AdminDashboardPage() {
     totalPostulantes: postulantesData.length,
     postulantesEnBusqueda,
     postulantesEmpleado,
+    postulantesEmpleadosPorEmpresa,
+    totalContrataciones,
 
     topCategoriasPostuladas,
   }

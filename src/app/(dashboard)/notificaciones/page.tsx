@@ -11,14 +11,16 @@ export default async function NotificacionesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  // Solo postulantes pueden ver esta página
+  // Permitir acceso a postulantes y a administradores (municipalidad)
   const { data: usuario } = await supabase
     .from('usuarios')
     .select('rol')
     .eq('id', user.id)
     .single()
 
-  if (usuario?.rol !== 'postulante') redirect('/inicio')
+  if (usuario?.rol !== 'postulante' && usuario?.rol !== 'municipalidad') {
+    redirect('/inicio')
+  }
 
   const { data: notificaciones } = await supabaseAdmin
     .from('notificaciones')

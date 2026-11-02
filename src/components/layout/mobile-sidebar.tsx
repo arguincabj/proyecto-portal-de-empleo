@@ -35,6 +35,7 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
           { href: '/admin', label: 'Gestión Municipal', icon: Shield },
           { href: '/admin/buscador', label: 'Buscador de Perfiles', icon: UserSearch },
           { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
+          { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
           { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
         ]
       : [

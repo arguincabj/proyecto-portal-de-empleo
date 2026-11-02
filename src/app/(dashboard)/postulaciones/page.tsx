@@ -115,6 +115,26 @@ export default async function MisPostulacionesPage() {
     }
   }
 
+  // Consultar derivaciones de estas postulaciones (para mostrar resolución de la empresa si fue contratado o no)
+  type DerivacionInfo = {
+    id: string
+    postulacion_id: string
+    estado_empresa: string
+    nota_empresa?: string | null
+    updated_at?: string
+  }
+  const derivacionesMap = new Map<string, DerivacionInfo>()
+  if (postIds.length > 0) {
+    const { data: derData } = await supabaseAdmin
+      .from('derivaciones')
+      .select('id, postulacion_id, estado_empresa, nota_empresa, updated_at')
+      .in('postulacion_id', postIds)
+
+    if (derData) {
+      derData.forEach((d) => derivacionesMap.set(d.postulacion_id, d as DerivacionInfo))
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Encabezado */}
@@ -156,6 +176,7 @@ export default async function MisPostulacionesPage() {
             }
             const StatusIcon = estadoCfg.icon
             const preentrevista = preentrevistasMap.get(p.id)
+            const derivacion = derivacionesMap.get(p.id)
 
             return (
               <div
@@ -174,6 +195,20 @@ export default async function MisPostulacionesPage() {
                         <StatusIcon className="size-3.5" />
                         <span>{estadoCfg.label}</span>
                       </span>
+
+                      {/* Badge con el resultado de la decisión de la empresa */}
+                      {derivacion && derivacion.estado_empresa === 'contratado' && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-800 border-emerald-300">
+                          <CheckCircle2 className="size-3.5" />
+                          <span>¡Contratado por la empresa!</span>
+                        </span>
+                      )}
+                      {derivacion && derivacion.estado_empresa === 'rechazado' && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold bg-red-100 text-red-800 border-red-300">
+                          <XCircle className="size-3.5" />
+                          <span>No contratado</span>
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
@@ -218,6 +253,37 @@ export default async function MisPostulacionesPage() {
                           <p className="text-gray-600 italic mt-1">
                             Nota: &quot;{preentrevista.notas}&quot;
                           </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Información del resultado de la empresa */}
+                    {derivacion && derivacion.estado_empresa === 'contratado' && (
+                      <div className="mt-3 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/80 text-xs text-emerald-950 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                          <CheckCircle2 className="size-4 text-emerald-600" />
+                          <span>¡Contratación confirmada por {oferta?.empresa_nombre ?? 'la empresa'}!</span>
+                        </div>
+                        <p className="text-emerald-900 leading-relaxed">
+                          La empresa ha confirmado tu selección e incorporación al puesto laboral. Se pondrán en contacto contigo a través de tus datos de contacto registrados para coordinar los detalles de ingreso.
+                        </p>
+                      </div>
+                    )}
+
+                    {derivacion && derivacion.estado_empresa === 'rechazado' && (
+                      <div className="mt-3 p-3.5 rounded-xl border border-red-200 bg-red-50/80 text-xs text-red-950 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-red-800">
+                          <XCircle className="size-4 text-red-600" />
+                          <span>Proceso finalizado por la empresa contratante</span>
+                        </div>
+                        <p className="text-red-900 leading-relaxed">
+                          {oferta?.empresa_nombre ?? 'La empresa'} informó que no continuará con tu contratación para este puesto.
+                        </p>
+                        {derivacion.nota_empresa && (
+                          <div className="mt-1.5 pt-1.5 border-t border-red-200/70 text-red-950">
+                            <span className="font-bold text-red-900">Motivo informado por la empresa:</span>{' '}
+                            <span className="italic">&quot;{derivacion.nota_empresa}&quot;</span>
+                          </div>
                         )}
                       </div>
                     )}

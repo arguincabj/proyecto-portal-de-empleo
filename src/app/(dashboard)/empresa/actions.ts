@@ -205,41 +205,98 @@ export async function actualizarEstadoDerivacion(
 
     if (!user) return { ok: false, error: 'No autorizado' }
 
+    // Validación obligatoria de motivo en caso de no contratación (rechazo)
+    if (estadoEmpresa === 'rechazado') {
+      const motivoLimpio = (notaEmpresa ?? '').trim()
+      if (!motivoLimpio) {
+        return { ok: false, error: 'Es obligatorio registrar el motivo por el cual no se contrata al candidato.' }
+      }
+    }
+
     const { error } = await supabaseAdmin
       .from('derivaciones')
       .update({
         estado_empresa: estadoEmpresa,
-        nota_empresa: notaEmpresa ?? null,
+        nota_empresa: notaEmpresa?.trim() || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', derivacionId)
 
     if (error) return { ok: false, error: error.message }
 
-    // Si la empresa marcó como rechazado, verificar si el postulante acumula 3 rechazos para enviarlo al curso
+    // Obtener datos de la derivación, postulación, oferta y empresa para notificaciones precisas
+    const { data: derivacionInfo } = await supabaseAdmin
+      .from('derivaciones')
+      .select(`
+        postulacion_id,
+        postulacion:postulaciones (
+          id,
+          postulante_id,
+          postulante:postulantes (
+            id,
+            usuario_id,
+            usuario:usuarios (
+              id,
+              nombre,
+              apellido
+            )
+          ),
+          oferta:ofertas (
+            id,
+            titulo,
+            empresa_nombre
+          )
+        )
+      `)
+      .eq('id', derivacionId)
+      .maybeSingle()
+
+    const postulacionObj = Array.isArray(derivacionInfo?.postulacion)
+      ? derivacionInfo?.postulacion[0]
+      : derivacionInfo?.postulacion
+
+    const postulanteObj = Array.isArray(postulacionObj?.postulante)
+      ? postulacionObj?.postulante[0]
+      : postulacionObj?.postulante
+
+    const usuarioObj = Array.isArray(postulanteObj?.usuario)
+      ? postulanteObj?.usuario[0]
+      : postulanteObj?.usuario
+
+    const ofertaObj = Array.isArray(postulacionObj?.oferta)
+      ? postulacionObj?.oferta[0]
+      : postulacionObj?.oferta
+
+    const postulanteUsuarioId = postulanteObj?.usuario_id
+    const postulanteId = postulanteObj?.id || postulacionObj?.postulante_id
+    const postulanteNombreCompleto = [usuarioObj?.nombre, usuarioObj?.apellido].filter(Boolean).join(' ') || 'El postulante'
+    const ofertaTitulo = ofertaObj?.titulo || 'la búsqueda laboral'
+    const empresaNombre = ofertaObj?.empresa_nombre || 'La empresa'
+
+    // Si la empresa marcó como rechazado (no contrata):
     if (estadoEmpresa === 'rechazado') {
-      try {
-        const { data: derivacion } = await supabaseAdmin
-          .from('derivaciones')
-          .select('postulacion:postulaciones(postulante_id)')
-          .eq('id', derivacionId)
-          .single()
+      const motivoRegistrado = notaEmpresa?.trim() || 'No especificado'
 
-        const postulacionData = Array.isArray(derivacion?.postulacion)
-          ? derivacion.postulacion[0]
-          : derivacion?.postulacion
-        const postulanteId = (postulacionData as { postulante_id?: string } | null | undefined)?.postulante_id
-        if (postulanteId) {
-          await verificarYAsignarCursoCIT(postulanteId)
+      // 1. Notificar al postulante con el motivo del rechazo
+      if (postulanteUsuarioId) {
+        try {
+          await supabaseAdmin.from('notificaciones').insert({
+            usuario_id: postulanteUsuarioId,
+            titulo: `Resultado de postulación: ${ofertaTitulo}`,
+            mensaje: `${empresaNombre} informó que no fuiste contratado para el puesto "${ofertaTitulo}". Motivo: "${motivoRegistrado}".`,
+            tipo: 'alerta',
+            metadata: {
+              derivacion_id: derivacionId,
+              oferta_id: ofertaObj?.id,
+              motivo_rechazo: motivoRegistrado,
+            },
+          })
+        } catch (notifCandErr) {
+          console.error('Error al notificar al candidato del rechazo:', notifCandErr)
         }
-      } catch (citErr) {
-        console.error('Error al verificar CIT tras rechazo:', citErr)
       }
-    }
 
-    // Si la empresa marcó como contratado, notificar a administración
-    // (los rechazos se notifican automáticamente al llegar al 3er rechazo a través de verificarYAsignarCursoCIT)
-    if (estadoEmpresa === 'contratado') {
+      // 2. Notificar a la administración municipal (todos los usuarios con rol 'municipalidad')
       try {
         const { data: adminUsers } = await supabaseAdmin
           .from('usuarios')
@@ -247,13 +304,72 @@ export async function actualizarEstadoDerivacion(
           .eq('rol', 'municipalidad')
 
         if (adminUsers && adminUsers.length > 0) {
-          const titulo = 'Postulante contratado por empresa'
-          const mensaje = 'Una empresa marcó un postulante como contratado. Revisá el panel de administración.'
+          const notificacionesMuni = adminUsers.map((u: { id: string }) => ({
+            usuario_id: u.id,
+            titulo: `${postulanteNombreCompleto} fue rechazado por ${empresaNombre}`,
+            mensaje: `${postulanteNombreCompleto} fue rechazado por ${empresaNombre} para el puesto "${ofertaTitulo}". Motivo: "${motivoRegistrado}".`,
+            tipo: 'alerta',
+            metadata: {
+              derivacion_id: derivacionId,
+              oferta_id: ofertaObj?.id,
+              postulante_id: postulanteId,
+              motivo_rechazo: motivoRegistrado,
+            },
+          }))
+          await supabaseAdmin.from('notificaciones').insert(notificacionesMuni)
+        }
+      } catch (notifAdminErr) {
+        console.error('Error al notificar a administración del rechazo:', notifAdminErr)
+      }
+
+      // 3. Verificar si el postulante acumula 3 rechazos para enviarlo al curso CIT
+      if (postulanteId) {
+        try {
+          await verificarYAsignarCursoCIT(postulanteId)
+        } catch (citErr) {
+          console.error('Error al verificar CIT tras rechazo:', citErr)
+        }
+      }
+    }
+
+    // Si la empresa marcó como contratado:
+    if (estadoEmpresa === 'contratado') {
+      // 1. Notificar al candidato de la contratación
+      if (postulanteUsuarioId) {
+        try {
+          await supabaseAdmin.from('notificaciones').insert({
+            usuario_id: postulanteUsuarioId,
+            titulo: `¡Felicitaciones! Fuiste contratado`,
+            mensaje: `¡Excelente noticia! ${empresaNombre} confirmó tu contratación para el puesto "${ofertaTitulo}". Pronto se pondrán en contacto para coordinar el ingreso.`,
+            tipo: 'contratado',
+            metadata: {
+              derivacion_id: derivacionId,
+              oferta_id: ofertaObj?.id,
+            },
+          })
+        } catch (notifCandErr) {
+          console.error('Error al notificar al candidato de la contratación:', notifCandErr)
+        }
+      }
+
+      // 2. Notificar a administración municipal
+      try {
+        const { data: adminUsers } = await supabaseAdmin
+          .from('usuarios')
+          .select('id')
+          .eq('rol', 'municipalidad')
+
+        if (adminUsers && adminUsers.length > 0) {
           const notificaciones = adminUsers.map((u: { id: string }) => ({
             usuario_id: u.id,
-            titulo,
-            mensaje,
+            titulo: `${postulanteNombreCompleto} fue contratado por ${empresaNombre}`,
+            mensaje: `${postulanteNombreCompleto} fue contratado por ${empresaNombre} para el puesto "${ofertaTitulo}".`,
             tipo: 'contratado',
+            metadata: {
+              derivacion_id: derivacionId,
+              oferta_id: ofertaObj?.id,
+              postulante_id: postulanteId,
+            },
           }))
           await supabaseAdmin.from('notificaciones').insert(notificaciones)
         }
@@ -265,6 +381,8 @@ export async function actualizarEstadoDerivacion(
     revalidatePath('/empresa')
     revalidatePath('/admin')
     revalidatePath('/admin/postulantes')
+    revalidatePath('/admin/rechazados')
+    revalidatePath('/postulaciones')
     revalidatePath('/inicio')
     return { ok: true }
   } catch (err: unknown) {
