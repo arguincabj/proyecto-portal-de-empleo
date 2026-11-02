@@ -251,6 +251,9 @@ export default async function BuscadorPerfilesPage() {
   }
 
   // 8. Modelar la lista consolidada de postulantes para el cliente
+  const idsConTresRechazos = await obtenerIdsPostulantesConTresRechazos()
+  const idsConTresRechazosSet = new Set<string>(idsConTresRechazos)
+
   const postulantesParaCliente: PostulanteBuscadorItem[] = listaPostulantes.map((p) => {
     const rawUser = p.usuario_id ? usuariosMap.get(p.usuario_id) ?? null : null
     const userMeta = (p.usuario_id ? authMetadataMap.get(p.usuario_id) : null) || {}
@@ -322,6 +325,7 @@ export default async function BuscadorPerfilesPage() {
       usuario: usuarioInfo,
       curricula: curriculaFormateadas,
       totalPostulaciones: postulacionesCountMap.get(p.id) || 0,
+      tieneTresRechazos: idsConTresRechazosSet.has(p.id),
     }
   })
 

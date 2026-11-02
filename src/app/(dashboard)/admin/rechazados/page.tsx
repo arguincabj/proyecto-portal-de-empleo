@@ -47,7 +47,7 @@ export default async function AdminRechazadosPage({ searchParams }: PageProps) {
     supabaseAdmin.from('derivaciones').select('id', { count: 'exact', head: true }).eq('estado_empresa', 'rechazado'),
   ])
 
-  // Obtener IDs de postulantes que hayan alcanzado la condición de 3 rechazos
+  // Obtener IDs de postulantes que hayan alcanzado estrictamente la condición de 3 o más rechazos
   const postulantesConTresRechazosIds = await obtenerIdsPostulantesConTresRechazos()
   const idsConTresRechazosSet = new Set<string>(postulantesConTresRechazosIds)
 

@@ -111,7 +111,7 @@ export function AdminRechazadosClient({ rechazados }: Props) {
 
       return true
     })
-  }, [rechazados, busqueda, empresaFiltro])
+  }, [rechazados, filtroApartado, busqueda, empresaFiltro])
 
   const totalPaginas = Math.ceil(filtrados.length / ITEMS_POR_PAGINA) || 1
   const paginaValida = Math.min(paginaActual, totalPaginas)
