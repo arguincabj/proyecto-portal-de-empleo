@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
@@ -6,15 +6,17 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 
 async function getAppOrigin(): Promise<string> {
-  const h = await headers()
-  const origin = h.get('origin')
-  if (origin && origin !== 'null') return origin
+  // En produccion, priorizar la URL del sitio definida por variable de entorno
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL
+  }
 
+  const h = await headers()
   const host = h.get('x-forwarded-host') || h.get('host')
   const proto = h.get('x-forwarded-proto') || (host && host.includes('localhost') ? 'http' : 'https')
   if (host) return `${proto}://${host}`
 
-  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  return 'http://localhost:3000'
 }
 
 export async function login(email: string, password: string) {
