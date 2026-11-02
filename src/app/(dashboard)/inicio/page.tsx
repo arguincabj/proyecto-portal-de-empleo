@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { UserRound, Briefcase, Send, ArrowRight, GraduationCap } from 'lucide-react'
+import { UserRound, Briefcase, Send, ArrowRight, GraduationCap, AlertTriangle, CheckCircle2, Play } from 'lucide-react'
+import { contarRechazosDePostulante } from '@/lib/verificar-cit'
 
 const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
@@ -45,11 +46,12 @@ export default async function InicioPage() {
   let estadoLaboral: 'en_busqueda' | 'trabajando' = 'en_busqueda'
   let citAsignado = false
   let citEstado: string | null = null
+  let totalRechazados = 0
 
   if (!usuario?.rol || usuario.rol === 'postulante') {
     const { data: postulante } = await supabaseAdmin
       .from('postulantes')
-      .select('estado_laboral, cit_asignado, cit_estado')
+      .select('id, estado_laboral, cit_asignado, cit_estado')
       .eq('usuario_id', user.id)
       .maybeSingle()
 
@@ -61,6 +63,12 @@ export default async function InicioPage() {
     if (postulante?.cit_asignado) {
       citAsignado = true
       citEstado = postulante.cit_estado || 'pendiente'
+    }
+    if (postulante?.id) {
+      totalRechazados = await contarRechazosDePostulante(postulante.id)
+      if (totalRechazados >= 3) {
+        citAsignado = true
+      }
     }
   }
 

@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from '../admin-nav-tabs'
 import { AdminMetricasGraficos, type AdminStatsData } from '../admin-metricas-graficos'
 import { Shield, AlertTriangle, ExternalLink } from 'lucide-react'
+import { contarPostulantesConTresRechazos } from '@/lib/verificar-cit'
 
 export const dynamic = 'force-dynamic'
 

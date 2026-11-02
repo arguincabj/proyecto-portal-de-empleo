@@ -113,7 +113,7 @@ export default async function HomePage() {
                 className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white font-medium text-sm px-5 py-3 rounded-xl border border-white/20 transition-colors"
               >
                 <Briefcase className="size-4 text-emerald-300" />
-                <span>Explorar vacantes ({ofertas.length})</span>
+                <span>Explorar vacantes</span>
               </Link>
             </div>
           </div>

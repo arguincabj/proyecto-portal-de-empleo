@@ -213,6 +213,21 @@ export async function noEnviarPostulante(postulacionId: string) {
       .delete()
       .eq('postulacion_id', postulacionId)
 
+    // 3. Obtener el postulante_id para verificar si alcanza 3 rechazos
+    try {
+      const { data: postu } = await supabaseAdmin
+        .from('postulaciones')
+        .select('postulante_id')
+        .eq('id', postulacionId)
+        .single()
+
+      if (postu?.postulante_id) {
+        await verificarYAsignarCursoCIT(postu.postulante_id)
+      }
+    } catch (citErr) {
+      console.error('Error al verificar CIT al descartar postulación:', citErr)
+    }
+
     revalidatePath('/admin')
     revalidatePath('/admin/postulantes')
     revalidatePath('/empresa')

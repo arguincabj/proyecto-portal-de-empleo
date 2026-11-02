@@ -237,8 +237,9 @@ export async function actualizarEstadoDerivacion(
       }
     }
 
-    // Si la empresa marcó como rechazado o contratado, notificar a administración
-    if (estadoEmpresa === 'rechazado' || estadoEmpresa === 'contratado') {
+    // Si la empresa marcó como contratado, notificar a administración
+    // (los rechazos se notifican automáticamente al llegar al 3er rechazo a través de verificarYAsignarCursoCIT)
+    if (estadoEmpresa === 'contratado') {
       try {
         const { data: adminUsers } = await supabaseAdmin
           .from('usuarios')
@@ -246,18 +247,13 @@ export async function actualizarEstadoDerivacion(
           .eq('rol', 'municipalidad')
 
         if (adminUsers && adminUsers.length > 0) {
-          const esContratado = estadoEmpresa === 'contratado'
-          const titulo = esContratado
-            ? 'Postulante contratado por empresa'
-            : 'Postulante rechazado por empresa'
-          const mensaje = esContratado
-            ? 'Una empresa marcó un postulante como contratado. Revisá el panel de administración.'
-            : 'Una empresa rechazó a un postulante derivado. Revisá el panel de administración.'
+          const titulo = 'Postulante contratado por empresa'
+          const mensaje = 'Una empresa marcó un postulante como contratado. Revisá el panel de administración.'
           const notificaciones = adminUsers.map((u: { id: string }) => ({
             usuario_id: u.id,
             titulo,
             mensaje,
-            tipo: esContratado ? 'contratado' : 'rechazado_empresa',
+            tipo: 'contratado',
           }))
           await supabaseAdmin.from('notificaciones').insert(notificaciones)
         }

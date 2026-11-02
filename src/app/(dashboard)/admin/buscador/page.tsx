@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from '../admin-nav-tabs'
 import { BuscadorPerfilesClient, PostulanteBuscadorItem } from './buscador-perfiles-client'
 import { UserSearch } from 'lucide-react'
+import { obtenerIdsPostulantesConTresRechazos } from '@/lib/verificar-cit'
 
 export const dynamic = 'force-dynamic'
 

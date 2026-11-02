@@ -1,7 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch } from 'lucide-react'
+import { LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch, GraduationCap } from 'lucide-react'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
 import { logout } from '@/app/auth/actions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
@@ -55,6 +55,7 @@ export async function Sidebar({ usuario }: Props) {
           { href: '/perfil', label: 'Mi Perfil', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas', icon: Briefcase },
           { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
+          { href: '/cursos-y-videos', label: 'Cursos y Videos', icon: GraduationCap },
           { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
         ]
 

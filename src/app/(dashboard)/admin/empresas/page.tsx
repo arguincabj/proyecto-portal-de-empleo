@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from '../admin-nav-tabs'
 import { ListaEmpresasAdmin, EmpresaAdminItem } from './lista-empresas-admin'
 import { Shield, Building2, CheckCircle2, Clock, XCircle, AlertTriangle, ExternalLink } from 'lucide-react'
+import { contarPostulantesConTresRechazos } from '@/lib/verificar-cit'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,7 +52,7 @@ export default async function AdminEmpresasPage() {
     .select('id', { count: 'exact', head: true })
     .eq('estado', 'pendiente')
 
-  // Contar postulaciones pendientes para el badge de la pestaña
+  // Contar postulaciones rechazadas para el badge de la pestaña
   const { count: countRechazados } = await supabaseAdmin
     .from('derivaciones')
     .select('id', { count: 'exact', head: true })

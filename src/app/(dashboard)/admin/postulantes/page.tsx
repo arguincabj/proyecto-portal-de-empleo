@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from '../admin-nav-tabs'
 import { GestionPostulantesClient, PostulacionItem } from './gestion-postulantes-client'
 import { Shield, ExternalLink, AlertTriangle } from 'lucide-react'
+import { contarPostulantesConTresRechazos } from '@/lib/verificar-cit'
 
 export const dynamic = 'force-dynamic'
 

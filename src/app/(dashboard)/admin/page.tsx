@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from './admin-nav-tabs'
 import { ListaOfertasAdmin, OfertaAdminItem } from './lista-ofertas-admin'
 import { Shield, AlertTriangle, ExternalLink, Clock, CheckCircle2, XCircle, Briefcase } from 'lucide-react'
+import { contarPostulantesConTresRechazos } from '@/lib/verificar-cit'
 
 export const dynamic = 'force-dynamic'
 

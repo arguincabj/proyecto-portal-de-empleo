@@ -16,6 +16,7 @@ import {
   MapPin,
   X,
   User,
+  GraduationCap,
 } from 'lucide-react'
 import { Paginacion } from '@/components/ui/paginacion'
 
@@ -23,6 +24,8 @@ export type PostulanteRechazadoItem = {
   id: string // derivacion id
   fechaRechazo: string
   motivoRechazo: string | null
+  tieneTresRechazos?: boolean
+  totalRechazados?: number
   oferta: {
     id: string
     titulo: string
@@ -43,6 +46,7 @@ export type PostulanteRechazadoItem = {
     experiencia: string | null
     habilidades: string | null
     categorias_laborales?: string[] | null
+    totalRechazados?: number
   }
   cv_signed_url?: string | null
   cv_nombre?: string | null
@@ -55,10 +59,16 @@ type Props = {
 const ITEMS_POR_PAGINA = 10
 
 export function AdminRechazadosClient({ rechazados }: Props) {
+  const [filtroApartado, setFiltroApartado] = useState<'todos' | 'tres_rechazos'>('todos')
   const [busqueda, setBusqueda] = useState('')
   const [empresaFiltro, setEmpresaFiltro] = useState('')
   const [paginaActual, setPaginaActual] = useState(1)
   const [perfilModal, setPerfilModal] = useState<PostulanteRechazadoItem | null>(null)
+
+  // Cantidad de candidatos que cumplen la condición de 3 rechazos
+  const conTresRechazosCount = useMemo(() => {
+    return rechazados.filter((r) => r.tieneTresRechazos).length
+  }, [rechazados])
 
   // Lista única de empresas
   const empresasDisponibles = useMemo(() => {
@@ -72,6 +82,11 @@ export function AdminRechazadosClient({ rechazados }: Props) {
   // Filtrado
   const filtrados = useMemo(() => {
     return rechazados.filter((item) => {
+      // Filtro de apartado: todos vs únicamente con 3 rechazos
+      if (filtroApartado === 'tres_rechazos' && !item.tieneTresRechazos) {
+        return false
+      }
+
       if (empresaFiltro && item.oferta.empresaNombre !== empresaFiltro) {
         return false
       }
@@ -107,6 +122,54 @@ export function AdminRechazadosClient({ rechazados }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Selector de Apartados */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 pb-3">
+        <button
+          type="button"
+          onClick={() => {
+            setFiltroApartado('todos')
+            setPaginaActual(1)
+          }}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            filtroApartado === 'todos'
+              ? 'bg-rose-600 text-white shadow-sm'
+              : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+          }`}
+        >
+          <UserX className="size-3.5" />
+          <span>Todos los postulantes rechazados ({rechazados.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setFiltroApartado('tres_rechazos')
+            setPaginaActual(1)
+          }}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            filtroApartado === 'tres_rechazos'
+              ? 'bg-rose-600 text-white shadow-sm'
+              : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+          }`}
+        >
+          <GraduationCap className="size-4" />
+          <span>Apartado: Con 3 rechazos / Derivados a Cursos ({conTresRechazosCount})</span>
+        </button>
+      </div>
+
+      {/* Banner explicativo exclusivo del apartado de 3 rechazos */}
+      {filtroApartado === 'tres_rechazos' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 flex items-start gap-3">
+          <GraduationCap className="size-5 text-amber-700 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-bold text-sm text-amber-950">Apartado de Postulantes con 3 Rechazos</p>
+            <p className="text-amber-800 leading-relaxed">
+              En este apartado se listan los postulantes que alcanzaron 3 o más rechazos en sus búsquedas laborales. Cada uno de estos perfiles ha sido notificado automáticamente y derivado al espacio de <strong>Cursos y Videos</strong> formativos de la Municipalidad para potenciar su inserción profesional.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Barra de Filtros */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -175,10 +238,16 @@ export function AdminRechazadosClient({ rechazados }: Props) {
       {visibles.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-xs border border-gray-200 p-12 text-center">
           <UserX className="size-10 text-gray-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-gray-800">No se encontraron postulantes rechazados</h3>
+          <h3 className="text-base font-bold text-gray-800">
+            {filtroApartado === 'tres_rechazos'
+              ? 'No hay postulantes con 3 rechazos acumulados'
+              : 'No se encontraron postulantes rechazados'}
+          </h3>
           <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
             {busqueda || empresaFiltro
               ? 'No hay registros que coincidan con los filtros aplicados.'
+              : filtroApartado === 'tres_rechazos'
+              ? 'Los postulantes aparecerán en este apartado automáticamente cuando alcancen su tercer rechazo para gestionar su derivación a Cursos y Videos formativos.'
               : 'Ninguna empresa ha reportado rechazos de candidatos hasta el momento.'}
           </p>
         </div>

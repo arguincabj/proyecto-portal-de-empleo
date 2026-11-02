@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { FileText, Building2, Calendar, Clock, CheckCircle2, XCircle, ArrowUpRight, CalendarClock, MapPin } from 'lucide-react'
+import { FileText, Building2, Calendar, Clock, CheckCircle2, XCircle, ArrowUpRight, CalendarClock, MapPin, GraduationCap } from 'lucide-react'
+import { contarRechazosDePostulante } from '@/lib/verificar-cit'
 
 export const dynamic = 'force-dynamic'
 
@@ -117,7 +118,7 @@ export default async function MisPostulacionesPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Encabezado */}
-      <div>
+      <div className="border-b border-gray-200 pb-5">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Mis Postulaciones</h1>
         <p className="mt-1 text-sm text-foreground-secondary">
           Hacé el seguimiento del estado de las ofertas laborales a las que te postulaste.

@@ -6,6 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from '../admin-nav-tabs'
 import { AdminRechazadosClient } from './admin-rechazados-client'
 import type { PostulanteRechazadoItem } from './admin-rechazados-client'
+import { obtenerIdsPostulantesConTresRechazos, contarPostulantesConTresRechazos } from '@/lib/verificar-cit'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,16 +47,19 @@ export default async function AdminRechazadosPage({ searchParams }: PageProps) {
     supabaseAdmin.from('derivaciones').select('id', { count: 'exact', head: true }).eq('estado_empresa', 'rechazado'),
   ])
 
+  // Obtener IDs de postulantes que hayan alcanzado la condición de 3 rechazos
+  const postulantesConTresRechazosIds = await obtenerIdsPostulantesConTresRechazos()
+  const idsConTresRechazosSet = new Set<string>(postulantesConTresRechazosIds)
+
   // Paginación server-side
   const resolvedSearchParams = await searchParams
   const paginaActual = Math.max(1, Number(resolvedSearchParams.page) || 1)
-  const porPagina = 15
+  const porPagina = 20
 
-  // 1. Obtener count total de derivaciones rechazadas
   const from = (paginaActual - 1) * porPagina
   const to = from + porPagina - 1
 
-  // 2. Obtener lote paginado de derivaciones rechazadas
+  // 1. Obtener todas las derivaciones rechazadas como estaba antes
   const { data: derivacionesData, error: derErr } = await supabaseAdmin
     .from('derivaciones')
     .select('id, postulacion_id, nota_municipalidad, estado_empresa, nota_empresa, created_at, updated_at')
@@ -89,6 +93,31 @@ export default async function AdminRechazadosPage({ searchParams }: PageProps) {
 
   const postulacionesMap = new Map<string, (typeof listaPostulaciones)[0]>()
   listaPostulaciones.forEach((p) => postulacionesMap.set(p.id, p))
+
+  // Calcular la cantidad exacta de rechazos que tiene cada postulante en el sistema
+  const { data: todasDerivacionesRechazadas } = await supabaseAdmin
+    .from('derivaciones')
+    .select('postulacion_id')
+    .eq('estado_empresa', 'rechazado')
+
+  const postuIdsRechazadas = Array.from(
+    new Set((todasDerivacionesRechazadas ?? []).map((d) => d.postulacion_id).filter(Boolean))
+  )
+
+  const conteoRechazosPorPostulante: Record<string, number> = {}
+  if (postuIdsRechazadas.length > 0) {
+    const { data: pList } = await supabaseAdmin
+      .from('postulaciones')
+      .select('id, postulante_id')
+      .in('id', postuIdsRechazadas)
+
+    ;(pList ?? []).forEach((p) => {
+      if (p.postulante_id) {
+        conteoRechazosPorPostulante[p.postulante_id] =
+          (conteoRechazosPorPostulante[p.postulante_id] || 0) + 1
+      }
+    })
+  }
 
   // 4. Ofertas
   const ofertaIds = Array.from(new Set(listaPostulaciones.map((p) => p.oferta_id).filter(Boolean)))
@@ -266,10 +295,16 @@ export default async function AdminRechazadosPage({ searchParams }: PageProps) {
       }
     }
 
+    const idPostulante = postulante?.id ?? postu.postulante_id
+    const cantidadRechazos = conteoRechazosPorPostulante[idPostulante] || 1
+    const tieneTres = cantidadRechazos >= 3
+
     rechazados.push({
       id: der.id,
       fechaRechazo: der.updated_at || der.created_at,
       motivoRechazo: der.nota_empresa,
+      tieneTresRechazos: tieneTres,
+      totalRechazados: cantidadRechazos,
       oferta: {
         id: oferta?.id ?? postu.oferta_id,
         titulo: oferta?.titulo ?? 'Oferta no disponible',
@@ -290,6 +325,7 @@ export default async function AdminRechazadosPage({ searchParams }: PageProps) {
         experiencia: postulante?.experiencia ?? null,
         habilidades: postulante?.habilidades ?? null,
         categorias_laborales: Array.isArray(postulante?.categorias_laborales) ? postulante.categorias_laborales : [],
+        totalRechazados: cantidadRechazos,
       },
       cv_signed_url: cvSigned,
       cv_nombre: cvNombre,

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Menu, X, LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch } from 'lucide-react'
+import { Menu, X, LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
@@ -42,6 +42,7 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
           { href: '/perfil', label: 'Mi Perfil', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas', icon: Briefcase },
           { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
+          { href: '/cursos-y-videos', label: 'Cursos y Videos', icon: GraduationCap },
           { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
         ]
 
