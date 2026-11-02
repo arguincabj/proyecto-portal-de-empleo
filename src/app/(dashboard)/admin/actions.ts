@@ -179,6 +179,45 @@ export async function moderarEmpresa(
       return { ok: false, error: `No se pudo actualizar el estado: ${error.message}` }
     }
 
+    // Notificar a la empresa de la decisión tomada por la administración
+    try {
+      const { data: emp } = await supabaseAdmin
+        .from('empresas')
+        .select('usuario_id, razon_social')
+        .eq('id', empresaId)
+        .single()
+
+      if (emp?.usuario_id) {
+        if (nuevoEstado === 'aprobada') {
+          await supabaseAdmin.from('notificaciones').insert({
+            usuario_id: emp.usuario_id,
+            titulo: '¡Perfil de empresa confirmado y habilitado!',
+            mensaje: 'La administración municipal de Funes aprobó tu cuenta de empresa. Ya podés acceder al panel y publicar tus búsquedas laborales.',
+            tipo: 'exito',
+            metadata: {
+              link: '/empresa',
+              estado: 'aprobada',
+            },
+          })
+        } else if (nuevoEstado === 'rechazada') {
+          const motivoLimpio = motivoRechazo?.trim() || 'Datos no validados'
+          await supabaseAdmin.from('notificaciones').insert({
+            usuario_id: emp.usuario_id,
+            titulo: 'Perfil de empresa observado',
+            mensaje: `La administración municipal revisó tu registro y solicitó correcciones. Motivo: "${motivoLimpio}". Ingresá para modificar tus datos y volver a enviar la solicitud.`,
+            tipo: 'alerta',
+            metadata: {
+              link: '/empresa',
+              estado: 'rechazada',
+              motivo: motivoLimpio,
+            },
+          })
+        }
+      }
+    } catch (notifErr) {
+      console.error('Error al notificar a la empresa:', notifErr)
+    }
+
     revalidatePath('/admin')
     revalidatePath('/admin/empresas')
     revalidatePath('/empresa/perfil')

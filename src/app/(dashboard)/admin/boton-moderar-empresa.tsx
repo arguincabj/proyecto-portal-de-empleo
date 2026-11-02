@@ -15,6 +15,7 @@ export function BotonModerarEmpresa({ empresaId, estadoActual, motivoActual }: P
   const [isPending, startTransition] = useTransition()
   const [modalRechazoAbierto, setModalRechazoAbierto] = useState(false)
   const [motivo, setMotivo] = useState(motivoActual ?? '')
+  const [errorMotivo, setErrorMotivo] = useState('')
 
   const handleCambio = (
     nuevoEstado: 'aprobada' | 'rechazada' | 'pendiente',
@@ -26,6 +27,7 @@ export function BotonModerarEmpresa({ empresaId, estadoActual, motivoActual }: P
       if (res.ok) {
         toast.success(mensaje)
         setModalRechazoAbierto(false)
+        setErrorMotivo('')
       } else {
         toast.error(res.error ?? 'Error al actualizar el estado de la empresa')
       }
@@ -33,7 +35,11 @@ export function BotonModerarEmpresa({ empresaId, estadoActual, motivoActual }: P
   }
 
   const confirmarRechazo = () => {
-    handleCambio('rechazada', 'Empresa rechazada con comentario', motivo)
+    if (!motivo.trim()) {
+      setErrorMotivo('Por favor ingresá el motivo del rechazo para orientar a la empresa.')
+      return
+    }
+    handleCambio('rechazada', 'Empresa rechazada con motivo registrado', motivo.trim())
   }
 
   return (
@@ -105,16 +111,26 @@ export function BotonModerarEmpresa({ empresaId, estadoActual, motivoActual }: P
 
             <div className="space-y-1.5">
               <label htmlFor="motivo-rechazo" className="block text-xs font-semibold text-gray-700">
-                Motivo / Explicación del rechazo
+                Motivo / Explicación del rechazo <span className="text-red-600">* (Obligatorio)</span>
               </label>
               <textarea
                 id="motivo-rechazo"
                 rows={4}
                 value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
+                onChange={(e) => {
+                  setMotivo(e.target.value)
+                  if (errorMotivo) setErrorMotivo('')
+                }}
                 placeholder="Ej: El CUIT ingresado no coincide con la Razón Social declarada en AFIP. Por favor corregirlo y reenviar."
-                className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100"
+                className={`w-full rounded-xl border p-3 text-sm focus:outline-none focus:ring-2 ${
+                  errorMotivo
+                    ? 'border-red-400 focus:ring-red-100 focus:border-red-500'
+                    : 'border-gray-200 focus:border-red-400 focus:ring-red-100'
+                }`}
               />
+              {errorMotivo && (
+                <p className="text-xs text-red-600 font-medium">{errorMotivo}</p>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2">

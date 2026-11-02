@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { GraduationCap, ArrowLeft, Shield } from 'lucide-react'
+import { GraduationCap, ArrowLeft } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { contarRechazosDePostulante } from '@/lib/verificar-cit'

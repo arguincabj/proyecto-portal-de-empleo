@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Menu, X, LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch, GraduationCap } from 'lucide-react'
+import { Menu, X, LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
@@ -12,6 +12,7 @@ const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
   empresa: 'Empresa',
   municipalidad: 'Municipalidad',
+  superadmin: 'Super Administrador',
 }
 
 type Props = {
@@ -23,7 +24,11 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
   const [open, setOpen] = useState(false)
 
   const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number }[] =
-    usuario?.rol === 'empresa'
+    usuario?.rol === 'superadmin'
+      ? [
+          { href: '/superadmin', label: 'Gestión de Administradores', icon: Shield },
+        ]
+      : usuario?.rol === 'empresa'
       ? [
           { href: '/empresa', label: 'Panel de Empresa', icon: Building2 },
           { href: '/empresa/perfil', label: 'Perfil de Empresa', icon: Settings },
@@ -33,6 +38,7 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
       : usuario?.rol === 'municipalidad'
       ? [
           { href: '/admin', label: 'Gestión Municipal', icon: Shield },
+          { href: '/admin/empresas', label: 'Aprobación de Empresas', icon: Building2 },
           { href: '/admin/buscador', label: 'Buscador de Perfiles', icon: UserSearch },
           { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
           { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
@@ -43,7 +49,6 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
           { href: '/perfil', label: 'Mi Perfil', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas', icon: Briefcase },
           { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
-          { href: '/cursos-y-videos', label: 'Cursos y Videos', icon: GraduationCap },
           { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
         ]
 

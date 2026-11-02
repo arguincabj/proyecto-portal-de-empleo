@@ -55,7 +55,7 @@ export default function EditarOfertaPage({
         }
 
         // Limpiar la descripción de textos automáticos previos de modalidad y selección para no duplicar
-        let descLimpia = desc
+        const descLimpia = desc
           .replace(/\n*Modalidad:\s*(Presencial|Remoto|H[íi]brido)[^\n]*/gi, '')
           .replace(/\n*📅\s*Proceso de Selección:[\s\S]*?(?=\n\n|$)/gi, '')
           .trim()
@@ -197,10 +197,10 @@ export default function EditarOfertaPage({
                 <span>Observaciones del municipio (motivo del rechazo):</span>
               </div>
               <p className="text-sm font-medium bg-white/80 p-3 rounded-lg border border-amber-200/60 text-gray-900">
-                "{motivoRechazo}"
+                &quot;{motivoRechazo}&quot;
               </p>
               <p className="text-xs text-amber-700">
-                Corregí los datos señalados abajo y hacé clic en <strong>"Guardar y enviar a revisión"</strong> para que el municipio vuelva a evaluarla.
+                Corregí los datos señalados abajo y hacé clic en <strong>&quot;Guardar y enviar a revisión&quot;</strong> para que el municipio vuelva a evaluarla.
               </p>
             </div>
           )}

@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
@@ -43,6 +43,12 @@ export async function login(email: string, password: string) {
     }
 
     const userId = data.user.id
+    const userEmail = (data.user.email ?? '').toLowerCase()
+    const isSuper = userEmail === 'supadmin@gmail.com' || data.user.user_metadata?.is_superadmin === true || data.user.user_metadata?.rol === 'superadmin'
+
+    if (isSuper) {
+      return { ok: true, rol: 'superadmin' }
+    }
     const { data: usuario } = await supabaseAdmin
       .from('usuarios')
       .select('rol')
@@ -161,7 +167,7 @@ export async function registrarEmpresa(data: {
       email: data.email,
       password: data.password,
       options: {
-        emailRedirectTo: `${origin}/auth/callback?next=/empresa/perfil`,
+        emailRedirectTo: `${origin}/auth/callback?next=/empresa`,
       },
     })
 
@@ -205,6 +211,32 @@ export async function registrarEmpresa(data: {
     // Si el usuario aún no confirmó su email, asegurar que no quede sesión iniciada en cookies
     if (!authData.user.email_confirmed_at) {
       await supabase.auth.signOut()
+    }
+
+    // Notificar a la administración municipal que una nueva empresa espera confirmación
+    try {
+      const { data: adminUsers } = await supabaseAdmin
+        .from('usuarios')
+        .select('id')
+        .eq('rol', 'municipalidad')
+
+      if (adminUsers && adminUsers.length > 0) {
+        const notificacionesMuni = adminUsers.map((u: { id: string }) => ({
+          usuario_id: u.id,
+          titulo: 'Nueva empresa registrada para aprobación',
+          mensaje: `La empresa "${data.razon_social}" (CUIT: ${data.cuit}) se registró en el portal y espera confirmación de la administración municipal.`,
+          tipo: 'alerta',
+          metadata: {
+            tipo: 'empresa_pendiente',
+            link: '/admin/empresas',
+            cuit: data.cuit,
+            razon_social: data.razon_social,
+          },
+        }))
+        await supabaseAdmin.from('notificaciones').insert(notificacionesMuni)
+      }
+    } catch {
+      // Silencioso
     }
 
     return { ok: true }

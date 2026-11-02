@@ -5,7 +5,6 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from './admin-nav-tabs'
 import { ListaOfertasAdmin, OfertaAdminItem } from './lista-ofertas-admin'
 import { Shield, AlertTriangle, ExternalLink, Clock, CheckCircle2, XCircle, Briefcase } from 'lucide-react'
-import { contarPostulantesConTresRechazos } from '@/lib/verificar-cit'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,7 +58,7 @@ export default async function AdminDashboardPage() {
     .in('estado', ['recibida', 'en_revision'])
 
   // 1. Obtener todas las ofertas creadas en el sistema usando admin client
-  let { data: ofertasRaw, error: errorOfertas } = await supabaseAdmin
+  const { data: ofertasRaw, error: errorOfertas } = await supabaseAdmin
     .from('ofertas')
     .select(`
       id,

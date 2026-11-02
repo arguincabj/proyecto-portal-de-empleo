@@ -4,12 +4,14 @@ import { useState, useRef } from 'react'
 import { Building2 } from 'lucide-react'
 import { BotonModerarEmpresa } from '../boton-moderar-empresa'
 import { Paginacion } from '@/components/ui/paginacion'
+import { EmpresaNombreModal } from '../empresa-nombre-modal'
 
 export type EmpresaAdminItem = {
   id: string
   razon_social: string | null
   cuit: string | null
   rubro: string | null
+  descripcion?: string | null
   email: string | null
   estado_aprobacion: string
   motivo_rechazo?: string | null
@@ -80,9 +82,26 @@ export function ListaEmpresasAdmin({ empresas }: Props) {
             >
               <div className="space-y-1.5 flex-1 min-w-0 pr-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-bold text-base text-gray-900">
-                    {empresa.razon_social || 'Sin razón social'}
-                  </span>
+                  <EmpresaNombreModal
+                    empresa={{
+                      id: empresa.id,
+                      razonSocial: empresa.razon_social || '',
+                      cuit: empresa.cuit,
+                      rubro: empresa.rubro,
+                      descripcion: empresa.descripcion ?? null,
+                      email: empresa.email,
+                      estadoAprobacion: empresa.estado_aprobacion,
+                      motivoRechazo: empresa.motivo_rechazo ?? null,
+                      fechaRegistro: new Date(empresa.created_at).toLocaleDateString('es-AR'),
+                      responsable: responsable
+                        ? {
+                            nombre: responsable.nombre || '',
+                            apellido: responsable.apellido || '',
+                            telefono: responsable.telefono ?? null,
+                          }
+                        : null,
+                    }}
+                  />
                   <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${badge.cls}`}>
                     {badge.label}
                   </span>

@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import Link from 'next/link'
-import { Bell, CheckCheck, CalendarClock, Info, AlertCircle, Check, GraduationCap, ArrowRight, CheckCircle2, XCircle } from 'lucide-react'
+import { Bell, CheckCheck, CalendarClock, Info, AlertCircle, Check, GraduationCap, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { marcarNotificacionLeida, marcarTodasLeidas } from './actions'
 
 type Notificacion = {

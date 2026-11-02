@@ -2,8 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { FileText, Building2, Calendar, Clock, CheckCircle2, XCircle, ArrowUpRight, CalendarClock, MapPin, GraduationCap } from 'lucide-react'
-import { contarRechazosDePostulante } from '@/lib/verificar-cit'
+import { FileText, Building2, Calendar, Clock, CheckCircle2, XCircle, ArrowUpRight, CalendarClock, MapPin } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 

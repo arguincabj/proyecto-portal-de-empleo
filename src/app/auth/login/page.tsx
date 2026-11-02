@@ -24,6 +24,8 @@ function LoginContent() {
         // Si hay una URL de redirección específica (y es segura), usarla
         if (redirectUrl && redirectUrl.startsWith('/') && !redirectUrl.startsWith('//')) {
           router.push(redirectUrl)
+        } else if (result.rol === 'superadmin') {
+          router.push('/superadmin')
         } else if (result.rol === 'empresa') {
           router.push('/empresa')
         } else if (result.rol === 'municipalidad') {

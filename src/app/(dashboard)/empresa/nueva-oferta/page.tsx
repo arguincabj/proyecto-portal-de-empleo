@@ -22,12 +22,16 @@ export default async function NuevaOfertaEmpresaPage() {
     redirect('/inicio')
   }
 
-  // Obtener perfil de empresa
+  // Obtener perfil de empresa y validar aprobación
   const { data: empresa } = await supabase
     .from('empresas')
-    .select('razon_social')
+    .select('razon_social, estado_aprobacion')
     .eq('usuario_id', user.id)
     .single()
+
+  if (empresa?.estado_aprobacion !== 'aprobada') {
+    redirect('/empresa')
+  }
 
   // Obtener categorías disponibles
   const { data: categorias } = await supabase

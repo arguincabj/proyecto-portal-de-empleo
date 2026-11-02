@@ -145,6 +145,15 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
     })
   }
 
+  const abrirConfirmacion = (
+    candidato: CandidatoDerivado,
+    nuevoEstado: 'en_proceso' | 'contratado' | 'rechazado'
+  ) => {
+    setMotivoRechazo('')
+    setErrorMotivo('')
+    setModalConfirmacion({ candidato, nuevoEstado })
+  }
+
   const conteo = {
     total: candidatos.length,
     pendientes: candidatos.filter((c) => (c.estadoEmpresa || 'pendiente') === 'pendiente').length,
@@ -380,7 +389,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                         <button
                           type="button"
                           disabled={ocupado}
-                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'contratado' })}
+                          onClick={() => abrirConfirmacion(c, 'contratado')}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-600 hover:text-white"
                           title="Marcar como contratado"
                         >
@@ -390,7 +399,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                         <button
                           type="button"
                           disabled={ocupado}
-                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'rechazado' })}
+                          onClick={() => abrirConfirmacion(c, 'rechazado')}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-red-50 text-red-800 border border-red-200 hover:bg-red-600 hover:text-white"
                           title="Denegar la postulación del candidato"
                         >
@@ -403,7 +412,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                         <button
                           type="button"
                           disabled={ocupado}
-                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'en_proceso' })}
+                          onClick={() => abrirConfirmacion(c, 'en_proceso')}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-600 hover:text-white"
                           title="Poner al candidato en revisión"
                         >
@@ -413,7 +422,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                         <button
                           type="button"
                           disabled={ocupado}
-                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'rechazado' })}
+                          onClick={() => abrirConfirmacion(c, 'rechazado')}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-red-50 text-red-800 border border-red-200 hover:bg-red-600 hover:text-white"
                           title="Denegar la postulación del candidato"
                         >
@@ -592,7 +601,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                       <button
                         type="button"
                         onClick={() => {
-                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'contratado' })
+                          abrirConfirmacion(perfilModal, 'contratado')
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-emerald-600 hover:bg-emerald-700 text-white"
                       >
@@ -601,7 +610,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                       <button
                         type="button"
                         onClick={() => {
-                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'rechazado' })
+                          abrirConfirmacion(perfilModal, 'rechazado')
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-red-600 hover:bg-red-700 text-white"
                       >
@@ -613,7 +622,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                       <button
                         type="button"
                         onClick={() => {
-                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'en_proceso' })
+                          abrirConfirmacion(perfilModal, 'en_proceso')
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-amber-600 hover:bg-amber-700 text-white"
                       >
@@ -622,7 +631,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                       <button
                         type="button"
                         onClick={() => {
-                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'rechazado' })
+                          abrirConfirmacion(perfilModal, 'rechazado')
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-red-600 hover:bg-red-700 text-white"
                       >

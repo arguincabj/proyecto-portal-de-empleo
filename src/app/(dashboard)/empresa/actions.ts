@@ -39,12 +39,19 @@ export async function crearOfertaEmpresa(data: {
 
     const { data: empresa, error: empresaError } = await supabase
       .from('empresas')
-      .select('id, razon_social')
+      .select('id, razon_social, estado_aprobacion')
       .eq('usuario_id', user.id)
       .single()
 
     if (empresaError || !empresa) {
       return { ok: false, error: 'No se encontró el perfil de tu empresa.' }
+    }
+
+    if (empresa.estado_aprobacion !== 'aprobada') {
+      return {
+        ok: false,
+        error: 'Tu perfil de empresa está en revisión o no ha sido aprobado aún. Podrás publicar ofertas laborales una vez confirmada por la administración.',
+      }
     }
 
     // Calcular período de selección (entre 30 y 60 días)
@@ -475,6 +482,120 @@ export async function actualizarEstadoDerivacion(
     return { ok: true }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Error al actualizar la derivación'
+    return { ok: false, error: msg }
+  }
+}
+
+export async function reenviarPerfilEmpresaRevision(data: {
+  razon_social: string
+  cuit: string
+  rubro: string
+  descripcion?: string
+  email: string
+  nombre: string
+  apellido: string
+  telefono: string
+}) {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return { ok: false, error: 'Debes iniciar sesión para realizar esta acción.' }
+    }
+
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('rol')
+      .eq('id', user.id)
+      .single()
+
+    if (usuario?.rol !== 'empresa') {
+      return { ok: false, error: 'No autorizado. Se requiere cuenta de empresa.' }
+    }
+
+    const { data: empresa } = await supabase
+      .from('empresas')
+      .select('id')
+      .eq('usuario_id', user.id)
+      .single()
+
+    if (!empresa) {
+      return { ok: false, error: 'No se encontró el perfil de empresa.' }
+    }
+
+    // 1. Actualizar empresa y volver a estado 'pendiente' limpiando motivo de rechazo
+    const { error: errorEmpresa } = await supabaseAdmin
+      .from('empresas')
+      .update({
+        razon_social: data.razon_social.trim(),
+        cuit: data.cuit.trim(),
+        rubro: data.rubro.trim(),
+        descripcion: data.descripcion?.trim() || null,
+        email: data.email.trim(),
+        estado_aprobacion: 'pendiente',
+        motivo_rechazo: null,
+      })
+      .eq('id', empresa.id)
+
+    if (errorEmpresa) {
+      if (errorEmpresa.code === '23505') {
+        return { ok: false, error: 'Ya existe una empresa registrada con ese CUIT' }
+      }
+      return { ok: false, error: `Error al actualizar datos de la empresa: ${errorEmpresa.message}` }
+    }
+
+    // 2. Actualizar datos del usuario responsable
+    const { error: errorUsuario } = await supabaseAdmin
+      .from('usuarios')
+      .update({
+        nombre: data.nombre.trim(),
+        apellido: data.apellido.trim(),
+        telefono: data.telefono.trim(),
+      })
+      .eq('id', user.id)
+
+    if (errorUsuario) {
+      return { ok: false, error: `Error al actualizar datos de contacto: ${errorUsuario.message}` }
+    }
+
+    // 3. Notificar a la administración municipal
+    try {
+      const { data: adminUsers } = await supabaseAdmin
+        .from('usuarios')
+        .select('id')
+        .eq('rol', 'municipalidad')
+
+      if (adminUsers && adminUsers.length > 0) {
+        const notificacionesMuni = adminUsers.map((u: { id: string }) => ({
+          usuario_id: u.id,
+          titulo: `Solicitud de empresa reenviada: ${data.razon_social.trim()}`,
+          mensaje: `La empresa "${data.razon_social.trim()}" (CUIT: ${data.cuit.trim()}) actualizó sus datos y solicitó una nueva confirmación por parte de la administración municipal.`,
+          tipo: 'alerta',
+          metadata: {
+            tipo: 'empresa_reenvio',
+            link: '/admin/empresas',
+            cuit: data.cuit.trim(),
+            razon_social: data.razon_social.trim(),
+          },
+        }))
+        await supabaseAdmin.from('notificaciones').insert(notificacionesMuni)
+      }
+    } catch (notifErr) {
+      console.error('Error al notificar a administración del reenvío:', notifErr)
+    }
+
+    revalidatePath('/empresa')
+    revalidatePath('/empresa/perfil')
+    revalidatePath('/admin')
+    revalidatePath('/admin/empresas')
+
+    return { ok: true }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error inesperado al reenviar la solicitud'
     return { ok: false, error: msg }
   }
 }

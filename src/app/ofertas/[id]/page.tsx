@@ -312,6 +312,7 @@ export default async function OfertaDetallePage({ params }: PageProps) {
       <section>
         <BotonPostular
           ofertaId={oferta.id}
+          ofertaTitulo={oferta.titulo}
           isAuthenticated={!!user}
           userRole={userRole}
           yaPostulado={yaPostulado}

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { UserRound, Briefcase, Send, ArrowRight, GraduationCap, AlertTriangle, CheckCircle2, Play } from 'lucide-react'
+import { UserRound, Briefcase, Send, ArrowRight, GraduationCap } from 'lucide-react'
 import { contarRechazosDePostulante } from '@/lib/verificar-cit'
 
 const ROL_LABEL: Record<string, string> = {

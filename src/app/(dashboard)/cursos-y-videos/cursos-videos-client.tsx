@@ -4,17 +4,14 @@ import { useState } from 'react'
 import {
   GraduationCap,
   Play,
-  FileText,
   Clock,
   BookOpen,
   Calendar,
   CheckCircle2,
   ExternalLink,
-  Download,
   MapPin,
   Sparkles,
   Search,
-  Filter,
   X,
   Building2,
   Phone,
@@ -29,6 +26,7 @@ type VideoItem = {
   categoria: string
   thumbnailUrl: string
   videoUrl?: string
+  youtubeId?: string
   destacado?: boolean
 }
 
@@ -53,6 +51,8 @@ const VIDEOS: VideoItem[] = [
     duracion: '12 min',
     categoria: 'Currículum',
     thumbnailUrl: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=600&auto=format&fit=crop&q=80',
+    videoUrl: 'https://www.youtube.com/watch?v=kYJv8Z1n8qA',
+    youtubeId: 'kYJv8Z1n8qA',
     destacado: true,
   },
   {
@@ -62,6 +62,8 @@ const VIDEOS: VideoItem[] = [
     duracion: '15 min',
     categoria: 'Entrevistas',
     thumbnailUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&auto=format&fit=crop&q=80',
+    videoUrl: 'https://www.youtube.com/watch?v=0tLwVw5lW-U',
+    youtubeId: '0tLwVw5lW-U',
     destacado: true,
   },
   {
@@ -71,14 +73,18 @@ const VIDEOS: VideoItem[] = [
     duracion: '10 min',
     categoria: 'Entrevistas',
     thumbnailUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&auto=format&fit=crop&q=80',
+    videoUrl: 'https://www.youtube.com/watch?v=b4wHwYlqKms',
+    youtubeId: 'b4wHwYlqKms',
   },
   {
     id: 'funes-1',
-    titulo: 'Estrategias de búsqueda laboral en Funes y la región',
-    descripcion: 'Conocé los sectores productivos con mayor demanda en nuestra ciudad: logística, gastronomía, comercio minorista y servicios profesionales.',
+    titulo: 'Estrategias de búsqueda laboral: cómo conseguir trabajo',
+    descripcion: 'Conocé herramientas, canales y estrategias para buscar empleo de forma activa y efectiva: optimización de perfiles, portales y postulaciones.',
     duracion: '8 min',
     categoria: 'Orientación',
     thumbnailUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format&fit=crop&q=80',
+    videoUrl: 'https://www.youtube.com/watch?v=1u-O4E8E8t4',
+    youtubeId: '1u-O4E8E8t4',
   },
   {
     id: 'blandas-1',
@@ -87,6 +93,8 @@ const VIDEOS: VideoItem[] = [
     duracion: '14 min',
     categoria: 'Habilidades',
     thumbnailUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&auto=format&fit=crop&q=80',
+    videoUrl: 'https://www.youtube.com/watch?v=dQ0yqZ6yH7w',
+    youtubeId: 'dQ0yqZ6yH7w',
   },
 ]
 
@@ -160,11 +168,9 @@ const CURSOS: CursoItem[] = [
 
 type Props = {
   haAlcanzadoTresRechazos: boolean
-  totalRechazados: number
-  citAsignado: boolean
 }
 
-export function CursosVideosClient({ haAlcanzadoTresRechazos, totalRechazados, citAsignado }: Props) {
+export function CursosVideosClient({ haAlcanzadoTresRechazos }: Props) {
   const [seccionActiva, setSeccionActiva] = useState<'todos' | 'cursos' | 'videos'>('todos')
   const [categoriaVideo, setCategoriaVideo] = useState<string>('todas')
   const [videoModal, setVideoModal] = useState<VideoItem | null>(null)
@@ -341,9 +347,24 @@ export function CursosVideosClient({ haAlcanzadoTresRechazos, totalRechazados, c
                     </p>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-emerald-600 font-bold">
-                    <span>Ver video formativo</span>
-                    <Play className="size-3 fill-emerald-600" />
+                  <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <span className="text-emerald-600 font-bold group-hover:underline flex items-center gap-1">
+                      <span>Reproducir video</span>
+                      <Play className="size-3 fill-emerald-600" />
+                    </span>
+                    {video.videoUrl && (
+                      <a
+                        href={video.videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-gray-400 hover:text-red-600 flex items-center gap-1 font-medium transition-colors"
+                        title="Abrir directamente en YouTube"
+                      >
+                        <span>YouTube</span>
+                        <ExternalLink className="size-3" />
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
@@ -503,22 +524,34 @@ export function CursosVideosClient({ haAlcanzadoTresRechazos, totalRechazados, c
               </button>
             </div>
 
-            {/* Simulación / Contenedor de Video */}
-            <div className="relative aspect-video w-full bg-gray-900 flex items-center justify-center text-white">
-              <img
-                src={videoModal.thumbnailUrl}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover opacity-30"
-              />
-              <div className="relative z-10 text-center space-y-3 p-6">
-                <div className="size-16 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-xl">
-                  <Play className="size-7 fill-white ml-1" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-bold">Cápsula Formativa Oficial</p>
-                  <p className="text-xs text-gray-300">Dirección Municipal de Empleo de Funes</p>
-                </div>
-              </div>
+            {/* Reproductor de Video Embebido / Fallback */}
+            <div className="relative aspect-video w-full bg-black flex items-center justify-center">
+              {videoModal.youtubeId ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${videoModal.youtubeId}?autoplay=1&rel=0`}
+                  title={videoModal.titulo}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full border-0"
+                />
+              ) : (
+                <>
+                  <img
+                    src={videoModal.thumbnailUrl}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover opacity-30"
+                  />
+                  <div className="relative z-10 text-center space-y-3 p-6 text-white">
+                    <div className="size-16 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-xl">
+                      <Play className="size-7 fill-white ml-1" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold">Cápsula Formativa Oficial</p>
+                      <p className="text-xs text-gray-300">Dirección Municipal de Empleo de Funes</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="p-5 space-y-3 overflow-y-auto">
@@ -536,7 +569,18 @@ export function CursosVideosClient({ haAlcanzadoTresRechazos, totalRechazados, c
               </p>
             </div>
 
-            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+              {videoModal.videoUrl ? (
+                <a
+                  href={videoModal.videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
+                >
+                  <span>Abrir en YouTube</span>
+                  <ExternalLink className="size-3.5" />
+                </a>
+              ) : <div />}
               <button
                 onClick={() => setVideoModal(null)}
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-gray-900 text-white hover:bg-gray-800 transition-colors"
