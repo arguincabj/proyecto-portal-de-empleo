@@ -39,7 +39,7 @@ export async function Sidebar({ usuario }: Props) {
   const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number }[] =
     usuario?.rol === 'superadmin'
       ? [
-          { href: '/superadmin', label: 'Gesti�n de Administradores', icon: Shield },
+          { href: '/superadmin', label: 'Gestión de Administradores', icon: Shield },
         ]
       : usuario?.rol === 'empresa'
       ? [
