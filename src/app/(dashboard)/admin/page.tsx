@@ -58,7 +58,7 @@ export default async function AdminDashboardPage() {
     .in('estado', ['recibida', 'en_revision'])
 
   // 1. Obtener todas las ofertas creadas en el sistema usando admin client
-  const { data: ofertasRaw, error: errorOfertas } = await supabaseAdmin
+  let { data: ofertasRaw, error: errorOfertas } = await supabaseAdmin
     .from('ofertas')
     .select(`
       id,

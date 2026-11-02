@@ -120,7 +120,7 @@ export default async function EmpresaDashboardPage() {
     queryOfertas = queryOfertas.ilike('empresa_nombre', razonSocial)
   }
 
-  const { data: ofertasData, error: errOfEmpresa } = await queryOfertas.order('created_at', { ascending: false })
+  let { data: ofertasData, error: errOfEmpresa } = await queryOfertas.order('created_at', { ascending: false })
 
   if (errOfEmpresa) {
     // Si falla (por ejemplo, si 'salario' o 'motivo_rechazo' aÃºn no existen), reintentamos bÃ¡sico
