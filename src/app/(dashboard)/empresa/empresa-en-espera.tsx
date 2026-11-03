@@ -22,15 +22,15 @@ const RUBROS = [
   'Agro e industria alimentaria',
   'Arte y entretenimiento',
   'Comercio minorista y mayorista',
-  'ConstrucciÃƒÂ³n e inmobiliaria',
-  'EducaciÃƒÂ³n y formaciÃƒÂ³n',
+  'Construcción e inmobiliaria',
+  'Educación y formación',
   'Finanzas y seguros',
-  'GastronomÃƒÂ­a y hotelerÃƒÂ­a',
-  'LogÃƒÂ­stica y transporte',
+  'Gastronomía y hotelería',
+  'Logística y transporte',
   'Manufactura e industria',
   'Salud y bienestar',
   'Servicios profesionales',
-  'TecnologÃƒÂ­a e informÃƒÂ¡tica',
+  'Tecnología e informática',
   'Otro',
 ] as const
 
@@ -56,7 +56,7 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
   const [modalEditarAbierto, setModalEditarAbierto] = useState(false)
   const [isPendingGuardar, startTransitionGuardar] = useTransition()
 
-  // Estados del formulario de ediciÃƒÂ³n
+  // Estados del formulario de edición
   const [razonSocial, setRazonSocial] = useState(empresa.razon_social ?? '')
   const [cuit, setCuit] = useState(empresa.cuit ?? '')
   const [rubro, setRubro] = useState(empresa.rubro ?? '')
@@ -76,23 +76,23 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
     setErrorForm('')
 
     if (!razonSocial.trim()) {
-      setErrorForm('La razÃƒÂ³n social es obligatoria.')
+      setErrorForm('La razón social es obligatoria.')
       return
     }
     if (!/^\d{11}$/.test(cuit.trim())) {
-      setErrorForm('El CUIT debe tener exactamente 11 nÃƒÂºmeros sin guiones.')
+      setErrorForm('El CUIT debe tener exactamente 11 números sin guiones.')
       return
     }
     if (!rubro.trim()) {
-      setErrorForm('SeleccionÃƒÂ¡ el rubro de la empresa.')
+      setErrorForm('Seleccioná el rubro de la empresa.')
       return
     }
     if (!email.trim() || !email.includes('@')) {
-      setErrorForm('IngresÃƒÂ¡ un email de contacto vÃƒÂ¡lido.')
+      setErrorForm('Ingresá un email de contacto válido.')
       return
     }
     if (!nombre.trim() || !apellido.trim()) {
-      setErrorForm('IngresÃƒÂ¡ nombre y apellido del responsable.')
+      setErrorForm('Ingresá nombre y apellido del responsable.')
       return
     }
 
@@ -131,14 +131,14 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
                 <span className="size-2 rounded-full bg-amber-500 animate-ping" />
-                <span>En espera de confirmaciÃƒÂ³n municipal</span>
+                <span>En espera de confirmación municipal</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-                Cuenta de Empresa en RevisiÃƒÂ³n
+                Cuenta de Empresa en Revisión
               </h1>
               <p className="text-xs sm:text-sm text-gray-600 max-w-2xl leading-relaxed mt-1">
-                Tu perfil de empresa fue registrado con ÃƒÂ©xito y ha sido enviado a la DirecciÃƒÂ³n Municipal de Empleo de Funes.
-                Para garantizar la seguridad de los postulantes, la administraciÃƒÂ³n verifica los datos de cada empleador antes de habilitar la publicaciÃƒÂ³n de ofertas laborales.
+                Tu perfil de empresa fue registrado con éxito y ha sido enviado a la Dirección Municipal de Empleo de Funes.
+                Para garantizar la seguridad de los postulantes, la administración verifica los datos de cada empleador antes de habilitar la publicación de ofertas laborales.
               </p>
             </div>
           </div>
@@ -174,7 +174,7 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
-              <span className="text-gray-400 font-medium block">RazÃƒÂ³n Social</span>
+              <span className="text-gray-400 font-medium block">Razón Social</span>
               <p className="font-bold text-gray-900 text-sm truncate">{empresa.razon_social || 'No especificada'}</p>
             </div>
 
@@ -201,14 +201,14 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
             </div>
 
             <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
-              <span className="text-gray-400 font-medium block">TelÃƒÂ©fono de contacto</span>
+              <span className="text-gray-400 font-medium block">Teléfono de contacto</span>
               <p className="font-bold text-gray-900 text-sm font-mono">{usuario.telefono || 'No especificado'}</p>
             </div>
           </div>
 
           {empresa.descripcion && (
             <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
-              <span className="text-xs text-gray-400 font-medium block">DescripciÃƒÂ³n corporativa</span>
+              <span className="text-xs text-gray-400 font-medium block">Descripción corporativa</span>
               <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-line">{empresa.descripcion}</p>
             </div>
           )}
@@ -224,30 +224,30 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
               className="text-xs font-semibold text-gray-600 hover:text-red-700 transition-colors inline-flex items-center gap-1.5"
             >
               <LogOut className="size-3.5" />
-              <span>Cerrar sesiÃƒÂ³n</span>
+              <span>Cerrar sesión</span>
             </button>
           </div>
         </div>
 
-        {/* Tarjeta Lateral de InformaciÃƒÂ³n Municipal */}
+        {/* Tarjeta Lateral de Información Municipal */}
         <div className="space-y-4">
           <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-xs space-y-4">
             <div className="flex items-center gap-2 text-teal-800 font-bold text-sm">
               <ShieldCheck className="size-5 text-teal-600 shrink-0" />
-              <span>Ã‚Â¿QuÃƒÂ© sucede a continuaciÃƒÂ³n?</span>
+              <span>¿Qué sucede a continuación?</span>
             </div>
             <ul className="text-xs text-gray-600 space-y-2.5 leading-relaxed">
               <li className="flex items-start gap-2">
                 <span className="size-1.5 rounded-full bg-teal-600 mt-1.5 shrink-0" />
-                <span>La Oficina de Empleo verifica la inscripciÃ³n</span>
+                <span>La Oficina de Empleo verifica la inscripci�n</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="size-1.5 rounded-full bg-teal-600 mt-1.5 shrink-0" />
-                <span>Una vez validada, recibirÃƒÂ¡s una notificaciÃƒÂ³n y tu panel quedarÃƒÂ¡ habilitado para publicar ofertas.</span>
+                <span>Una vez validada, recibirás una notificación y tu panel quedará habilitado para publicar ofertas.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="size-1.5 rounded-full bg-teal-600 mt-1.5 shrink-0" />
-                <span>Si el equipo municipal requiere algÃƒÂºn dato adicional, te indicarÃƒÂ¡ el motivo para que puedas actualizarlo.</span>
+                <span>Si el equipo municipal requiere algún dato adicional, te indicará el motivo para que puedas actualizarlo.</span>
               </li>
             </ul>
           </div>
@@ -257,12 +257,12 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
               Oficina Municipal de Empleo
             </h3>
             <p className="text-xs text-teal-900 leading-relaxed">
-              Ã‚Â¿NecesitÃƒÂ¡s agilizar la validaciÃƒÂ³n de tu empresa o tenÃƒÂ©s consultas? Ponete en contacto con nosotros:
+              ¿Necesitás agilizar la validación de tu empresa o tenés consultas? Ponete en contacto con nosotros:
             </p>
             <div className="space-y-1.5 text-xs text-teal-800 pt-1">
               <p className="flex items-center gap-2">
                 <MapPin className="size-3.5 text-teal-600 shrink-0" />
-                <span>Pedro A. RÃƒÂ­os 1500, Funes</span>
+                <span>Pedro A. Ríos 1500, Funes</span>
               </p>
               <p className="flex items-center gap-2">
                 <Phone className="size-3.5 text-teal-600 shrink-0" />
@@ -276,13 +276,13 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
               </p>
             </div>
             <p className="text-[11px] text-teal-700/90 pt-1">
-              Horario de atenciÃƒÂ³n: Lunes a Viernes de 7:00 a 13:00 hs.
+              Horario de atención: Lunes a Viernes de 7:00 a 13:00 hs.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Modal para Editar Datos mientras estÃƒÂ¡ en espera */}
+      {/* Modal para Editar Datos mientras está en espera */}
       {modalEditarAbierto && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
@@ -299,7 +299,7 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-gray-900">Editar datos de la empresa</h3>
-                  <p className="text-xs text-gray-500">CorregÃƒÂ­ los datos enviados para la revisiÃƒÂ³n municipal</p>
+                  <p className="text-xs text-gray-500">Corregí los datos enviados para la revisión municipal</p>
                 </div>
               </div>
               <button
@@ -321,7 +321,7 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700">RazÃƒÂ³n Social *</label>
+                  <label className="text-xs font-bold text-gray-700">Razón Social *</label>
                   <input
                     type="text"
                     value={razonSocial}
@@ -332,7 +332,7 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700">CUIT (11 dÃƒÂ­gitos) *</label>
+                  <label className="text-xs font-bold text-gray-700">CUIT (11 dígitos) *</label>
                   <input
                     type="text"
                     value={cuit}
@@ -352,7 +352,7 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
                     required
                     className="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600"
                   >
-                    <option value="">SeleccionÃƒÂ¡ un rubro</option>
+                    <option value="">Seleccioná un rubro</option>
                     {RUBROS.map((r) => (
                       <option key={r} value={r}>
                         {r}
@@ -397,7 +397,7 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700">TelÃƒÂ©fono *</label>
+                  <label className="text-xs font-bold text-gray-700">Teléfono *</label>
                   <input
                     type="tel"
                     value={telefono}
@@ -409,12 +409,12 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-700">DescripciÃƒÂ³n / PresentaciÃƒÂ³n</label>
+                <label className="text-xs font-bold text-gray-700">Descripción / Presentación</label>
                 <textarea
                   rows={3}
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
-                  placeholder="Breve descripciÃƒÂ³n de la actividad de la empresa..."
+                  placeholder="Breve descripción de la actividad de la empresa..."
                   className="w-full text-xs p-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 resize-none"
                 />
               </div>
