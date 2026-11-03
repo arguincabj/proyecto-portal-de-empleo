@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import Link from 'next/link'
-import { Bell, CheckCheck, CalendarClock, Info, AlertCircle, Check, GraduationCap, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { Bell, CheckCheck, CalendarClock, Info, AlertCircle, Check, GraduationCap, ArrowRight, CheckCircle2, Building2 } from 'lucide-react'
 import { marcarNotificacionLeida, marcarTodasLeidas } from './actions'
 
 type Notificacion = {
@@ -83,8 +83,8 @@ function NotificacionCard({ notif }: { notif: Notificacion }) {
                 href={notif.metadata.link}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-500 transition-all hover:scale-[1.02]"
               >
-                <GraduationCap className="size-4" />
-                <span>{notif.metadata.link_texto || 'Ir a Cursos y Videos'}</span>
+                {notif.metadata?.link?.includes('/admin/empresas') ? <Building2 className="size-4" /> : <GraduationCap className="size-4" />}
+                <span>{notif.metadata.link_texto || (notif.metadata?.link?.includes('/admin/empresas') ? 'Ir a aprobación de empresas' : 'Ir a Cursos y Videos')}</span>
                 <ArrowRight className="size-3.5 ml-0.5" />
               </Link>
             </div>

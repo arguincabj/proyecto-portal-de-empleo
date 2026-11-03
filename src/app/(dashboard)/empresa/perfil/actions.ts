@@ -104,6 +104,7 @@ export async function actualizarPerfilEmpresa(formData: FormData) {
             metadata: {
               tipo: 'empresa_reenvio',
               link: '/admin/empresas',
+              link_texto: 'Ir a aprobación de empresas',
               cuit,
               razon_social,
             },
