@@ -578,6 +578,7 @@ export async function reenviarPerfilEmpresaRevision(data: {
           metadata: {
             tipo: 'empresa_reenvio',
             link: '/admin/empresas',
+            link_texto: 'Ir a aprobación de empresas',
             cuit: data.cuit.trim(),
             razon_social: data.razon_social.trim(),
           },

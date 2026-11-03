@@ -229,6 +229,7 @@ export async function registrarEmpresa(data: {
           metadata: {
             tipo: 'empresa_pendiente',
             link: '/admin/empresas',
+            link_texto: 'Ir a aprobación de empresas',
             cuit: data.cuit,
             razon_social: data.razon_social,
           },
