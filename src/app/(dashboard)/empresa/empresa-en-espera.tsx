@@ -239,7 +239,7 @@ export function EmpresaEnEspera({ empresa, usuario }: Props) {
             <ul className="text-xs text-gray-600 space-y-2.5 leading-relaxed">
               <li className="flex items-start gap-2">
                 <span className="size-1.5 rounded-full bg-teal-600 mt-1.5 shrink-0" />
-                <span>La Oficina de Empleo verifica la inscripci�n</span>
+                <span>La Oficina de Empleo verifica la inscripción</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="size-1.5 rounded-full bg-teal-600 mt-1.5 shrink-0" />
