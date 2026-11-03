@@ -75,20 +75,18 @@ export default async function AdminEmpresasPage() {
       estado_aprobacion,
       motivo_rechazo,
       created_at,
-      usuario:usuarios!inner (
+      usuario:usuarios (
         nombre,
         apellido,
-        telefono,
-        email,
-        avatar_url
+        telefono
       )
     `)
     .order('created_at', { ascending: false })
 
   let empresasRaw = initialEmpresas
 
-  if (errorEmpresas && errorEmpresas.message?.includes('motivo_rechazo')) {
-    const fallback = await supabaseAdmin
+  if (errorEmpresas) {
+    const { data: fallbackData } = await supabaseAdmin
       .from('empresas')
       .select(`
         id,
@@ -99,16 +97,14 @@ export default async function AdminEmpresasPage() {
         email,
         estado_aprobacion,
         created_at,
-        usuario:usuarios!inner (
+        usuario:usuarios (
           nombre,
           apellido,
-          telefono,
-          email,
-          avatar_url
+          telefono
         )
       `)
       .order('created_at', { ascending: false })
-    empresasRaw = (fallback.data ?? []).map((e) => ({ ...e, motivo_rechazo: null }))
+    empresasRaw = (fallbackData ?? []).map((e) => ({ ...e, motivo_rechazo: null }))
   }
 
   const empresas = (empresasRaw ?? []) as unknown as EmpresaAdminItem[]
