@@ -52,6 +52,13 @@ function NotificacionCard({ notif }: { notif: Notificacion }) {
     timeZone: 'America/Argentina/Buenos_Aires',
   })
 
+  // No mostrar botón de cursos para la notificación de 3 rechazos
+  const esNotif3Rechazos =
+    notif.tipo === 'cursos' ||
+    notif.tipo === 'alerta_3_rechazos' ||
+    Boolean(notif.metadata?.link?.includes('/cursos-y-videos')) ||
+    notif.metadata?.total_rechazos !== undefined
+
   return (
     <div
       className={`rounded-2xl border p-5 transition-colors ${
@@ -77,14 +84,14 @@ function NotificacionCard({ notif }: { notif: Notificacion }) {
             {notif.mensaje}
           </p>
 
-          {notif.metadata?.link && (
+          {!esNotif3Rechazos && notif.metadata?.link && (
             <div className="mt-3">
               <Link
                 href={notif.metadata.link}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-500 transition-all hover:scale-[1.02]"
               >
                 {notif.metadata?.link?.includes('/admin/empresas') ? <Building2 className="size-4" /> : <GraduationCap className="size-4" />}
-                <span>{notif.metadata.link_texto || (notif.metadata?.link?.includes('/admin/empresas') ? 'Ir a aprobación de empresas' : 'Ir a Cursos y Videos')}</span>
+                <span>{notif.metadata.link_texto || (notif.metadata?.link?.includes('/admin/empresas') ? 'Ir a aprobación de empresas' : 'Ver detalle')}</span>
                 <ArrowRight className="size-3.5 ml-0.5" />
               </Link>
             </div>

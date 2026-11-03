@@ -86,8 +86,6 @@ export async function verificarYAsignarCursoCIT(postulanteId: string): Promise<{
               'Registramos 3 rechazos en tus procesos de postulación. La Oficina de Empleo de la Municipalidad de Funes pone a tu disposición un espacio exclusivo de Cursos y Videos formativos para ayudarte a optimizar tu CV, entrenar entrevistas y mejorar tus oportunidades laborales.',
             tipo: 'cursos',
             metadata: {
-              link: '/cursos-y-videos',
-              link_texto: 'Ver Cursos y Videos',
               total_rechazos: totalRechazados,
             },
           })
