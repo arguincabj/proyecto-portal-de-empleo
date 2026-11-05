@@ -4,7 +4,19 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Paginacion } from '@/components/ui/paginacion'
-import { Search, Briefcase, Building2, Calendar, ArrowRight, LoaderCircle, AlertCircle, Clock } from 'lucide-react'
+import { formatearSalario } from '@/lib/utils'
+import {
+  Search,
+  Briefcase,
+  Building2,
+  Calendar,
+  ArrowRight,
+  LoaderCircle,
+  AlertCircle,
+  Clock,
+  Banknote,
+  DollarSign,
+} from 'lucide-react'
 
 type Oferta = {
   id: string
@@ -16,6 +28,7 @@ type Oferta = {
   fecha_inicio_seleccion?: string | null
   duracion_dias?: number | null
   fecha_fin_seleccion?: string | null
+  salario?: number | null
 }
 
 const ITEMS_POR_PAGINA = 15
@@ -26,6 +39,8 @@ export default function OfertasPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [modalidadFilter, setModalidadFilter] = useState('todas')
+  const [salarioFilter, setSalarioFilter] = useState('todos')
+  const [salarioMinimoCustom, setSalarioMinimoCustom] = useState('')
   const [paginaActual, setPaginaActual] = useState(1)
 
   useEffect(() => {
@@ -65,10 +80,45 @@ export default function OfertasPage() {
     fetchOfertas()
   }, [searchTerm])
 
+  // Filtrado compuesto: Modalidad y Salario (cuando se especifica)
   const filteredOfertas = ofertas.filter((oferta) => {
-    if (modalidadFilter === 'todas') return true
-    const content = `${oferta.titulo} ${oferta.descripcion}`.toLowerCase()
-    return content.includes(modalidadFilter.toLowerCase())
+    // 1. Filtro de modalidad
+    if (modalidadFilter !== 'todas') {
+      const content = `${oferta.titulo} ${oferta.descripcion}`.toLowerCase()
+      if (!content.includes(modalidadFilter.toLowerCase())) return false
+    }
+
+    // 2. Filtro de salario
+    if (salarioFilter === 'todos') {
+      return true
+    }
+
+    // Si el usuario aplicó un filtro de salario, solo califican ofertas que tengan salario especificado (> 0)
+    const tieneSalario = oferta.salario !== null && oferta.salario !== undefined && Number(oferta.salario) > 0
+    if (!tieneSalario) {
+      return false
+    }
+
+    const salarioNum = Number(oferta.salario)
+
+    if (salarioFilter === 'con_salario') {
+      return true
+    }
+
+    if (salarioFilter === 'personalizado') {
+      const minMonto = Number(salarioMinimoCustom)
+      if (!isNaN(minMonto) && minMonto > 0) {
+        return salarioNum >= minMonto
+      }
+      return true
+    }
+
+    const minSalario = Number(salarioFilter)
+    if (!isNaN(minSalario)) {
+      return salarioNum >= minSalario
+    }
+
+    return true
   })
 
   const totalPaginas = Math.ceil(filteredOfertas.length / ITEMS_POR_PAGINA) || 1
@@ -110,36 +160,92 @@ export default function OfertasPage() {
       </div>
 
       {/* Buscador y Filtros */}
-      <div className="rounded-xl bg-surface p-4 shadow-card border border-border/60 flex flex-col sm:flex-row gap-3">
-        <div className="flex-1 relative">
-          <Search className="size-4 text-foreground-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Buscar por palabra clave (título, descripción, empresa)..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value)
-              setPaginaActual(1)
-            }}
-            className="w-full rounded-xl border border-input bg-background pl-9 pr-4 py-2.5 text-sm text-foreground placeholder:text-foreground-muted focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50 transition-all"
-          />
+      <div className="rounded-xl bg-surface p-4 shadow-card border border-border/60 flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <Search className="size-4 text-foreground-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Buscar por palabra clave (título, descripción, empresa)..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setPaginaActual(1)
+              }}
+              className="w-full rounded-xl border border-input bg-background pl-9 pr-4 py-2.5 text-sm text-foreground placeholder:text-foreground-muted focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50 transition-all"
+            />
+          </div>
+
+          {/* Filtro por Modalidad */}
+          <div className="w-full sm:w-48">
+            <select
+              value={modalidadFilter}
+              onChange={(e) => {
+                setModalidadFilter(e.target.value)
+                setPaginaActual(1)
+              }}
+              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50 transition-all"
+            >
+              <option value="todas">Modalidad: Todas</option>
+              <option value="presencial">Presencial</option>
+              <option value="remoto">Remoto</option>
+              <option value="hibrido">Híbrido</option>
+            </select>
+          </div>
+
+          {/* Filtro por Salario */}
+          <div className="w-full sm:w-56">
+            <select
+              value={salarioFilter}
+              onChange={(e) => {
+                setSalarioFilter(e.target.value)
+                setPaginaActual(1)
+              }}
+              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50 transition-all"
+            >
+              <option value="todos">💵 Salario: Cualquiera</option>
+              <option value="con_salario">Con salario especificado</option>
+              <option value="300000">Salario desde $ 300.000</option>
+              <option value="500000">Salario desde $ 500.000</option>
+              <option value="750000">Salario desde $ 750.000</option>
+              <option value="1000000">Salario desde $ 1.000.000</option>
+              <option value="1500000">Salario desde $ 1.500.000</option>
+              <option value="personalizado">Monto mínimo personalizado...</option>
+            </select>
+          </div>
         </div>
 
-        <div className="w-full sm:w-56">
-          <select
-            value={modalidadFilter}
-            onChange={(e) => {
-              setModalidadFilter(e.target.value)
-              setPaginaActual(1)
-            }}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50 transition-all"
-          >
-            <option value="todas">Todas las modalidades</option>
-            <option value="presencial">Presencial</option>
-            <option value="remoto">Remoto</option>
-            <option value="hibrido">Híbrido</option>
-          </select>
-        </div>
+        {/* Input adicional si seleccionó monto personalizado */}
+        {salarioFilter === 'personalizado' && (
+          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border/40">
+            <span className="text-xs font-semibold text-foreground-secondary flex items-center gap-1.5">
+              <DollarSign className="size-3.5 text-emerald-600" />
+              Ingresá el salario mínimo pretendido:
+            </span>
+            <div className="relative max-w-xs">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-foreground-muted font-bold text-xs">
+                $
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="50000"
+                placeholder="Ej: 650000"
+                value={salarioMinimoCustom}
+                onChange={(e) => {
+                  setSalarioMinimoCustom(e.target.value)
+                  setPaginaActual(1)
+                }}
+                className="w-full rounded-lg border border-input bg-background pl-7 pr-3 py-1.5 text-xs text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50 transition-all"
+              />
+            </div>
+            {salarioMinimoCustom && Number(salarioMinimoCustom) > 0 && (
+              <span className="text-xs text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                Filtrando ofertas con salario especificado ≥ {formatearSalario(Number(salarioMinimoCustom))}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Estado de Error */}
@@ -171,8 +277,8 @@ export default function OfertasPage() {
           </div>
           <h3 className="text-base font-bold text-foreground">No se encontraron ofertas</h3>
           <p className="text-sm text-foreground-secondary max-w-md mx-auto">
-            {searchTerm || modalidadFilter !== 'todas'
-              ? 'No hay ofertas que coincidan con la búsqueda o filtros aplicados. Intentá modificando los términos.'
+            {searchTerm || modalidadFilter !== 'todas' || salarioFilter !== 'todos'
+              ? 'No hay ofertas que coincidan con la búsqueda o filtros de salario aplicados. Intentá modificando los criterios de búsqueda.'
               : 'Actualmente no hay ofertas laborales activas disponibles en el portal.'}
           </p>
         </div>
@@ -216,10 +322,24 @@ export default function OfertasPage() {
                       <Calendar className="size-3.5" />
                       <span>Publicado el {new Date(oferta.created_at).toLocaleDateString('es-AR')}</span>
                     </span>
+
                     <span className="flex items-center gap-1.5 text-teal-800 font-medium bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
                       <Clock className="size-3 text-teal-600" />
                       <span>Convocatoria: {oferta.duracion_dias || 30} días</span>
                     </span>
+
+                    {/* Badge de Salario */}
+                    {oferta.salario ? (
+                      <span className="flex items-center gap-1.5 text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 shadow-2xs">
+                        <Banknote className="size-3.5 text-emerald-600" />
+                        <span>Salario: {formatearSalario(oferta.salario)}</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-gray-500 font-normal bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200">
+                        <Banknote className="size-3.5 text-gray-400" />
+                        <span>Salario: A convenir</span>
+                      </span>
+                    )}
                   </div>
                 </div>
 

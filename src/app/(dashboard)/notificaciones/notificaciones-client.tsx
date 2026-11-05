@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import Link from 'next/link'
-import { Bell, CheckCheck, CalendarClock, Info, AlertCircle, Check, GraduationCap, ArrowRight } from 'lucide-react'
+import { Bell, CheckCheck, CalendarClock, Info, AlertCircle, Check, GraduationCap, ArrowRight, CheckCircle2, Building2 } from 'lucide-react'
 import { marcarNotificacionLeida, marcarTodasLeidas } from './actions'
 
 type Notificacion = {
@@ -15,6 +15,10 @@ type Notificacion = {
     fecha_hora?: string
     lugar_modalidad?: string
     postulacion_id?: string
+    derivacion_id?: string
+    oferta_id?: string
+    postulante_id?: string
+    motivo_rechazo?: string
     link?: string
     link_texto?: string
     total_rechazos?: number
@@ -23,8 +27,9 @@ type Notificacion = {
 }
 
 function IconoTipo({ tipo }: { tipo: string }) {
+  if (tipo === 'contratado') return <CheckCircle2 className="size-5 text-emerald-600 shrink-0 mt-0.5" />
   if (tipo === 'entrevista') return <CalendarClock className="size-5 text-blue-600 shrink-0 mt-0.5" />
-  if (tipo === 'alerta' || tipo === 'alerta_3_rechazos') return <AlertCircle className="size-5 text-amber-500 shrink-0 mt-0.5" />
+  if (tipo === 'alerta' || tipo === 'alerta_3_rechazos') return <AlertCircle className="size-5 text-rose-500 shrink-0 mt-0.5" />
   if (tipo === 'cursos') return <GraduationCap className="size-5 text-emerald-600 shrink-0 mt-0.5" />
   return <Info className="size-5 text-teal-600 shrink-0 mt-0.5" />
 }
@@ -46,6 +51,13 @@ function NotificacionCard({ notif }: { notif: Notificacion }) {
     minute: '2-digit',
     timeZone: 'America/Argentina/Buenos_Aires',
   })
+
+  // No mostrar botón de cursos para la notificación de 3 rechazos
+  const esNotif3Rechazos =
+    notif.tipo === 'cursos' ||
+    notif.tipo === 'alerta_3_rechazos' ||
+    Boolean(notif.metadata?.link?.includes('/cursos-y-videos')) ||
+    notif.metadata?.total_rechazos !== undefined
 
   return (
     <div
@@ -72,14 +84,14 @@ function NotificacionCard({ notif }: { notif: Notificacion }) {
             {notif.mensaje}
           </p>
 
-          {notif.metadata?.link && (
+          {!esNotif3Rechazos && notif.metadata?.link && (
             <div className="mt-3">
               <Link
                 href={notif.metadata.link}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-500 transition-all hover:scale-[1.02]"
               >
-                <GraduationCap className="size-4" />
-                <span>{notif.metadata.link_texto || 'Ir a Cursos y Videos'}</span>
+                {notif.metadata?.link?.includes('/admin/empresas') ? <Building2 className="size-4" /> : <GraduationCap className="size-4" />}
+                <span>{notif.metadata.link_texto || (notif.metadata?.link?.includes('/admin/empresas') ? 'Ir a aprobación de empresas' : 'Ver detalle')}</span>
                 <ArrowRight className="size-3.5 ml-0.5" />
               </Link>
             </div>

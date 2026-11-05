@@ -5,7 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 const ROL_REDIRECT: Record<string, string> = {
   postulante: '/perfil',
-  empresa: '/empresa/perfil',
+  empresa: '/empresa',
   municipalidad: '/admin/perfil',
 }
 

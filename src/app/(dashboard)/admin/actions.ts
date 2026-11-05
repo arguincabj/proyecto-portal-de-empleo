@@ -7,7 +7,8 @@ import { verificarYAsignarCursoCIT } from '@/lib/verificar-cit'
 
 export async function moderarOferta(
   ofertaId: string,
-  nuevoEstado: 'publicada' | 'rechazada' | 'cerrada' | 'pendiente'
+  nuevoEstado: 'publicada' | 'rechazada' | 'cerrada' | 'pendiente' | 'borrador',
+  motivoRechazo?: string
 ) {
   try {
     const supabase = await createSupabaseServerClient()
@@ -30,10 +31,84 @@ export async function moderarOferta(
       return { ok: false, error: 'Permisos insuficientes. Solo la municipalidad puede moderar ofertas.' }
     }
 
-    const { error } = await supabaseAdmin
-      .from('ofertas')
-      .update({ estado: nuevoEstado })
-      .eq('id', ofertaId)
+    // El rechazo requiere motivo obligatorio y pasa la oferta a estado 'borrador'
+    // para que la empresa pueda editar lo observado y volver a enviarla a revisión
+    if (nuevoEstado === 'rechazada' || nuevoEstado === 'borrador') {
+      const motivo = motivoRechazo?.trim()
+      if (!motivo) {
+        return { ok: false, error: 'Debés ingresar el motivo del rechazo para que la empresa pueda corregir la oferta.' }
+      }
+
+      // Guardar motivo y cambiar estado a 'borrador'
+      const updatePayload: Record<string, unknown> = {
+        estado: 'borrador',
+        motivo_rechazo: motivo,
+      }
+
+      let { error } = await supabaseAdmin.from('ofertas').update(updatePayload).eq('id', ofertaId)
+
+      // Fallback si la columna motivo_rechazo aún no existe en BD
+      if (error && error.message?.includes('motivo_rechazo')) {
+        const fallback = await supabaseAdmin.from('ofertas').update({ estado: 'borrador' }).eq('id', ofertaId)
+        error = fallback.error
+      }
+
+      if (error) {
+        return { ok: false, error: `No se pudo rechazar la oferta: ${error.message}` }
+      }
+
+      // Notificar a la empresa
+      try {
+        const { data: oferta } = await supabaseAdmin
+          .from('ofertas')
+          .select('titulo, empresa_id')
+          .eq('id', ofertaId)
+          .single()
+
+        if (oferta?.empresa_id) {
+          const { data: empresa } = await supabaseAdmin
+            .from('empresas')
+            .select('usuario_id')
+            .eq('id', oferta.empresa_id)
+            .single()
+
+          if (empresa?.usuario_id) {
+            await supabaseAdmin.from('notificaciones').insert({
+              usuario_id: empresa.usuario_id,
+              titulo: `Oferta laboral en borrador por correcciones`,
+              mensaje: `Tu oferta "${oferta.titulo}" fue observada por el municipio: "${motivo}". Quedó guardada como borrador para que puedas corregir lo indicado y reenviarla.`,
+              tipo: 'alerta',
+              metadata: {
+                oferta_id: ofertaId,
+                motivo_rechazo: motivo,
+              },
+            })
+          }
+        }
+      } catch (notifErr) {
+        console.error('[moderarOferta] Error al notificar:', notifErr)
+      }
+
+      revalidatePath('/admin')
+      revalidatePath('/admin/postulantes')
+      revalidatePath('/ofertas')
+      revalidatePath(`/ofertas/${ofertaId}`)
+      revalidatePath('/empresa')
+      return { ok: true }
+    }
+
+    // Para otros estados (publicada, cerrada, pendiente):
+    const payload: Record<string, unknown> = { estado: nuevoEstado }
+    if (nuevoEstado === 'publicada') {
+      payload.motivo_rechazo = null
+    }
+
+    let { error } = await supabaseAdmin.from('ofertas').update(payload).eq('id', ofertaId)
+
+    if (error && error.message?.includes('motivo_rechazo')) {
+      const fallback = await supabaseAdmin.from('ofertas').update({ estado: nuevoEstado }).eq('id', ofertaId)
+      error = fallback.error
+    }
 
     if (error) {
       return { ok: false, error: `No se pudo actualizar el estado: ${error.message}` }
@@ -43,6 +118,7 @@ export async function moderarOferta(
     revalidatePath('/admin/postulantes')
     revalidatePath('/ofertas')
     revalidatePath(`/ofertas/${ofertaId}`)
+    revalidatePath('/empresa')
     return { ok: true }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Error al moderar la oferta'
@@ -101,6 +177,45 @@ export async function moderarEmpresa(
 
     if (error) {
       return { ok: false, error: `No se pudo actualizar el estado: ${error.message}` }
+    }
+
+    // Notificar a la empresa de la decisión tomada por la administración
+    try {
+      const { data: emp } = await supabaseAdmin
+        .from('empresas')
+        .select('usuario_id, razon_social')
+        .eq('id', empresaId)
+        .single()
+
+      if (emp?.usuario_id) {
+        if (nuevoEstado === 'aprobada') {
+          await supabaseAdmin.from('notificaciones').insert({
+            usuario_id: emp.usuario_id,
+            titulo: '¡Perfil de empresa confirmado y habilitado!',
+            mensaje: 'La administración municipal de Funes aprobó tu cuenta de empresa. Ya podés acceder al panel y publicar tus búsquedas laborales.',
+            tipo: 'exito',
+            metadata: {
+              link: '/empresa',
+              estado: 'aprobada',
+            },
+          })
+        } else if (nuevoEstado === 'rechazada') {
+          const motivoLimpio = motivoRechazo?.trim() || 'Datos no validados'
+          await supabaseAdmin.from('notificaciones').insert({
+            usuario_id: emp.usuario_id,
+            titulo: 'Perfil de empresa observado',
+            mensaje: `La administración municipal revisó tu registro y solicitó correcciones. Motivo: "${motivoLimpio}". Ingresá para modificar tus datos y volver a enviar la solicitud.`,
+            tipo: 'alerta',
+            metadata: {
+              link: '/empresa',
+              estado: 'rechazada',
+              motivo: motivoLimpio,
+            },
+          })
+        }
+      }
+    } catch (notifErr) {
+      console.error('Error al notificar a la empresa:', notifErr)
     }
 
     revalidatePath('/admin')

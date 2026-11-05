@@ -6,7 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from '../admin-nav-tabs'
 import { AdminRechazadosClient } from './admin-rechazados-client'
 import type { PostulanteRechazadoItem } from './admin-rechazados-client'
-import { obtenerIdsPostulantesConTresRechazos, contarPostulantesConTresRechazos } from '@/lib/verificar-cit'
+import { obtenerIdsPostulantesConTresRechazos } from '@/lib/verificar-cit'
 
 export const dynamic = 'force-dynamic'
 

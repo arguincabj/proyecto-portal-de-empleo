@@ -99,6 +99,8 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
     candidato: CandidatoDerivado
     nuevoEstado: 'en_proceso' | 'contratado' | 'rechazado'
   } | null>(null)
+  const [motivoRechazo, setMotivoRechazo] = useState('')
+  const [errorMotivo, setErrorMotivo] = useState('')
   const [isPending, startTransition] = useTransition()
   const [candidatoActualizando, setCandidatoActualizando] = useState<string | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'pendiente' | 'en_proceso' | 'contratado' | 'rechazado'>('todos')
@@ -110,21 +112,24 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
 
   const cambiarEstado = (
     derivacionId: string,
-    nuevoEstado: 'pendiente' | 'en_proceso' | 'contratado' | 'rechazado'
+    nuevoEstado: 'pendiente' | 'en_proceso' | 'contratado' | 'rechazado',
+    nota?: string
   ) => {
     setCandidatoActualizando(derivacionId)
     startTransition(async () => {
       try {
-        const result = await actualizarEstadoDerivacion(derivacionId, nuevoEstado)
+        const result = await actualizarEstadoDerivacion(derivacionId, nuevoEstado, nota)
         if (result.ok) {
           setCandidatos((prev) =>
             prev.map((c) =>
-              c.derivacionId === derivacionId ? { ...c, estadoEmpresa: nuevoEstado } : c
+              c.derivacionId === derivacionId
+                ? { ...c, estadoEmpresa: nuevoEstado, notaEmpresa: nota || c.notaEmpresa }
+                : c
             )
           )
           const labels: Record<string, string> = {
-            contratado: 'Candidato marcado como contratado',
-            rechazado: 'Candidato marcado como rechazado',
+            contratado: 'Candidato marcado como contratado (notificado a candidato y administración)',
+            rechazado: 'Candidato no contratado. Se registró el motivo y se notificó a las partes.',
             en_proceso: 'Candidato puesto en revisión',
             pendiente: 'Estado restablecido a pendiente',
           }
@@ -138,6 +143,15 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
         setCandidatoActualizando(null)
       }
     })
+  }
+
+  const abrirConfirmacion = (
+    candidato: CandidatoDerivado,
+    nuevoEstado: 'en_proceso' | 'contratado' | 'rechazado'
+  ) => {
+    setMotivoRechazo('')
+    setErrorMotivo('')
+    setModalConfirmacion({ candidato, nuevoEstado })
   }
 
   const conteo = {
@@ -375,7 +389,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                         <button
                           type="button"
                           disabled={ocupado}
-                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'contratado' })}
+                          onClick={() => abrirConfirmacion(c, 'contratado')}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-600 hover:text-white"
                           title="Marcar como contratado"
                         >
@@ -385,7 +399,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                         <button
                           type="button"
                           disabled={ocupado}
-                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'rechazado' })}
+                          onClick={() => abrirConfirmacion(c, 'rechazado')}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-red-50 text-red-800 border border-red-200 hover:bg-red-600 hover:text-white"
                           title="Denegar la postulación del candidato"
                         >
@@ -398,7 +412,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                         <button
                           type="button"
                           disabled={ocupado}
-                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'en_proceso' })}
+                          onClick={() => abrirConfirmacion(c, 'en_proceso')}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-600 hover:text-white"
                           title="Poner al candidato en revisión"
                         >
@@ -408,7 +422,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                         <button
                           type="button"
                           disabled={ocupado}
-                          onClick={() => setModalConfirmacion({ candidato: c, nuevoEstado: 'rechazado' })}
+                          onClick={() => abrirConfirmacion(c, 'rechazado')}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 bg-red-50 text-red-800 border border-red-200 hover:bg-red-600 hover:text-white"
                           title="Denegar la postulación del candidato"
                         >
@@ -427,6 +441,17 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                     <div>
                       <strong className="font-bold">Observación de la Oficina Municipal de Empleo:</strong>{' '}
                       {c.notaMunicipalidad}
+                    </div>
+                  </div>
+                )}
+
+                {/* Motivo de no contratación registrado si fue rechazado */}
+                {c.estadoEmpresa === 'rechazado' && c.notaEmpresa && (
+                  <div className="bg-red-50/70 border border-red-200/80 rounded-xl p-3.5 text-xs text-red-900 flex items-start gap-2">
+                    <XCircle className="size-4 text-red-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-bold">Motivo de no contratación informado:</strong>{' '}
+                      {c.notaEmpresa}
                     </div>
                   </div>
                 )}
@@ -576,7 +601,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                       <button
                         type="button"
                         onClick={() => {
-                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'contratado' })
+                          abrirConfirmacion(perfilModal, 'contratado')
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-emerald-600 hover:bg-emerald-700 text-white"
                       >
@@ -585,7 +610,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                       <button
                         type="button"
                         onClick={() => {
-                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'rechazado' })
+                          abrirConfirmacion(perfilModal, 'rechazado')
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-red-600 hover:bg-red-700 text-white"
                       >
@@ -597,7 +622,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                       <button
                         type="button"
                         onClick={() => {
-                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'en_proceso' })
+                          abrirConfirmacion(perfilModal, 'en_proceso')
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-amber-600 hover:bg-amber-700 text-white"
                       >
@@ -606,7 +631,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                       <button
                         type="button"
                         onClick={() => {
-                          setModalConfirmacion({ candidato: perfilModal, nuevoEstado: 'rechazado' })
+                          abrirConfirmacion(perfilModal, 'rechazado')
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-red-600 hover:bg-red-700 text-white"
                       >
@@ -814,8 +839,8 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
 
         const infoConfig = {
           contratado: {
-            titulo: '¿Confirmás marcar como contratado?',
-            descripcion: `Estás a punto de confirmar como contratado/a a ${nombre} para el puesto "${oferta.titulo}". Esta decisión quedará asentada y no podrás volver a cambiarla.`,
+            titulo: '¿Confirmás la contratación del candidato?',
+            descripcion: `Estás a punto de confirmar como contratado/a a ${nombre} para el puesto "${oferta.titulo}". Se registrará en el sistema y se notificará de inmediato tanto al candidato como a la administración municipal. Esta decisión quedará asentada y no podrás volver a cambiarla.`,
             botonTexto: 'Sí, confirmar contratación',
             botonColor: 'bg-emerald-600 hover:bg-emerald-700 text-white',
             badge: 'Contratado',
@@ -824,7 +849,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
           },
           en_proceso: {
             titulo: '¿Confirmás poner en revisión?',
-            descripcion: `Estás a punto de pasar a ${nombre} a etapa de revisión. Una vez evaluado/a, podrás definir si queda Contratado/a o Rechazado/a.`,
+            descripcion: `Estás a punto de pasar a ${nombre} a etapa de revisión. Una vez evaluado/a, podrás definir si queda Contratado/a o No Contratado/a.`,
             botonTexto: 'Sí, poner en revisión',
             botonColor: 'bg-amber-600 hover:bg-amber-700 text-white',
             badge: 'En revisión',
@@ -832,11 +857,11 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
             icono: Clock,
           },
           rechazado: {
-            titulo: '¿Confirmás rechazar a este candidato?',
-            descripcion: `Estás a punto de rechazar la postulación de ${nombre} para esta oferta. Esta acción no se puede deshacer.`,
-            botonTexto: 'Sí, rechazar candidato',
+            titulo: '¿Informar que no se contrata al candidato?',
+            descripcion: `Estás por registrar que no contratas a ${nombre} para el puesto "${oferta.titulo}". Es obligatorio especificar el motivo del desestimiento, el cual será registrado formalmente y notificado de manera transparente tanto al candidato como a la administración municipal.`,
+            botonTexto: 'Confirmar y notificar rechazo',
             botonColor: 'bg-red-600 hover:bg-red-700 text-white',
-            badge: 'Rechazado',
+            badge: 'No contratado',
             badgeClass: 'bg-red-100 text-red-800 border-red-300',
             icono: XCircle,
           },
@@ -847,7 +872,7 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
             <div
-              className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+              className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 space-y-4">
@@ -875,10 +900,48 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                   {infoConfig.descripcion}
                 </p>
 
+                {/* Campo obligatorio de motivo si el estado es rechazado (no contrata) */}
+                {estado === 'rechazado' && (
+                  <div className="space-y-1.5 pt-1">
+                    <label htmlFor="motivo-rechazo-empresa" className="block text-xs font-bold text-gray-800">
+                      Motivo del desestimiento / no contratación <span className="text-red-600">* (Obligatorio)</span>:
+                    </label>
+                    <textarea
+                      id="motivo-rechazo-empresa"
+                      rows={3}
+                      value={motivoRechazo}
+                      onChange={(e) => {
+                        setMotivoRechazo(e.target.value)
+                        if (errorMotivo) setErrorMotivo('')
+                      }}
+                      placeholder="Ej: Se requiere mayor experiencia técnica específica en el área, perfil con disponibilidad de turnos rotativos, o se optó por otro perfil con conocimientos avanzados..."
+                      className={`w-full p-3 rounded-xl border text-xs focus:outline-none focus:ring-2 bg-gray-50/50 resize-none ${
+                        errorMotivo
+                          ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500'
+                          : 'border-gray-300 focus:ring-red-500/20 focus:border-red-500'
+                      }`}
+                    />
+                    {errorMotivo ? (
+                      <p className="text-[11px] font-semibold text-red-600 flex items-center gap-1">
+                        <AlertCircle className="size-3.5 shrink-0" />
+                        {errorMotivo}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-gray-500">
+                        Este motivo será recibido y visible por el candidato en sus notificaciones y por la administración municipal en la sección de postulantes rechazados.
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className="pt-2 flex items-center justify-end gap-2.5">
                   <button
                     type="button"
-                    onClick={() => setModalConfirmacion(null)}
+                    onClick={() => {
+                      setModalConfirmacion(null)
+                      setMotivoRechazo('')
+                      setErrorMotivo('')
+                    }}
                     disabled={isPending}
                     className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
                   >
@@ -888,11 +951,26 @@ export function OfertaCandidatosClient({ oferta, candidatos: initialCandidatos }
                     type="button"
                     disabled={isPending}
                     onClick={() => {
-                      cambiarEstado(c.derivacionId, estado)
+                      if (estado === 'rechazado') {
+                        if (!motivoRechazo.trim()) {
+                          setErrorMotivo('Por favor ingresá el motivo por el cual no se contrata al candidato.')
+                          return
+                        }
+                      }
+
+                      const notaFinal = estado === 'rechazado' ? motivoRechazo.trim() : undefined
+                      cambiarEstado(c.derivacionId, estado, notaFinal)
+
                       if (perfilModal && perfilModal.derivacionId === c.derivacionId) {
-                        setPerfilModal({ ...perfilModal, estadoEmpresa: estado })
+                        setPerfilModal({
+                          ...perfilModal,
+                          estadoEmpresa: estado,
+                          notaEmpresa: notaFinal || perfilModal.notaEmpresa,
+                        })
                       }
                       setModalConfirmacion(null)
+                      setMotivoRechazo('')
+                      setErrorMotivo('')
                     }}
                     className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs ${infoConfig.botonColor}`}
                   >

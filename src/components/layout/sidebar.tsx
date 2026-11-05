@@ -1,7 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch, GraduationCap } from 'lucide-react'
+import { LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch } from 'lucide-react'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
 import { logout } from '@/app/auth/actions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
@@ -11,6 +11,7 @@ const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
   empresa: 'Empresa',
   municipalidad: 'Municipalidad',
+  superadmin: 'Super Administrador',
 }
 
 type Props = {
@@ -18,9 +19,9 @@ type Props = {
 }
 
 export async function Sidebar({ usuario }: Props) {
-  // Contar notificaciones no leídas para postulantes
+  // Contar notificaciones no leídas para postulantes y administradores
   let noLeidas = 0
-  if (usuario?.rol === 'postulante') {
+  if (usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad') {
     try {
       const supabase = await createSupabaseServerClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -36,7 +37,11 @@ export async function Sidebar({ usuario }: Props) {
   }
 
   const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number }[] =
-    usuario?.rol === 'empresa'
+    usuario?.rol === 'superadmin'
+      ? [
+          { href: '/superadmin', label: 'Gestión de Administradores', icon: Shield },
+        ]
+      : usuario?.rol === 'empresa'
       ? [
           { href: '/empresa', label: 'Panel de Empresa', icon: Building2 },
           { href: '/empresa/perfil', label: 'Perfil de Empresa', icon: Settings },
@@ -46,8 +51,10 @@ export async function Sidebar({ usuario }: Props) {
       : usuario?.rol === 'municipalidad'
       ? [
           { href: '/admin', label: 'Gestión Municipal', icon: Shield },
+          { href: '/admin/empresas', label: 'Aprobación de Empresas', icon: Building2 },
           { href: '/admin/buscador', label: 'Buscador de Perfiles', icon: UserSearch },
           { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
+          { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
           { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
         ]
       : [
@@ -55,7 +62,6 @@ export async function Sidebar({ usuario }: Props) {
           { href: '/perfil', label: 'Mi Perfil', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas', icon: Briefcase },
           { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
-          { href: '/cursos-y-videos', label: 'Cursos y Videos', icon: GraduationCap },
           { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
         ]
 

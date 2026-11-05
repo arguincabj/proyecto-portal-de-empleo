@@ -7,6 +7,7 @@ import {
   Clock,
   Send,
   UserCheck,
+  CheckCircle2,
   PieChart as PieIcon,
   BarChart3,
 } from 'lucide-react'
@@ -30,6 +31,8 @@ export interface AdminStatsData {
   totalPostulantes: number
   postulantesEnBusqueda: number
   postulantesEmpleado: number
+  postulantesEmpleadosPorEmpresa?: number
+  totalContrataciones?: number
 
   topCategoriasPostuladas: Array<{
     categoria: string
@@ -59,7 +62,7 @@ export function AdminMetricasGraficos({ stats }: Props) {
   return (
     <div className="space-y-6">
       {/* 1. Tarjetas KPI de Resumen General */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* KPI Ofertas */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
@@ -136,7 +139,32 @@ export function AdminMetricasGraficos({ stats }: Props) {
           </div>
           <div className="mt-2 text-xs text-gray-500 flex items-center gap-1.5">
             <UserCheck className="size-3 text-emerald-600" />
-            <span>{stats.postulantesEnBusqueda} en búsqueda activa</span>
+            <span>{stats.postulantesEnBusqueda} en búsqueda</span>
+          </div>
+        </div>
+
+        {/* KPI Postulantes Empleados / Aceptados por Empresas */}
+        <div className="bg-emerald-50/70 rounded-2xl p-4 sm:p-5 border border-emerald-200 shadow-sm hover:shadow-md transition-shadow col-span-2 sm:col-span-1 lg:col-span-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+              Empleados / Aceptados
+            </span>
+            <div className="size-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+              <CheckCircle2 className="size-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-black text-emerald-950">
+              {stats.postulantesEmpleadosPorEmpresa ?? 0}
+            </span>
+            <span className="text-xs text-emerald-700 font-semibold">vecinos</span>
+          </div>
+          <div className="mt-2 text-xs text-emerald-800 flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-emerald-600" />
+            <span>
+              {stats.totalContrataciones ?? 0}{' '}
+              {(stats.totalContrataciones ?? 0) === 1 ? 'contratación confirmada' : 'contrataciones confirmadas'}
+            </span>
           </div>
         </div>
       </div>
@@ -182,20 +210,29 @@ export function AdminMetricasGraficos({ stats }: Props) {
               </div>
 
               {/* Leyenda y Detalles Numéricos */}
-              <div className="grid grid-cols-3 gap-2 pt-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3">
                 <div className="bg-teal-50/70 border border-teal-100 rounded-xl p-3 text-left">
                   <div className="flex items-center gap-1.5 text-teal-900 font-bold text-xs">
                     <span className="size-2 rounded-full bg-teal-600" />
-                    <span>Derivadas a Empresa</span>
+                    <span>Derivadas</span>
                   </div>
                   <p className="text-xl font-extrabold text-teal-950 mt-1">{stats.postulacionesDerivadas}</p>
                   <p className="text-[11px] text-teal-700 font-medium">{pctPostDer}% del total</p>
                 </div>
 
+                <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 text-left">
+                  <div className="flex items-center gap-1.5 text-emerald-950 font-bold text-xs">
+                    <span className="size-2 rounded-full bg-emerald-600" />
+                    <span>Empleados</span>
+                  </div>
+                  <p className="text-xl font-extrabold text-emerald-950 mt-1">{stats.postulantesEmpleadosPorEmpresa ?? 0}</p>
+                  <p className="text-[11px] text-emerald-700 font-medium">Aceptados por empresa</p>
+                </div>
+
                 <div className="bg-amber-50/70 border border-amber-100 rounded-xl p-3 text-left">
                   <div className="flex items-center gap-1.5 text-amber-900 font-bold text-xs">
                     <span className="size-2 rounded-full bg-amber-400" />
-                    <span>En Revisión Inicial</span>
+                    <span>En Revisión</span>
                   </div>
                   <p className="text-xl font-extrabold text-amber-950 mt-1">{stats.postulacionesRecibidas}</p>
                   <p className="text-[11px] text-amber-700 font-medium">{pctPostRec}% del total</p>

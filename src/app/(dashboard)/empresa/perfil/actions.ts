@@ -45,24 +45,30 @@ export async function actualizarPerfilEmpresa(formData: FormData) {
     const apellido = (formData.get('apellido') as string)?.trim()
     const telefono = (formData.get('telefono') as string)?.trim()
 
-    // Determinar si cambió algún campo sensible
+    // Determinar si cambió algún campo sensible o si estaba rechazada
+    const estabaRechazada = empresaActual.estado_aprobacion === 'rechazada'
     const cambioCritico =
       razon_social !== empresaActual.razon_social || cuit !== empresaActual.cuit
 
-    // Si hay cambio crítico → volver a pendiente
-    const nuevoEstado = cambioCritico ? 'pendiente' : empresaActual.estado_aprobacion
+    // Si estaba rechazada o hubo cambio crítico → volver a pendiente
+    const nuevoEstado = (estabaRechazada || cambioCritico) ? 'pendiente' : empresaActual.estado_aprobacion
+
+    const updatePayload: Record<string, unknown> = {
+      razon_social,
+      cuit,
+      rubro,
+      descripcion,
+      email,
+      estado_aprobacion: nuevoEstado,
+    }
+    if (estabaRechazada) {
+      updatePayload.motivo_rechazo = null
+    }
 
     // Actualizar tabla empresas
     const { error: errorEmpresa } = await supabaseAdmin
       .from('empresas')
-      .update({
-        razon_social,
-        cuit,
-        rubro,
-        descripcion,
-        email,
-        estado_aprobacion: nuevoEstado,
-      })
+      .update(updatePayload)
       .eq('id', empresaActual.id)
 
     if (errorEmpresa) {
@@ -82,12 +88,42 @@ export async function actualizarPerfilEmpresa(formData: FormData) {
       return { ok: false, error: `Error al guardar datos personales: ${errorUsuario.message}` }
     }
 
+    if (estabaRechazada || cambioCritico) {
+      try {
+        const { data: adminUsers } = await supabaseAdmin
+          .from('usuarios')
+          .select('id')
+          .eq('rol', 'municipalidad')
+
+        if (adminUsers && adminUsers.length > 0) {
+          const notificacionesMuni = adminUsers.map((u: { id: string }) => ({
+            usuario_id: u.id,
+            titulo: `Empresa actualizó sus datos: ${razon_social}`,
+            mensaje: `La empresa "${razon_social}" (CUIT: ${cuit}) modificó su perfil y solicitó una nueva confirmación municipal.`,
+            tipo: 'alerta',
+            metadata: {
+              tipo: 'empresa_reenvio',
+              link: '/admin/empresas',
+              link_texto: 'Ir a aprobación de empresas',
+              cuit,
+              razon_social,
+            },
+          }))
+          await supabaseAdmin.from('notificaciones').insert(notificacionesMuni)
+        }
+      } catch {
+        // Silencioso
+      }
+    }
+
     revalidatePath('/empresa/perfil')
     revalidatePath('/empresa')
+    revalidatePath('/admin/empresas')
+    revalidatePath('/admin')
 
     return {
       ok: true,
-      vueltoPendiente: cambioCritico,
+      vueltoPendiente: estabaRechazada || cambioCritico,
     }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Error inesperado'

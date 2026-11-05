@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { crearOfertaEmpresa } from '../actions'
+import { formatearSalario } from '@/lib/utils'
+import { DollarSign } from 'lucide-react'
 
 interface NuevaOfertaFormProps {
   razonSocial: string
@@ -20,6 +22,7 @@ export function NuevaOfertaForm({ razonSocial, categorias }: NuevaOfertaFormProp
   const [modalidad, setModalidad] = useState('presencial')
   const [fechaInicioSeleccion, setFechaInicioSeleccion] = useState(() => new Date().toISOString().split('T')[0])
   const [duracionDias, setDuracionDias] = useState(30)
+  const [salario, setSalario] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -50,6 +53,7 @@ export function NuevaOfertaForm({ razonSocial, categorias }: NuevaOfertaFormProp
         modalidad,
         fechaInicioSeleccion,
         duracionDias,
+        salario: salario ? Number(salario) : null,
         estado: 'pendiente',
       })
 
@@ -204,6 +208,56 @@ export function NuevaOfertaForm({ razonSocial, categorias }: NuevaOfertaFormProp
               Elegí entre 30 y 60 días corridos de convocatoria laboral.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Salario Ofrecido (Opcional) */}
+      <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800">
+              <DollarSign className="size-4" />
+            </span>
+            <div>
+              <label htmlFor="salario" className="block text-sm font-bold text-gray-900">
+                Salario ofrecido
+              </label>
+              <p className="text-xs text-gray-500">
+                Remuneración estimada mensual en pesos argentinos ($ ARS).
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wide">
+            Opcional
+          </span>
+        </div>
+
+        <div className="max-w-md pt-1">
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none font-bold text-gray-400 text-sm">
+              $
+            </span>
+            <input
+              id="salario"
+              type="number"
+              min="0"
+              step="1000"
+              placeholder="Ej: 850000 (Dejar en blanco si es a convenir)"
+              value={salario}
+              onChange={(e) => setSalario(e.target.value)}
+              className="w-full border border-gray-200 pl-8 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-800 font-medium placeholder:text-gray-400"
+            />
+          </div>
+          {salario && Number(salario) > 0 ? (
+            <p className="text-xs text-emerald-700 font-medium mt-1.5 flex items-center gap-1.5">
+              <span>✓ Se mostrará en la oferta como:</span>
+              <strong className="font-bold text-emerald-800">{formatearSalario(Number(salario))}</strong>
+            </p>
+          ) : (
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              Si no se especifica, se informará a los postulantes como &quot;A convenir&quot;.
+            </p>
+          )}
         </div>
       </div>
 

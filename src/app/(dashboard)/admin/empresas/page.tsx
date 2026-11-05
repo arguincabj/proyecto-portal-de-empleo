@@ -5,7 +5,6 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from '../admin-nav-tabs'
 import { ListaEmpresasAdmin, EmpresaAdminItem } from './lista-empresas-admin'
 import { Shield, Building2, CheckCircle2, Clock, XCircle, AlertTriangle, ExternalLink } from 'lucide-react'
-import { contarPostulantesConTresRechazos } from '@/lib/verificar-cit'
 
 export const dynamic = 'force-dynamic'
 
@@ -71,11 +70,12 @@ export default async function AdminEmpresasPage() {
       razon_social,
       cuit,
       rubro,
+      descripcion,
       email,
       estado_aprobacion,
       motivo_rechazo,
       created_at,
-      usuario:usuarios!inner (
+      usuario:usuarios (
         nombre,
         apellido,
         telefono
@@ -85,25 +85,26 @@ export default async function AdminEmpresasPage() {
 
   let empresasRaw = initialEmpresas
 
-  if (errorEmpresas && errorEmpresas.message?.includes('motivo_rechazo')) {
-    const fallback = await supabaseAdmin
+  if (errorEmpresas) {
+    const { data: fallbackData } = await supabaseAdmin
       .from('empresas')
       .select(`
         id,
         razon_social,
         cuit,
         rubro,
+        descripcion,
         email,
         estado_aprobacion,
         created_at,
-        usuario:usuarios!inner (
+        usuario:usuarios (
           nombre,
           apellido,
           telefono
         )
       `)
       .order('created_at', { ascending: false })
-    empresasRaw = (fallback.data ?? []).map((e) => ({ ...e, motivo_rechazo: null }))
+    empresasRaw = (fallbackData ?? []).map((e) => ({ ...e, motivo_rechazo: null }))
   }
 
   const empresas = (empresasRaw ?? []) as unknown as EmpresaAdminItem[]
