@@ -1,11 +1,12 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch } from 'lucide-react'
+import { LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, UserSearch } from 'lucide-react'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
 import { logout } from '@/app/auth/actions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { NotificacionesPopover } from './notificaciones-popover'
 
 const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
@@ -19,9 +20,13 @@ type Props = {
 }
 
 export async function Sidebar({ usuario }: Props) {
-  // Contar notificaciones no leídas para postulantes y administradores
+  // Contar notificaciones no leídas y obtener las recientes para postulantes y administradores
   let noLeidas = 0
-  if (usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad') {
+  let notificacionesRecientes: { id: string; titulo: string; mensaje: string; tipo: string; leida: boolean; created_at: string }[] = []
+
+  const tieneNotificaciones = usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad'
+
+  if (tieneNotificaciones) {
     try {
       const supabase = await createSupabaseServerClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -32,6 +37,14 @@ export async function Sidebar({ usuario }: Props) {
           .eq('usuario_id', user.id)
           .eq('leida', false)
         noLeidas = count ?? 0
+
+        const { data } = await supabaseAdmin
+          .from('notificaciones')
+          .select('id, titulo, mensaje, tipo, leida, created_at')
+          .eq('usuario_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5)
+        notificacionesRecientes = data ?? []
       }
     } catch { /* silencioso */ }
   }
@@ -54,7 +67,6 @@ export async function Sidebar({ usuario }: Props) {
           { href: '/admin/empresas', label: 'Aprobación de Empresas', icon: Building2 },
           { href: '/admin/buscador', label: 'Buscador de Perfiles', icon: UserSearch },
           { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
-          { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
           { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
         ]
       : [
@@ -62,7 +74,6 @@ export async function Sidebar({ usuario }: Props) {
           { href: '/perfil', label: 'Mi Perfil', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas', icon: Briefcase },
           { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
-          { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
         ]
 
   return (
@@ -103,6 +114,16 @@ export async function Sidebar({ usuario }: Props) {
       </nav>
 
       <div className="border-t border-white/10 p-4">
+        {/* Notificaciones con popover — solo para roles que las tienen */}
+        {tieneNotificaciones && (
+          <div className="mb-2 px-1">
+            <NotificacionesPopover
+              noLeidas={noLeidas}
+              notificaciones={notificacionesRecientes}
+            />
+          </div>
+        )}
+
         {usuario && (
           <Link
             href={

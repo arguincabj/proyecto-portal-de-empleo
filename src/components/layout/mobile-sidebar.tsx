@@ -23,6 +23,8 @@ type Props = {
 export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
   const [open, setOpen] = useState(false)
 
+  const tieneNotificaciones = usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad'
+
   const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number }[] =
     usuario?.rol === 'superadmin'
       ? [
@@ -41,7 +43,6 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
           { href: '/admin/empresas', label: 'Aprobación de Empresas', icon: Building2 },
           { href: '/admin/buscador', label: 'Buscador de Perfiles', icon: UserSearch },
           { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
-          { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
           { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
         ]
       : [
@@ -49,7 +50,6 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
           { href: '/perfil', label: 'Mi Perfil', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas', icon: Briefcase },
           { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
-          { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
         ]
 
   useEffect(() => {
@@ -136,6 +136,23 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
         </nav>
 
         <div className="border-t border-white/10 p-4">
+          {/* Notificaciones — solo para roles que las tienen */}
+          {tieneNotificaciones && (
+            <Link
+              href="/notificaciones"
+              onClick={() => setOpen(false)}
+              className="mb-2 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
+            >
+              <Bell className="size-4 shrink-0" />
+              <span className="flex-1">Notificaciones</span>
+              {noLeidas > 0 && (
+                <span className="inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                  {noLeidas}
+                </span>
+              )}
+            </Link>
+          )}
+
           {usuario && (
             <Link
               href={
