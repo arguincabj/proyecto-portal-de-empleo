@@ -101,7 +101,7 @@ export function MultiSelectCategorias({
 
       {/* Menú desplegable */}
       {open && (
-        <div className="absolute z-50 mt-1 max-h-72 w-full overflow-hidden rounded-xl border border-border bg-popover shadow-xl animate-in fade-in-0 zoom-in-95">
+        <div className="absolute z-50 mt-1 max-h-96 w-full overflow-hidden rounded-xl border border-border bg-popover shadow-xl animate-in fade-in-0 zoom-in-95">
           {/* Buscador dentro del combo box */}
           <div className="flex items-center border-b border-border px-3 py-2 bg-muted/30">
             <Search className="size-4 text-muted-foreground mr-2 shrink-0" />
@@ -126,7 +126,7 @@ export function MultiSelectCategorias({
           </div>
 
           {/* Opciones */}
-          <div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5">
+          <div className="max-h-72 overflow-y-auto p-1.5 space-y-0.5">
             {filtradas.length === 0 ? (
               <p className="p-3 text-center text-xs text-muted-foreground">
                 No se encontraron categorías con &quot;{busqueda}&quot;

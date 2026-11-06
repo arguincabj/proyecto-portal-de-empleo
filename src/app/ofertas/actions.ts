@@ -54,11 +54,14 @@ export async function postularAOferta(ofertaId: string, cvId?: string | null) {
       experiencia?: string | null
       habilidades?: string | null
       cursos?: string | null
+      idiomas?: string | null
+      horarios?: string | null
+      categorias_laborales?: string[] | null
     } | null = null
 
     const { data: postData } = await supabaseAdmin
       .from('postulantes')
-      .select('id, dni, localidad, estudios, experiencia, habilidades, cursos')
+      .select('id, dni, localidad, estudios, experiencia, habilidades, cursos, idiomas, horarios, categorias_laborales')
       .eq('usuario_id', user.id)
       .single()
 
@@ -67,7 +70,7 @@ export async function postularAOferta(ofertaId: string, cvId?: string | null) {
     } else {
       const { data: basicPost } = await supabaseAdmin
         .from('postulantes')
-        .select('id, dni, estudios, experiencia, habilidades, cursos')
+        .select('id, dni, estudios, experiencia, habilidades, cursos, idiomas, horarios, categorias_laborales')
         .eq('usuario_id', user.id)
         .single()
       postulante = basicPost ?? null
@@ -77,7 +80,8 @@ export async function postularAOferta(ofertaId: string, cvId?: string | null) {
       return { ok: false, error: 'No se encontró tu perfil de postulante.' }
     }
 
-    // 3. Validar perfil completo en el servidor (freno de seguridad)
+    // 3. Validar perfil en el servidor (freno de seguridad)
+    // 3.1. Datos personales SIEMPRE obligatorios:
     const tieneNombre = Boolean(usuario.nombre || user.user_metadata?.nombre)
     const tieneApellido = Boolean(usuario.apellido || user.user_metadata?.apellido)
     const tieneTelefono = Boolean(usuario.telefono || user.user_metadata?.telefono)
@@ -85,16 +89,37 @@ export async function postularAOferta(ofertaId: string, cvId?: string | null) {
     const tieneLocalidad = Boolean(postulante.localidad || user.user_metadata?.localidad)
     const datosPersonalesCompletos = tieneNombre && tieneApellido && tieneTelefono && tieneDni && tieneLocalidad
 
-    const tieneEstudios = Boolean(postulante.estudios && postulante.estudios.trim())
-    const tieneExperiencia = Boolean(postulante.experiencia && postulante.experiencia.trim())
-    const tieneHabilidades = Boolean(postulante.habilidades && postulante.habilidades.trim())
-    const tieneCursos = Boolean(postulante.cursos && postulante.cursos.trim())
-    const datosLaboralesCompletos = tieneEstudios || tieneExperiencia || tieneHabilidades || tieneCursos
-
-    if (!datosPersonalesCompletos || !datosLaboralesCompletos) {
+    if (!datosPersonalesCompletos) {
       return {
         ok: false,
-        error: 'Tu perfil está incompleto. Completá tus datos personales y laborales antes de postularte.',
+        error: 'Debés completar tus datos personales y de contacto (nombre, apellido, teléfono, DNI y localidad) en tu perfil.',
+      }
+    }
+
+    // 3.2. Categorías de interés SIEMPRE obligatorias (tanto con CV como sin CV)
+    const categorias = Array.isArray(postulante.categorias_laborales) ? postulante.categorias_laborales : []
+    if (categorias.length === 0) {
+      return {
+        ok: false,
+        error: 'Debés seleccionar al menos una categoría laboral de tu interés en tu perfil antes de postularte.',
+      }
+    }
+
+    // 3.3. Si se postula con "Solo datos de mi perfil" (sin CV adjunto), todos los campos laborales son obligatorios
+    const sePostulaSinCv = !cvId || cvId === 'perfil_solamente'
+    if (sePostulaSinCv) {
+      const tieneEstudios = Boolean(postulante.estudios && postulante.estudios.trim())
+      const tieneCursos = Boolean(postulante.cursos && postulante.cursos.trim())
+      const tieneExperiencia = Boolean(postulante.experiencia && postulante.experiencia.trim())
+      const tieneHabilidades = Boolean(postulante.habilidades && postulante.habilidades.trim())
+      const tieneIdiomas = Boolean(postulante.idiomas && postulante.idiomas.trim())
+      const tieneHorarios = Boolean(postulante.horarios && postulante.horarios.trim())
+
+      if (!tieneEstudios || !tieneCursos || !tieneExperiencia || !tieneHabilidades || !tieneIdiomas || !tieneHorarios) {
+        return {
+          ok: false,
+          error: 'Para postularte solo con los datos de tu perfil, debés completar todos los campos del perfil laboral (estudios, cursos, experiencia, habilidades, idiomas y disponibilidad horaria). O bien, seleccioná o subí un currículum vitae en archivo PDF.',
+        }
       }
     }
 
@@ -364,5 +389,29 @@ export async function actualizarOferta(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Error al actualizar la oferta.'
     return { ok: false, error: message }
+  }
+}
+
+export async function actualizarCategoriasPostulante(categorias: string[]): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) return { ok: false, error: 'Debes iniciar sesión para realizar esta acción.' }
+
+    if (!Array.isArray(categorias) || categorias.length === 0) {
+      return { ok: false, error: 'Debés seleccionar al menos una categoría laboral.' }
+    }
+
+    const { error } = await supabaseAdmin
+      .from('postulantes')
+      .update({ categorias_laborales: categorias })
+      .eq('usuario_id', user.id)
+
+    if (error) return { ok: false, error: 'No se pudieron guardar las categorías. Intentá de nuevo.' }
+
+    revalidatePath('/perfil')
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Error inesperado al guardar las categorías.' }
   }
 }

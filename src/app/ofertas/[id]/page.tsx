@@ -50,7 +50,9 @@ export default async function OfertaDetallePage({ params }: PageProps) {
   let yaPostulado = false
   let estadoPostulacion: string | null = null
   let estadoLaboral: string | null = null
-  let perfilIncompleto = false
+  let datosPersonalesCompletos = true
+  let tieneCategorias = true
+  let perfilLaboralCompleto = true
   let cvsDisponibles: Array<{ id: string; nombre: string }> = []
 
   if (user) {
@@ -86,22 +88,23 @@ export default async function OfertaDetallePage({ params }: PageProps) {
         cursos?: string | null
         idiomas?: string | null
         horarios?: string | null
+        categorias_laborales?: string[] | null
       } | null = null
 
-      // Intentar consulta completa con columnas nuevas si existen
+      // Intentar consulta completa incluyendo categorias_laborales
       const { data: postData, error: postErr } = await supabaseAdmin
         .from('postulantes')
-        .select('id, cv_url, estado_laboral, dni, localidad, direccion, codigo_postal, estudios, experiencia, habilidades, cursos, idiomas, horarios')
+        .select('id, cv_url, estado_laboral, dni, localidad, direccion, codigo_postal, estudios, experiencia, habilidades, cursos, idiomas, horarios, categorias_laborales')
         .eq('usuario_id', user.id)
         .single()
 
       if (!postErr && postData) {
         postulante = postData
       } else {
-        // Fallback seguro si faltan columnas como localidad/direccion en la tabla postulantes
+        // Fallback seguro si faltan columnas de domicilio en postulantes
         const { data: basicPost } = await supabaseAdmin
           .from('postulantes')
-          .select('id, cv_url, estado_laboral, dni, estudios, experiencia, habilidades, cursos, idiomas, horarios')
+          .select('id, cv_url, estado_laboral, dni, estudios, experiencia, habilidades, cursos, idiomas, horarios, categorias_laborales')
           .eq('usuario_id', user.id)
           .single()
         postulante = basicPost ?? null
@@ -110,23 +113,35 @@ export default async function OfertaDetallePage({ params }: PageProps) {
       if (postulante) {
         estadoLaboral = postulante.estado_laboral || (user.user_metadata?.estado_laboral as string) || null
 
-        // Comprobación de perfil incompleto:
-        // 1. Datos personales requeridos: nombre, apellido, teléfono, DNI, localidad
+        // 1. Datos personales requeridos siempre: nombre, apellido, teléfono, DNI, localidad
         const tieneNombre = !!(usuario?.nombre || user.user_metadata?.nombre)
         const tieneApellido = !!(usuario?.apellido || user.user_metadata?.apellido)
         const tieneTelefono = !!(usuario?.telefono || user.user_metadata?.telefono)
         const tieneDni = !!(postulante.dni || user.user_metadata?.dni)
         const tieneLocalidad = !!(postulante.localidad || user.user_metadata?.localidad)
-        const datosPersonalesCompletos = tieneNombre && tieneApellido && tieneTelefono && tieneDni && tieneLocalidad
+        datosPersonalesCompletos = tieneNombre && tieneApellido && tieneTelefono && tieneDni && tieneLocalidad
 
-        // 2. Perfil laboral: se requiere que al menos uno de los campos principales esté completado
+        // 2. Categorías de interés: SIEMPRE obligatorias (tanto con CV como sin CV)
+        const categoriasArray = Array.isArray(postulante.categorias_laborales) ? postulante.categorias_laborales : []
+        tieneCategorias = categoriasArray.length > 0
+
+        // 3. Perfil laboral completo: obligatorio si se postula "Solo datos de mi perfil" (sin CV adjunto)
+        // Deben estar completos: estudios, experiencia, habilidades, horarios, cursos, idiomas
         const tieneEstudios = Boolean(postulante.estudios && postulante.estudios.trim())
         const tieneExperiencia = Boolean(postulante.experiencia && postulante.experiencia.trim())
         const tieneHabilidades = Boolean(postulante.habilidades && postulante.habilidades.trim())
+        const tieneHorarios = Boolean(postulante.horarios && postulante.horarios.trim())
         const tieneCursos = Boolean(postulante.cursos && postulante.cursos.trim())
-        const datosLaboralesCompletos = tieneEstudios || tieneExperiencia || tieneHabilidades || tieneCursos
+        const tieneIdiomas = Boolean(postulante.idiomas && postulante.idiomas.trim())
 
-        perfilIncompleto = !datosPersonalesCompletos || !datosLaboralesCompletos
+        perfilLaboralCompleto =
+          tieneEstudios &&
+          tieneExperiencia &&
+          tieneHabilidades &&
+          tieneHorarios &&
+          tieneCursos &&
+          tieneIdiomas &&
+          tieneCategorias
 
         const { data: postu } = await supabase
           .from('postulaciones')
@@ -319,7 +334,9 @@ export default async function OfertaDetallePage({ params }: PageProps) {
           estadoPostulacion={estadoPostulacion}
           estadoLaboral={estadoLaboral}
           cvsDisponibles={cvsDisponibles}
-          perfilIncompleto={perfilIncompleto}
+          datosPersonalesCompletos={datosPersonalesCompletos}
+          tieneCategorias={tieneCategorias}
+          perfilLaboralCompleto={perfilLaboralCompleto}
         />
       </section>
 

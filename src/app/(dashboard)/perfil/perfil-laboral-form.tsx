@@ -77,6 +77,8 @@ export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
           toast.success('Perfil laboral actualizado correctamente')
           if (retorno) {
             router.push(retorno)
+          } else {
+            router.refresh()
           }
         } else {
           toast.error(result.error)
