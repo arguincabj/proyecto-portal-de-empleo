@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
 import { logout } from '@/app/auth/actions'
+import { MobileGestionMunicipalNav } from './gestion-municipal-nav'
 
 const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
@@ -40,8 +41,7 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
       : usuario?.rol === 'municipalidad'
       ? [
           { href: '/admin', label: 'Gestión Municipal', icon: Shield },
-          { href: '/admin/empresas', label: 'Aprobación de Empresas', icon: Building2 },
-          { href: '/admin/buscador', label: 'Buscador de Perfiles', icon: UserSearch },
+          { href: '/admin/buscador', label: 'Buscador de Postulantes', icon: UserSearch },
           { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
         ]
@@ -119,20 +119,42 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
         <div className="mx-5 h-px bg-white/10" />
 
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
-              >
-                <Icon className="size-4 shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
+          {usuario?.rol === 'municipalidad' ? (
+            <>
+              <MobileGestionMunicipalNav onNavigate={() => setOpen(false)} />
+              {navItems
+                .filter((item) => item.href !== '/admin')
+                .map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
+                    >
+                      <Icon className="size-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  )
+                })}
+            </>
+          ) : (
+            navItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
+                >
+                  <Icon className="size-4 shrink-0" />
+                  <span>{item.label}</span>
+                </Link>
+              )
+            })
+          )}
         </nav>
 
         <div className="border-t border-white/10 p-4">

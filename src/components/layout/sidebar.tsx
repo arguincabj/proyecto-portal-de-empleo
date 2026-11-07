@@ -7,6 +7,7 @@ import { logout } from '@/app/auth/actions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { NotificacionesPopover } from './notificaciones-popover'
+import { GestionMunicipalNav } from './gestion-municipal-nav'
 
 const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
@@ -64,8 +65,7 @@ export async function Sidebar({ usuario }: Props) {
       : usuario?.rol === 'municipalidad'
       ? [
           { href: '/admin', label: 'Gestión Municipal', icon: Shield },
-          { href: '/admin/empresas', label: 'Aprobación de Empresas', icon: Building2 },
-          { href: '/admin/buscador', label: 'Buscador de Perfiles', icon: UserSearch },
+          { href: '/admin/buscador', label: 'Buscador de Postulantes', icon: UserSearch },
           { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
           { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
         ]
@@ -93,24 +93,50 @@ export async function Sidebar({ usuario }: Props) {
       <div className="mx-5 h-px bg-white/10" />
 
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
-            >
-              <Icon className="size-4 shrink-0" />
-              <span className="flex-1">{item.label}</span>
-              {item.badge != null && item.badge > 0 && (
-                <span className="ml-auto inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          )
-        })}
+        {usuario?.rol === 'municipalidad' ? (
+          <>
+            <GestionMunicipalNav />
+            {navItems
+              .filter((item) => item.href !== '/admin')
+              .map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
+                  >
+                    <Icon className="size-4 shrink-0" />
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge != null && item.badge > 0 && (
+                      <span className="ml-auto inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                )
+              })}
+          </>
+        ) : (
+          navItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
+              >
+                <Icon className="size-4 shrink-0" />
+                <span className="flex-1">{item.label}</span>
+                {item.badge != null && item.badge > 0 && (
+                  <span className="ml-auto inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            )
+          })
+        )}
       </nav>
 
       <div className="border-t border-white/10 p-4">
