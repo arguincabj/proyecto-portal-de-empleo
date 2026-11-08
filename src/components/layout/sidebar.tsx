@@ -25,7 +25,7 @@ export async function Sidebar({ usuario }: Props) {
   let noLeidas = 0
   let notificacionesRecientes: { id: string; titulo: string; mensaje: string; tipo: string; leida: boolean; created_at: string }[] = []
 
-  const tieneNotificaciones = usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad'
+  const tieneNotificaciones = usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad' || usuario?.rol === 'superadmin'
 
   if (tieneNotificaciones) {
     try {
@@ -51,8 +51,8 @@ export async function Sidebar({ usuario }: Props) {
   }
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col bg-sidebar lg:flex">
-      <div className="flex items-center gap-3 px-5 py-6">
+    <aside className="hidden w-64 shrink-0 flex-col bg-sidebar lg:flex h-dvh sticky top-0">
+      <div className="flex shrink-0 items-center gap-3 px-5 py-6">
         <Image src={escudo} alt="" width={32} height={32} className="shrink-0" />
         <div className="flex min-w-0 flex-col">
           <span className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted">
@@ -64,13 +64,13 @@ export async function Sidebar({ usuario }: Props) {
         </div>
       </div>
 
-      <div className="mx-5 h-px bg-white/10" />
+      <div className="mx-5 h-px bg-white/10 shrink-0" />
 
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-1">
         <SidebarNavList rol={usuario?.rol} />
       </nav>
 
-      <div className="border-t border-white/10 p-4">
+      <div className="shrink-0 border-t border-white/10 p-4 bg-sidebar">
         {/* Notificaciones con popover — solo para roles que las tienen */}
         {tieneNotificaciones && (
           <div className="mb-2 px-1">

@@ -21,7 +21,7 @@ type Props = {
   currentAvatarUrl?: string | null
   nombre?: string
   apellido?: string
-  rol?: 'postulante' | 'empresa' | 'municipalidad'
+  rol?: 'postulante' | 'empresa' | 'municipalidad' | 'superadmin'
   estadoLaboral?: 'en_busqueda' | 'trabajando'
 }
 
@@ -307,7 +307,7 @@ export function FotoPerfilUpload({
               <div className="flex flex-col items-center justify-center text-emerald-800">
                 {rol === 'empresa' ? (
                   <Building2 className="size-10 sm:size-12 text-emerald-700/70" />
-                ) : rol === 'municipalidad' ? (
+                ) : (rol === 'municipalidad' || rol === 'superadmin') ? (
                   <UserCog className="size-10 sm:size-12 text-emerald-700/70" />
                 ) : (
                   <span className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-emerald-800">

@@ -13,6 +13,7 @@ type Props = {
 export function BotonModerarOferta({ ofertaId, estadoActual }: Props) {
   const [isPending, startTransition] = useTransition()
   const [modalRechazoAbierto, setModalRechazoAbierto] = useState(false)
+  const [modalCerrarAbierto, setModalCerrarAbierto] = useState(false)
   const [motivoRechazo, setMotivoRechazo] = useState('')
 
   const handleCambio = (
@@ -44,7 +45,7 @@ export function BotonModerarOferta({ ofertaId, estadoActual }: Props) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-1.5">
-        {estadoActual !== 'publicada' && (
+        {estadoActual !== 'publicada' && estadoActual !== 'cerrada' && (
           <button
             onClick={() => handleCambio('publicada', 'Oferta aprobada y publicada en el portal')}
             disabled={isPending}
@@ -70,7 +71,7 @@ export function BotonModerarOferta({ ofertaId, estadoActual }: Props) {
 
         {estadoActual === 'publicada' && (
           <button
-            onClick={() => handleCambio('cerrada', 'Oferta cerrada/finalizada')}
+            onClick={() => setModalCerrarAbierto(true)}
             disabled={isPending}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 transition-colors disabled:opacity-50 cursor-pointer"
             title="Cerrar oferta para no recibir más postulaciones"
@@ -80,7 +81,7 @@ export function BotonModerarOferta({ ofertaId, estadoActual }: Props) {
           </button>
         )}
 
-        {(estadoActual === 'cerrada' || estadoActual === 'rechazada' || estadoActual === 'borrador') && (
+        {(estadoActual === 'rechazada' || estadoActual === 'borrador') && (
           <button
             onClick={() => handleCambio('pendiente', 'Oferta vuelta a revisión')}
             disabled={isPending}
@@ -145,6 +146,46 @@ export function BotonModerarOferta({ ofertaId, estadoActual }: Props) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal de confirmación para cerrar oferta */}
+      {modalCerrarAbierto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-red-50 text-red-600 rounded-xl shrink-0">
+                <AlertCircle className="size-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-base">¿Desea cerrar oferta?</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Una vez que cierre la oferta, no se podrá volver a abrir ni recibirá nuevas postulaciones.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setModalCerrarAbierto(false)}
+                disabled={isPending}
+                className="px-4 py-2 text-xs font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              >
+                CANCELAR
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalCerrarAbierto(false)
+                  handleCambio('cerrada', 'Oferta cerrada/finalizada')
+                }}
+                disabled={isPending}
+                className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+              >
+                {isPending ? 'Cerrando...' : 'CERRAR'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -21,7 +21,7 @@ export async function actualizarPerfilAdmin(formData: FormData): Promise<ActionR
       .eq('id', user.id)
       .single()
 
-    if (usuarioRol?.rol !== 'municipalidad') {
+    if (usuarioRol?.rol !== 'municipalidad' && usuarioRol?.rol !== 'superadmin') {
       return { ok: false, error: 'Acción no permitida para tu rol' }
     }
 

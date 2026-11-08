@@ -205,7 +205,7 @@ export async function obtenerOfertaParaEditar(ofertaId: string) {
       if (!esDuenia) {
         return { ok: false, error: 'No tenés permisos para editar esta oferta.' }
       }
-    } else if (usuario?.rol !== 'municipalidad') {
+    } else if (usuario?.rol !== 'municipalidad' && usuario?.rol !== 'superadmin') {
       return { ok: false, error: 'No tenés permisos para editar esta oferta.' }
     }
 
@@ -293,7 +293,7 @@ export async function actualizarOferta(
       if (!esDuenia) {
         return { ok: false, error: 'No tenés permisos para modificar esta oferta.' }
       }
-    } else if (usuario?.rol !== 'municipalidad') {
+    } else if (usuario?.rol !== 'municipalidad' && usuario?.rol !== 'superadmin') {
       return { ok: false, error: 'Permisos insuficientes.' }
     }
 

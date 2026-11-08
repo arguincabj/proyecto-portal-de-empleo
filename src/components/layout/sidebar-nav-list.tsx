@@ -48,6 +48,10 @@ export function getNavItemsByRole(rol?: string): NavItemConfig[] {
   if (rol === 'superadmin') {
     return [
       { href: '/superadmin', label: 'Gestión de Administradores', iconName: 'shield' },
+      { href: '/admin', label: 'Gestión Municipal', iconName: 'shield' },
+      { href: '/admin/buscador', label: 'Buscador de Postulantes', iconName: 'userSearch' },
+      { href: '/admin/perfil', label: 'Mis Datos', iconName: 'userRound' },
+      { href: '/ofertas', label: 'Ofertas Laborales', iconName: 'briefcase' },
     ]
   }
 
@@ -147,12 +151,32 @@ export function SidebarNavList({ rol, onNavigate }: Props) {
   const pathname = usePathname()
   const navItems = getNavItemsByRole(rol)
 
-  if (rol === 'municipalidad') {
+  if (rol === 'municipalidad' || rol === 'superadmin') {
     return (
       <>
+        {rol === 'superadmin' && (
+          <Link
+            href="/superadmin"
+            onClick={onNavigate}
+            className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              pathname.startsWith('/superadmin')
+                ? 'bg-sidebar-hover text-sidebar-foreground font-semibold shadow-xs ring-1 ring-white/15'
+                : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover/70'
+            }`}
+          >
+            <Shield
+              className={`size-4 shrink-0 transition-transform duration-200 ${
+                pathname.startsWith('/superadmin')
+                  ? 'text-sidebar-foreground scale-110'
+                  : 'text-sidebar-muted group-hover:text-sidebar-foreground'
+              }`}
+            />
+            <span className="flex-1 truncate">Gestión de Administradores</span>
+          </Link>
+        )}
         <GestionMunicipalNav onNavigate={onNavigate} />
         {navItems
-          .filter((item) => item.href !== '/admin')
+          .filter((item) => item.href !== '/admin' && item.href !== '/superadmin')
           .map((item) => {
             const Icon = ICON_MAP[item.iconName]
             const active = isNavItemActive(pathname, item.href)

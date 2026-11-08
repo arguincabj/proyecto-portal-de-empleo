@@ -22,6 +22,10 @@ export type AdminItem = {
   telefono: string
   email: string
   created_at: string
+  dni?: string | null
+  avatar_url?: string | null
+  rol?: string
+  last_sign_in_at?: string | null
 }
 
 export async function obtenerAdministradores(): Promise<{ ok: boolean; administradores?: AdminItem[]; error?: string }> {
@@ -48,14 +52,20 @@ export async function obtenerAdministradores(): Promise<{ ok: boolean; administr
       return { ok: false, error: 'Error al consultar cuentas de autenticación' }
     }
 
-    const authMap = new Map<string, { email: string; isSuper: boolean }>()
+    const authMap = new Map<string, { email: string; isSuper: boolean; lastSignIn?: string | null; avatarUrl?: string | null; dni?: string | null }>()
     for (const u of listUsersData.users) {
       const email = u.email ?? ''
       const isSuper =
         email.toLowerCase() === 'supadmin@gmail.com' ||
         u.user_metadata?.is_superadmin === true ||
         u.user_metadata?.rol === 'superadmin'
-      authMap.set(u.id, { email, isSuper })
+      authMap.set(u.id, {
+        email,
+        isSuper,
+        lastSignIn: u.last_sign_in_at ?? null,
+        avatarUrl: u.user_metadata?.avatar_url ?? null,
+        dni: u.user_metadata?.dni ?? null,
+      })
     }
 
     const administradores: AdminItem[] = []
@@ -71,6 +81,10 @@ export async function obtenerAdministradores(): Promise<{ ok: boolean; administr
         telefono: adm.telefono || '',
         email: authInfo?.email || 'Sin correo asociado',
         created_at: adm.created_at,
+        dni: authInfo?.dni || null,
+        avatar_url: authInfo?.avatarUrl || null,
+        rol: adm.rol || 'municipalidad',
+        last_sign_in_at: authInfo?.lastSignIn || null,
       })
     }
 

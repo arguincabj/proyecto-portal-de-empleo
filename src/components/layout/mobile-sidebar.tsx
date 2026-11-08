@@ -24,7 +24,7 @@ type Props = {
 export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
   const [open, setOpen] = useState(false)
 
-  const tieneNotificaciones = usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad'
+  const tieneNotificaciones = usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad' || usuario?.rol === 'superadmin'
 
   useEffect(() => {
     if (!open) return
@@ -69,7 +69,7 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex items-center justify-between px-5 py-5">
+        <div className="flex shrink-0 items-center justify-between px-5 py-5">
           <div className="flex items-center gap-3">
             <Image src={escudo} alt="" width={32} height={32} className="shrink-0" />
             <div className="flex flex-col">
@@ -90,16 +90,16 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
           </button>
         </div>
 
-        <div className="mx-5 h-px bg-white/10" />
+        <div className="mx-5 h-px bg-white/10 shrink-0" />
 
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-1">
           <SidebarNavList
             rol={usuario?.rol}
             onNavigate={() => setOpen(false)}
           />
         </nav>
 
-        <div className="border-t border-white/10 p-4">
+        <div className="shrink-0 border-t border-white/10 p-4 bg-sidebar">
           {/* Notificaciones — solo para roles que las tienen */}
           {tieneNotificaciones && (
             <Link

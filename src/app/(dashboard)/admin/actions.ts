@@ -27,8 +27,19 @@ export async function moderarOferta(
       .eq('id', user.id)
       .single()
 
-    if (!usuario || usuario.rol !== 'municipalidad') {
+    if (!usuario || (usuario.rol !== 'municipalidad' && usuario.rol !== 'superadmin')) {
       return { ok: false, error: 'Permisos insuficientes. Solo la municipalidad puede moderar ofertas.' }
+    }
+
+    // Si la oferta ya está cerrada, no se permite volver a abrirla
+    const { data: ofertaExistente } = await supabaseAdmin
+      .from('ofertas')
+      .select('estado')
+      .eq('id', ofertaId)
+      .single()
+
+    if (ofertaExistente?.estado === 'cerrada') {
+      return { ok: false, error: 'La oferta ya se encuentra cerrada y no se puede volver a abrir.' }
     }
 
     // El rechazo requiere motivo obligatorio y pasa la oferta a estado 'borrador'
@@ -148,7 +159,7 @@ export async function moderarEmpresa(
       .eq('id', user.id)
       .single()
 
-    if (!usuario || usuario.rol !== 'municipalidad') {
+    if (!usuario || (usuario.rol !== 'municipalidad' && usuario.rol !== 'superadmin')) {
       return { ok: false, error: 'Permisos insuficientes. Solo la municipalidad puede aprobar empresas.' }
     }
 
@@ -247,7 +258,7 @@ export async function derivarPostulante(postulacionId: string, notaMunicipalidad
       .eq('id', user.id)
       .single()
 
-    if (!usuario || usuario.rol !== 'municipalidad') {
+    if (!usuario || (usuario.rol !== 'municipalidad' && usuario.rol !== 'superadmin')) {
       return { ok: false, error: 'Permisos insuficientes. Solo el personal municipal puede derivar postulantes.' }
     }
 
@@ -308,7 +319,7 @@ export async function noEnviarPostulante(postulacionId: string) {
       .eq('id', user.id)
       .single()
 
-    if (!usuario || usuario.rol !== 'municipalidad') {
+    if (!usuario || (usuario.rol !== 'municipalidad' && usuario.rol !== 'superadmin')) {
       return { ok: false, error: 'Permisos insuficientes. Solo el personal municipal puede moderar postulantes.' }
     }
 
@@ -371,7 +382,7 @@ export async function reabrirPostulante(postulacionId: string) {
       .eq('id', user.id)
       .single()
 
-    if (!usuario || usuario.rol !== 'municipalidad') {
+    if (!usuario || (usuario.rol !== 'municipalidad' && usuario.rol !== 'superadmin')) {
       return { ok: false, error: 'Permisos insuficientes.' }
     }
 
@@ -438,7 +449,7 @@ export async function agendarOActualizarPreentrevista(data: {
       .eq('id', user.id)
       .single()
 
-    if (!usuario || usuario.rol !== 'municipalidad') {
+    if (!usuario || (usuario.rol !== 'municipalidad' && usuario.rol !== 'superadmin')) {
       return { ok: false, error: 'Permisos insuficientes. Solo el personal municipal puede gestionar preentrevistas.' }
     }
 
@@ -567,7 +578,7 @@ export async function actualizarEstadoPreentrevista(
       .eq('id', user.id)
       .single()
 
-    if (!usuario || usuario.rol !== 'municipalidad') {
+    if (!usuario || (usuario.rol !== 'municipalidad' && usuario.rol !== 'superadmin')) {
       return { ok: false, error: 'Permisos insuficientes.' }
     }
 

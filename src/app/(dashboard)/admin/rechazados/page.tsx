@@ -29,7 +29,7 @@ export default async function AdminRechazadosPage({ searchParams }: PageProps) {
     .eq('id', user.id)
     .single()
 
-  if (usuario?.rol !== 'municipalidad') {
+  if (usuario?.rol !== 'municipalidad' && usuario?.rol !== 'superadmin') {
     redirect('/inicio')
   }
 
