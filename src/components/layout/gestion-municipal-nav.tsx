@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -47,65 +47,39 @@ export function GestionMunicipalNav() {
     item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)
   )
 
-  const [isOpen, setIsOpen] = useState(false)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [isOpen, setIsOpen] = useState(isAnySubActive)
 
-  const handleMouseEnter = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    setIsOpen(true)
-  }
-
-  const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setIsOpen(false)
-    }, 180)
-  }
-
-  const toggleOpen = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+  const toggleOpen = () => {
     setIsOpen((prev) => !prev)
   }
 
   return (
-    <div
-      className="space-y-1"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* Botón contenedor único y uniforme */}
-      <div
-        className={`group flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+    <div className="space-y-1">
+      {/* Botón completo clickable para desplegar/replegar */}
+      <button
+        type="button"
+        onClick={toggleOpen}
+        aria-label={isOpen ? 'Cerrar opciones de Gestión Municipal' : 'Abrir opciones de Gestión Municipal'}
+        aria-expanded={isOpen}
+        className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
           isAnySubActive
             ? 'bg-sidebar-hover text-sidebar-foreground shadow-sm'
             : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover'
         }`}
       >
-        <Link
-          href="/admin"
-          className="flex flex-1 items-center gap-3 min-w-0"
-        >
+        <div className="flex items-center gap-3 min-w-0">
           <Shield className="size-4 shrink-0" />
           <span className="truncate">Gestión Municipal</span>
-        </Link>
+        </div>
 
-        <button
-          type="button"
-          onClick={toggleOpen}
-          aria-label={isOpen ? 'Cerrar submenú' : 'Abrir submenú'}
-          aria-expanded={isOpen}
-          className="p-1 -mr-1 rounded text-inherit opacity-75 hover:opacity-100 transition-opacity flex items-center justify-center"
-        >
-          <ChevronDown
-            className={`size-4 transition-transform duration-200 ${
-              isOpen ? 'rotate-180' : ''
-            }`}
-          />
-        </button>
-      </div>
+        <ChevronDown
+          className={`size-4 opacity-75 transition-transform duration-200 ${
+            isOpen ? 'rotate-180 opacity-100' : ''
+          }`}
+        />
+      </button>
 
-      {/* Submenú desplegable */}
+      {/* Submenú desplegable únicamente al hacer clic */}
       {isOpen && (
         <div className="ml-3 pl-3 border-l-2 border-white/15 space-y-1 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
           {subItems.map((sub) => {
@@ -141,44 +115,36 @@ export function MobileGestionMunicipalNav({ onNavigate }: { onNavigate?: () => v
   const isAnySubActive = subItems.some((item) =>
     item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)
   )
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(isAnySubActive)
 
-  const toggleExpand = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const toggleExpand = () => {
     setIsExpanded((prev) => !prev)
   }
 
   return (
     <div className="space-y-1">
-      <div
+      <button
+        type="button"
+        onClick={toggleExpand}
+        aria-label="Expandir opciones de Gestión Municipal"
+        aria-expanded={isExpanded}
         className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
           isAnySubActive
             ? 'bg-sidebar-hover text-sidebar-foreground'
             : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover'
         }`}
       >
-        <Link
-          href="/admin"
-          onClick={onNavigate}
-          className="flex flex-1 items-center gap-3 min-w-0"
-        >
+        <div className="flex items-center gap-3 min-w-0">
           <Shield className="size-4 shrink-0" />
           <span className="truncate">Gestión Municipal</span>
-        </Link>
-        <button
-          type="button"
-          onClick={toggleExpand}
-          aria-label="Expandir submenú"
-          className="p-1 -mr-1 rounded text-inherit opacity-75 hover:opacity-100 transition-opacity flex items-center justify-center"
-        >
-          <ChevronDown
-            className={`size-4 transition-transform duration-200 ${
-              isExpanded ? 'rotate-180' : ''
-            }`}
-          />
-        </button>
-      </div>
+        </div>
+
+        <ChevronDown
+          className={`size-4 opacity-75 transition-transform duration-200 ${
+            isExpanded ? 'rotate-180 opacity-100' : ''
+          }`}
+        />
+      </button>
 
       {isExpanded && (
         <div className="ml-3 pl-3 border-l-2 border-white/15 space-y-1 py-1">

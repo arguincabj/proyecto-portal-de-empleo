@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Paginacion } from '@/components/ui/paginacion'
 import { formatearSalario } from '@/lib/utils'
+import { OfertasSkeleton } from '@/components/ofertas/ofertas-skeleton'
 import {
   Search,
   Briefcase,
@@ -262,12 +263,7 @@ export default function OfertasPage() {
       )}
 
       {/* Estado de Carga */}
-      {loading && !error && (
-        <div className="rounded-xl bg-surface p-12 shadow-card border border-border/60 text-center space-y-3">
-          <LoaderCircle className="size-8 motion-safe:animate-spin text-primary-600 mx-auto" />
-          <p className="text-sm font-medium text-foreground-secondary">Cargando ofertas de empleo...</p>
-        </div>
-      )}
+      {loading && !error && <OfertasSkeleton />}
 
       {/* Ausencia de Resultados */}
       {!loading && !error && filteredOfertas.length === 0 && (
