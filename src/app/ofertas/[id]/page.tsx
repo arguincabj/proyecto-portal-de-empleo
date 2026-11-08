@@ -216,14 +216,14 @@ export default async function OfertaDetallePage({ params }: PageProps) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Navegación / Volver */}
+      {/* Navegación / Volver contextual según rol */}
       <div>
         <Link
-          href="/ofertas"
+          href={userRole === 'empresa' ? '/empresa' : '/ofertas'}
           className="inline-flex items-center gap-2 text-xs font-bold text-foreground-secondary hover:text-primary-600 transition-colors bg-surface px-3.5 py-2 rounded-xl shadow-card border border-border/60"
         >
           <ArrowLeft className="size-3.5" />
-          <span>Volver a todas las ofertas</span>
+          <span>{userRole === 'empresa' ? 'Volver a mis ofertas (Panel de Empresa)' : 'Volver a todas las ofertas'}</span>
         </Link>
       </div>
 
