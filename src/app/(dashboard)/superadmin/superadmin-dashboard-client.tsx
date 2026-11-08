@@ -142,7 +142,7 @@ export function SuperadminDashboardClient({ administradoresIniciales }: Props) {
 
       {/* Tarjeta de métrica resumida */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-5 shadow-sm flex items-center justify-between">
+        <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-5 shadow-xs select-none flex items-center justify-between">
           <div>
             <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
               Administradores Activos
@@ -155,7 +155,7 @@ export function SuperadminDashboardClient({ administradoresIniciales }: Props) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm flex items-center justify-between">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs select-none flex items-center justify-between">
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
               Seguridad & Privilegios

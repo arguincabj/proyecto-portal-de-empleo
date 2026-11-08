@@ -64,7 +64,7 @@ export function AdminMetricasGraficos({ stats }: Props) {
       {/* 1. Tarjetas KPI de Resumen General */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* KPI Ofertas */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm ">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md">
               Ofertas Totales
@@ -84,7 +84,7 @@ export function AdminMetricasGraficos({ stats }: Props) {
         </div>
 
         {/* KPI Postulaciones */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm ">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-blue-800 bg-blue-50 px-2 py-0.5 rounded-md">
               Postulaciones
@@ -104,7 +104,7 @@ export function AdminMetricasGraficos({ stats }: Props) {
         </div>
 
         {/* KPI Empresas Registradas */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm ">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800 bg-purple-50 px-2 py-0.5 rounded-md">
               Empresas
@@ -124,7 +124,7 @@ export function AdminMetricasGraficos({ stats }: Props) {
         </div>
 
         {/* KPI Postulantes en el Padrón */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm ">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">
               Vecinos Postulantes
@@ -144,7 +144,7 @@ export function AdminMetricasGraficos({ stats }: Props) {
         </div>
 
         {/* KPI Postulantes Empleados / Aceptados por Empresas */}
-        <div className="bg-emerald-50/70 rounded-2xl p-4 sm:p-5 border border-emerald-200 shadow-sm hover:shadow-md transition-shadow col-span-2 sm:col-span-1 lg:col-span-1">
+        <div className="bg-emerald-50/70 rounded-2xl p-4 sm:p-5 border border-emerald-200 shadow-sm  col-span-2 sm:col-span-1 lg:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded-md">
               Empleados / Aceptados

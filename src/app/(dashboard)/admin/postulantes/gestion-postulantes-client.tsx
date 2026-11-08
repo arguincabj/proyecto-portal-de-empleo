@@ -378,20 +378,9 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
 
   return (
     <div className="space-y-6">
-      {/* Tarjetas de Métricas Generales */}
+      {/* Tarjetas de Métricas Generales (Exclusivamente informativas) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div
-          onClick={() => {
-            setSoloPendientes(true)
-            setOfertaSeleccionadaId(null)
-            setPaginaActual(1)
-          }}
-          className={`cursor-pointer transition-all rounded-2xl border p-5 shadow-xs ${
-            soloPendientes && !ofertaSeleccionadaId
-              ? 'bg-amber-100/90 border-amber-400 ring-2 ring-amber-400/30'
-              : 'bg-amber-50 border-amber-200 hover:bg-amber-100/60'
-          }`}
-        >
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-xs select-none">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">Pendientes de Selección</p>
             <Clock className="size-4 text-amber-600" />
@@ -400,7 +389,7 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
           <p className="text-xs text-amber-700 mt-1">Esperando decisión municipal</p>
         </div>
 
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 shadow-xs">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 shadow-xs select-none">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Enviadas a Empresas</p>
             <CheckCircle2 className="size-4 text-emerald-600" />
@@ -409,7 +398,7 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
           <p className="text-xs text-emerald-700 mt-1">Habilitadas para evaluación</p>
         </div>
 
-        <div className="bg-gray-100 border border-gray-200 rounded-2xl p-5 shadow-xs">
+        <div className="bg-gray-100 border border-gray-200 rounded-2xl p-5 shadow-xs select-none">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">No Enviadas</p>
             <XCircle className="size-4 text-gray-500" />
@@ -418,14 +407,7 @@ export function GestionPostulantesClient({ postulaciones, ofertaFiltroInicial }:
           <p className="text-xs text-gray-500 mt-1">Descartadas por el municipio</p>
         </div>
 
-        <div
-          onClick={() => {
-            setSoloPendientes(false)
-            setOfertaSeleccionadaId(null)
-            setPaginaActual(1)
-          }}
-          className="cursor-pointer transition-all rounded-2xl border border-gray-200 bg-white hover:border-teal-300 p-5 shadow-xs"
-        >
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs select-none">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Postulaciones</p>
             <Users className="size-4 text-teal-600" />

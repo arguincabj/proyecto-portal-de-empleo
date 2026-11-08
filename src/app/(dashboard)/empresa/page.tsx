@@ -6,6 +6,7 @@ import { CambiarEstadoBoton } from './cambiar-estado-boton'
 import { DerivacionesEmpresaClient } from './derivaciones-empresa-client'
 import type { DerivacionPostulante } from './derivaciones-empresa-client'
 import { formatearSalario } from '@/lib/utils'
+import { Briefcase, CheckCircle2, Users } from 'lucide-react'
 import { EmpresaEnEspera } from './empresa-en-espera'
 import { EmpresaRechazadaForm } from './empresa-rechazada'
 
@@ -489,30 +490,33 @@ export default async function EmpresaDashboardPage() {
         </Link>
       </div>
 
-      {/* Tarjetas de Métricas */}
+      {/* Tarjetas de Métricas (Exclusivamente informativas) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ofertas Activas</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-emerald-600">{ofertasPublicadas}</span>
-            <span className="text-xs text-gray-400">visibles en el portal</span>
+        <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-5 shadow-xs select-none">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Ofertas Activas</p>
+            <CheckCircle2 className="size-4 text-emerald-600" />
           </div>
+          <p className="text-3xl font-black text-emerald-950 mt-3">{ofertasPublicadas}</p>
+          <p className="text-xs text-emerald-700 mt-1">Visibles en el portal público</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total de Ofertas</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-gray-900">{totalOfertas}</span>
-            <span className="text-xs text-gray-400">publicadas</span>
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs select-none">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total de Ofertas</p>
+            <Briefcase className="size-4 text-teal-600" />
           </div>
+          <p className="text-3xl font-black text-gray-900 mt-3">{totalOfertas}</p>
+          <p className="text-xs text-gray-500 mt-1">Cargadas en la plataforma</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Postulantes Derivados</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-teal-700">{derivacionesProcesadas.length}</span>
-            <span className="text-xs text-gray-400">por el municipio</span>
+        <div className="bg-teal-50/70 rounded-2xl border border-teal-200 p-5 shadow-xs select-none">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-teal-800 uppercase tracking-wider">Postulantes Derivados</p>
+            <Users className="size-4 text-teal-700" />
           </div>
+          <p className="text-3xl font-black text-teal-950 mt-3">{derivacionesProcesadas.length}</p>
+          <p className="text-xs text-teal-700 mt-1">Recomendados por el municipio</p>
         </div>
       </div>
 
