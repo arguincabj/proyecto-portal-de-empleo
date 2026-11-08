@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Menu, X, LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch } from 'lucide-react'
+import { Menu, X, LogOut, UserRound, Bell } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
 import { logout } from '@/app/auth/actions'
-import { MobileGestionMunicipalNav } from './gestion-municipal-nav'
+import { SidebarNavList } from './sidebar-nav-list'
 
 const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
@@ -25,32 +25,6 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
   const [open, setOpen] = useState(false)
 
   const tieneNotificaciones = usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad'
-
-  const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number }[] =
-    usuario?.rol === 'superadmin'
-      ? [
-          { href: '/superadmin', label: 'Gestión de Administradores', icon: Shield },
-        ]
-      : usuario?.rol === 'empresa'
-      ? [
-          { href: '/empresa', label: 'Panel de Empresa', icon: Building2 },
-          { href: '/empresa/perfil', label: 'Perfil de Empresa', icon: Settings },
-          { href: '/empresa/nueva-oferta', label: 'Publicar Oferta', icon: PlusCircle },
-          { href: '/ofertas', label: 'Portal de Ofertas', icon: Briefcase },
-        ]
-      : usuario?.rol === 'municipalidad'
-      ? [
-          { href: '/admin', label: 'Gestión Municipal', icon: Shield },
-          { href: '/admin/buscador', label: 'Buscador de Postulantes', icon: UserSearch },
-          { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
-          { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
-        ]
-      : [
-          { href: '/inicio', label: 'Inicio', icon: LayoutDashboard },
-          { href: '/perfil', label: 'Mi Perfil', icon: UserRound },
-          { href: '/ofertas', label: 'Ofertas', icon: Briefcase },
-          { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
-        ]
 
   useEffect(() => {
     if (!open) return
@@ -119,42 +93,10 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
         <div className="mx-5 h-px bg-white/10" />
 
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {usuario?.rol === 'municipalidad' ? (
-            <>
-              <MobileGestionMunicipalNav onNavigate={() => setOpen(false)} />
-              {navItems
-                .filter((item) => item.href !== '/admin')
-                .map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
-                    >
-                      <Icon className="size-4 shrink-0" />
-                      <span>{item.label}</span>
-                    </Link>
-                  )
-                })}
-            </>
-          ) : (
-            navItems.map((item) => {
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
-                >
-                  <Icon className="size-4 shrink-0" />
-                  <span>{item.label}</span>
-                </Link>
-              )
-            })
-          )}
+          <SidebarNavList
+            rol={usuario?.rol}
+            onNavigate={() => setOpen(false)}
+          />
         </nav>
 
         <div className="border-t border-white/10 p-4">

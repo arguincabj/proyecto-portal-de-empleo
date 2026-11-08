@@ -41,11 +41,16 @@ const subItems = [
   },
 ]
 
-export function GestionMunicipalNav() {
+function isGestionSubActive(pathname: string, href: string): boolean {
+  if (href === '/admin') {
+    return pathname === '/admin'
+  }
+  return pathname === href || pathname.startsWith(href + '/')
+}
+
+export function GestionMunicipalNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
-  const isAnySubActive = subItems.some((item) =>
-    item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)
-  )
+  const isAnySubActive = subItems.some((item) => isGestionSubActive(pathname, item.href))
 
   const [isOpen, setIsOpen] = useState(isAnySubActive)
 
@@ -55,20 +60,26 @@ export function GestionMunicipalNav() {
 
   return (
     <div className="space-y-1">
-      {/* Botón completo clickable para desplegar/replegar */}
+      {/* Botón desplegable principal */}
       <button
         type="button"
         onClick={toggleOpen}
         aria-label={isOpen ? 'Cerrar opciones de Gestión Municipal' : 'Abrir opciones de Gestión Municipal'}
         aria-expanded={isOpen}
-        className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+        className={`group flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
           isAnySubActive
-            ? 'bg-sidebar-hover text-sidebar-foreground shadow-sm'
-            : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover'
+            ? 'bg-sidebar-hover text-sidebar-foreground font-semibold shadow-xs ring-1 ring-white/15'
+            : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover/70'
         }`}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <Shield className="size-4 shrink-0" />
+          <Shield
+            className={`size-4 shrink-0 transition-transform duration-200 ${
+              isAnySubActive
+                ? 'text-sidebar-foreground scale-110'
+                : 'text-sidebar-muted group-hover:text-sidebar-foreground'
+            }`}
+          />
           <span className="truncate">Gestión Municipal</span>
         </div>
 
@@ -79,27 +90,31 @@ export function GestionMunicipalNav() {
         />
       </button>
 
-      {/* Submenú desplegable únicamente al hacer clic */}
+      {/* Submenú desplegable */}
       {isOpen && (
-        <div className="ml-3 pl-3 border-l-2 border-white/15 space-y-1 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="ml-3 pl-3 border-l-2 border-white/20 space-y-1 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
           {subItems.map((sub) => {
             const SubIcon = sub.icon
-            const isActive =
-              sub.href === '/admin'
-                ? pathname === '/admin'
-                : pathname.startsWith(sub.href)
+            const isActive = isGestionSubActive(pathname, sub.href)
 
             return (
               <Link
                 key={sub.href}
                 href={sub.href}
-                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors ${
+                onClick={onNavigate}
+                className={`group/sub flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${
                   isActive
-                    ? 'bg-sidebar-hover text-sidebar-foreground font-semibold shadow-xs'
-                    : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover/70'
+                    ? 'bg-sidebar-hover text-sidebar-foreground font-semibold shadow-xs ring-1 ring-white/20'
+                    : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover/60'
                 }`}
               >
-                <SubIcon className="size-3.5 shrink-0 opacity-80" />
+                <SubIcon
+                  className={`size-3.5 shrink-0 transition-transform duration-200 ${
+                    isActive
+                      ? 'text-sidebar-foreground scale-110 opacity-100'
+                      : 'opacity-80 group-hover/sub:opacity-100'
+                  }`}
+                />
                 <span className="truncate">{sub.label}</span>
               </Link>
             )
@@ -111,68 +126,5 @@ export function GestionMunicipalNav() {
 }
 
 export function MobileGestionMunicipalNav({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname()
-  const isAnySubActive = subItems.some((item) =>
-    item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)
-  )
-  const [isExpanded, setIsExpanded] = useState(isAnySubActive)
-
-  const toggleExpand = () => {
-    setIsExpanded((prev) => !prev)
-  }
-
-  return (
-    <div className="space-y-1">
-      <button
-        type="button"
-        onClick={toggleExpand}
-        aria-label="Expandir opciones de Gestión Municipal"
-        aria-expanded={isExpanded}
-        className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-          isAnySubActive
-            ? 'bg-sidebar-hover text-sidebar-foreground'
-            : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover'
-        }`}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <Shield className="size-4 shrink-0" />
-          <span className="truncate">Gestión Municipal</span>
-        </div>
-
-        <ChevronDown
-          className={`size-4 opacity-75 transition-transform duration-200 ${
-            isExpanded ? 'rotate-180 opacity-100' : ''
-          }`}
-        />
-      </button>
-
-      {isExpanded && (
-        <div className="ml-3 pl-3 border-l-2 border-white/15 space-y-1 py-1">
-          {subItems.map((sub) => {
-            const SubIcon = sub.icon
-            const isActive =
-              sub.href === '/admin'
-                ? pathname === '/admin'
-                : pathname.startsWith(sub.href)
-
-            return (
-              <Link
-                key={sub.href}
-                href={sub.href}
-                onClick={onNavigate}
-                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors ${
-                  isActive
-                    ? 'bg-sidebar-hover text-sidebar-foreground font-semibold'
-                    : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover/70'
-                }`}
-              >
-                <SubIcon className="size-3.5 shrink-0" />
-                <span className="truncate">{sub.label}</span>
-              </Link>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
+  return <GestionMunicipalNav onNavigate={onNavigate} />
 }

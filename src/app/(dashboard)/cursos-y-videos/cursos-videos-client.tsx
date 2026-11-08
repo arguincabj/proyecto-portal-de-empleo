@@ -4,17 +4,14 @@ import { useState } from 'react'
 import {
   GraduationCap,
   Play,
-  FileText,
   Clock,
   BookOpen,
   Calendar,
   CheckCircle2,
   ExternalLink,
-  Download,
   MapPin,
   Sparkles,
   Search,
-  Filter,
   X,
   Building2,
   Phone,
@@ -164,7 +161,7 @@ type Props = {
   citAsignado: boolean
 }
 
-export function CursosVideosClient({ haAlcanzadoTresRechazos, totalRechazados, citAsignado }: Props) {
+export function CursosVideosClient({ haAlcanzadoTresRechazos }: Props) {
   const [seccionActiva, setSeccionActiva] = useState<'todos' | 'cursos' | 'videos'>('todos')
   const [categoriaVideo, setCategoriaVideo] = useState<string>('todas')
   const [videoModal, setVideoModal] = useState<VideoItem | null>(null)

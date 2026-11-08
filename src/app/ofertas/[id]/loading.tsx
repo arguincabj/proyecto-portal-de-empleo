@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, Building2, Calendar, ShieldCheck, Briefcase, Clock, Banknote } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function OfertaDetalleLoading() {

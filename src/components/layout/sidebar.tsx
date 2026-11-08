@@ -1,13 +1,13 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, UserSearch } from 'lucide-react'
+import { LogOut, UserRound } from 'lucide-react'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
 import { logout } from '@/app/auth/actions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { NotificacionesPopover } from './notificaciones-popover'
-import { GestionMunicipalNav } from './gestion-municipal-nav'
+import { SidebarNavList } from './sidebar-nav-list'
 
 const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
@@ -50,32 +50,6 @@ export async function Sidebar({ usuario }: Props) {
     } catch { /* silencioso */ }
   }
 
-  const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number }[] =
-    usuario?.rol === 'superadmin'
-      ? [
-          { href: '/superadmin', label: 'Gestión de Administradores', icon: Shield },
-        ]
-      : usuario?.rol === 'empresa'
-      ? [
-          { href: '/empresa', label: 'Panel de Empresa', icon: Building2 },
-          { href: '/empresa/perfil', label: 'Perfil de Empresa', icon: Settings },
-          { href: '/empresa/nueva-oferta', label: 'Publicar Oferta', icon: PlusCircle },
-          { href: '/ofertas', label: 'Portal de Ofertas', icon: Briefcase },
-        ]
-      : usuario?.rol === 'municipalidad'
-      ? [
-          { href: '/admin', label: 'Gestión Municipal', icon: Shield },
-          { href: '/admin/buscador', label: 'Buscador de Postulantes', icon: UserSearch },
-          { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
-          { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
-        ]
-      : [
-          { href: '/inicio', label: 'Inicio', icon: LayoutDashboard },
-          { href: '/perfil', label: 'Mi Perfil', icon: UserRound },
-          { href: '/ofertas', label: 'Ofertas', icon: Briefcase },
-          { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
-        ]
-
   return (
     <aside className="hidden w-64 shrink-0 flex-col bg-sidebar lg:flex">
       <div className="flex items-center gap-3 px-5 py-6">
@@ -93,50 +67,7 @@ export async function Sidebar({ usuario }: Props) {
       <div className="mx-5 h-px bg-white/10" />
 
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {usuario?.rol === 'municipalidad' ? (
-          <>
-            <GestionMunicipalNav />
-            {navItems
-              .filter((item) => item.href !== '/admin')
-              .map((item) => {
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
-                  >
-                    <Icon className="size-4 shrink-0" />
-                    <span className="flex-1">{item.label}</span>
-                    {item.badge != null && item.badge > 0 && (
-                      <span className="ml-auto inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                )
-              })}
-          </>
-        ) : (
-          navItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
-              >
-                <Icon className="size-4 shrink-0" />
-                <span className="flex-1">{item.label}</span>
-                {item.badge != null && item.badge > 0 && (
-                  <span className="ml-auto inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            )
-          })
-        )}
+        <SidebarNavList rol={usuario?.rol} />
       </nav>
 
       <div className="border-t border-white/10 p-4">
