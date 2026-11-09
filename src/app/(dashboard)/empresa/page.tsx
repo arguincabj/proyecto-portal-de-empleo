@@ -563,9 +563,9 @@ export default async function EmpresaDashboardPage() {
                   key={oferta.id}
                   className="group relative p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-teal-50/20 transition-all cursor-pointer"
                 >
-                  {/* Enlace que hace que toda la barra sea interactiva y clickeable para abrir la oferta */}
+                  {/* Enlace que hace que toda la barra sea interactiva y abra el detalle dentro del panel de empresa */}
                   <Link
-                    href={`/ofertas/${oferta.id}`}
+                    href={`/empresa/ofertas/${oferta.id}`}
                     className="absolute inset-0 z-0"
                     aria-label={`Ver oferta ${oferta.titulo}`}
                   />
@@ -649,11 +649,10 @@ export default async function EmpresaDashboardPage() {
                       <span>👥 Ver candidatos ({cantDerivados})</span>
                     </Link>
                     <Link
-                      href={`/ofertas/${oferta.id}`}
+                      href={`/empresa/ofertas/${oferta.id}`}
                       className="text-xs font-semibold text-teal-700 bg-white hover:bg-teal-50 border border-teal-200 hover:border-teal-300 px-3 py-1.5 rounded-lg transition-all shadow-2xs flex items-center gap-1.5"
                     >
                       <span>Ver oferta</span>
-                      <ExternalLink className="size-3.5 text-teal-600" />
                     </Link>
                     <CambiarEstadoBoton ofertaId={oferta.id} estadoActual={oferta.estado} />
                   </div>

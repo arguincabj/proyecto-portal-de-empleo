@@ -81,10 +81,10 @@ export async function verificarYAsignarCursoCIT(postulanteId: string): Promise<{
         if (!yaNotificado || yaNotificado.length === 0) {
           await supabaseAdmin.from('notificaciones').insert({
             usuario_id: postulante.usuario_id,
-            titulo: '¡Acceso a Cursos y Videos de Formación Laboral!',
+            titulo: '¡Acompañamiento de la Oficina de Empleo!',
             mensaje:
-              'Registramos 3 rechazos en tus procesos de postulación. La Oficina de Empleo de la Municipalidad de Funes pone a tu disposición un espacio exclusivo de Cursos y Videos formativos para ayudarte a optimizar tu CV, entrenar entrevistas y mejorar tus oportunidades laborales.',
-            tipo: 'cursos',
+              'Registramos 3 rechazos en tus procesos de postulación. La Oficina de Empleo de la Municipalidad de Funes se pondrá en contacto para asesorarte y acompañarte en la búsqueda de nuevas oportunidades laborales.',
+            tipo: 'info',
             metadata: {
               total_rechazos: totalRechazados,
             },
@@ -112,7 +112,7 @@ export async function verificarYAsignarCursoCIT(postulanteId: string): Promise<{
             const notifsAdmin = adminUsers.map((u: { id: string }) => ({
               usuario_id: u.id,
               titulo: 'Postulante alcanzó su 3er rechazo',
-              mensaje: `Un postulante acumuló ${totalRechazados} rechazos laborales y fue habilitado para Cursos y Videos. Ya está disponible en la sección de Postulantes Rechazados de administración.`,
+              mensaje: `Un postulante acumuló ${totalRechazados} rechazos laborales. Ya está disponible en la sección de Postulantes Rechazados de administración para seguimiento.`,
               tipo: 'alerta_3_rechazos',
               metadata: {
                 link: '/admin/rechazados',

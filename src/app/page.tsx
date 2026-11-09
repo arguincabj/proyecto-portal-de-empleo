@@ -2,6 +2,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import escudoFunes from '@/assets/brand/escudo-funes-blanco.png'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { getDashboardHref } from '@/lib/navigation'
+import { logout } from '@/app/auth/actions'
 import { OfertasCarousel, type OfertaSlide } from '@/components/home/ofertas-carousel'
 import { FunesCiudadCarousel } from '@/components/home/funes-ciudad-carousel'
 import {
@@ -18,11 +21,53 @@ import {
   FileText,
   CheckCircle2,
   MapPin,
+  LayoutDashboard,
+  UserRound,
+  LogOut,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
+const ROL_LABEL: Record<string, string> = {
+  postulante: 'Postulante',
+  empresa: 'Empresa',
+  municipalidad: 'Municipalidad',
+  superadmin: 'Super Administrador',
+}
+
 export default async function HomePage() {
+  const supabase = await createSupabaseServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let usuario: { nombre: string; apellido: string; rol: string; avatar_url?: string | null } | null = null
+
+  if (user) {
+    const { data } = await supabase
+      .from('usuarios')
+      .select('nombre, apellido, rol')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    usuario = data
+    if (!usuario) {
+      const { data: adminU } = await supabaseAdmin
+        .from('usuarios')
+        .select('nombre, apellido, rol')
+        .eq('id', user.id)
+        .maybeSingle()
+      usuario = adminU
+    }
+
+    if (usuario) {
+      const isSuper = user.email?.toLowerCase() === 'supadmin@gmail.com' || user.user_metadata?.is_superadmin === true || user.user_metadata?.rol === 'superadmin'
+      if (isSuper) {
+        usuario = { ...usuario, rol: 'superadmin' }
+      }
+      const avatarUrl = user.user_metadata?.avatar_url || (usuario as { avatar_url?: string | null })?.avatar_url || null
+      usuario = { ...usuario, avatar_url: avatarUrl }
+    }
+  }
+
   // Obtener ofertas reales activas/publicadas desde Supabase
   const { data: ofertasRaw } = await supabaseAdmin
     .from('ofertas')
@@ -33,10 +78,12 @@ export default async function HomePage() {
 
   const ofertas: OfertaSlide[] = ofertasRaw ?? []
 
+  const dashboardHref = usuario ? getDashboardHref(usuario.rol) : '/inicio'
+
   return (
     <main className="min-h-screen bg-page flex flex-col">
       {/* Barra superior de navegación */}
-      <header className="w-full bg-sidebar text-sidebar-foreground border-b border-white/10 px-4 sm:px-8 py-4">
+      <header className="w-full bg-sidebar text-sidebar-foreground border-b border-white/10 px-4 sm:px-8 py-4 sticky top-0 z-30 backdrop-blur-md bg-sidebar/95">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-90 group" title="Ir al inicio">
             <Image
@@ -55,7 +102,7 @@ export default async function HomePage() {
             </div>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/ofertas"
               className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-sidebar-muted hover:text-white transition-colors px-3 py-2 rounded-lg"
@@ -63,20 +110,78 @@ export default async function HomePage() {
               <Search className="size-3.5" />
               <span>Ver todas las ofertas</span>
             </Link>
-            <Link
-              href="/auth/login"
-              className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl transition-all border border-white/20"
-            >
-              <LogIn className="size-3.5" />
-              <span>Iniciar sesión</span>
-            </Link>
-            <Link
-              href="/auth/registro"
-              className="inline-flex items-center gap-1.5 text-xs font-bold bg-emerald-700/90 hover:bg-emerald-600 text-white px-3.5 sm:px-4 py-2 rounded-xl transition-all border border-emerald-500/40 shadow-sm hover:scale-[1.02]"
-            >
-              <UserPlus className="size-3.5 text-emerald-200" />
-              <span>Registrarse</span>
-            </Link>
+
+            {usuario ? (
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Link
+                  href={dashboardHref}
+                  className="inline-flex items-center gap-1.5 sm:gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 sm:px-4 py-2 rounded-xl transition-all shadow-sm hover:scale-[1.02]"
+                >
+                  <LayoutDashboard className="size-3.5" />
+                  <span>Ir a mi Panel</span>
+                </Link>
+
+                <Link
+                  href={
+                    usuario.rol === 'postulante'
+                      ? '/perfil'
+                      : usuario.rol === 'empresa'
+                      ? '/empresa/perfil'
+                      : '/admin/perfil'
+                  }
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-2.5 sm:px-3 py-1.5 rounded-xl border border-white/20 transition-all group"
+                  title="Ver mis datos"
+                >
+                  {usuario.avatar_url ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={usuario.avatar_url}
+                      alt={usuario.nombre}
+                      className="size-7 rounded-full object-cover ring-1 ring-white/30"
+                    />
+                  ) : (
+                    <span className="flex size-7 items-center justify-center rounded-full bg-white/15 text-sidebar-foreground ring-1 ring-white/20">
+                      <UserRound className="size-4" />
+                    </span>
+                  )}
+                  <div className="hidden md:flex flex-col text-left">
+                    <span className="text-xs font-semibold leading-tight text-white group-hover:text-emerald-300 transition-colors truncate max-w-[130px]">
+                      {usuario.nombre} {usuario.apellido}
+                    </span>
+                    <span className="text-[10px] text-sidebar-muted leading-none mt-0.5">
+                      {ROL_LABEL[usuario.rol] ?? usuario.rol}
+                    </span>
+                  </div>
+                </Link>
+
+                <form action={logout}>
+                  <button
+                    type="submit"
+                    title="Cerrar sesión"
+                    className="flex size-8 sm:size-9 items-center justify-center rounded-xl bg-white/5 hover:bg-red-500/20 text-sidebar-muted hover:text-red-300 border border-white/10 transition-colors"
+                  >
+                    <LogOut className="size-4" />
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/auth/login"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl transition-all border border-white/20"
+                >
+                  <LogIn className="size-3.5" />
+                  <span>Iniciar sesión</span>
+                </Link>
+                <Link
+                  href="/auth/registro"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold bg-emerald-700/90 hover:bg-emerald-600 text-white px-3.5 sm:px-4 py-2 rounded-xl transition-all border border-emerald-500/40 shadow-sm hover:scale-[1.02]"
+                >
+                  <UserPlus className="size-3.5 text-emerald-200" />
+                  <span>Registrarse</span>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -101,13 +206,24 @@ export default async function HomePage() {
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Link
-                href="/auth/registro"
-                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-lg transition-all hover:scale-[1.02]"
-              >
-                <span>Crear cuenta gratis</span>
-                <ArrowRight className="size-4" />
-              </Link>
+              {usuario ? (
+                <Link
+                  href={dashboardHref}
+                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-lg transition-all hover:scale-[1.02]"
+                >
+                  <LayoutDashboard className="size-4" />
+                  <span>Ir a mi panel ({ROL_LABEL[usuario.rol] ?? usuario.rol})</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+              ) : (
+                <Link
+                  href="/auth/registro"
+                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-lg transition-all hover:scale-[1.02]"
+                >
+                  <span>Crear cuenta gratis</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+              )}
               <Link
                 href="/ofertas"
                 className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white font-medium text-sm px-5 py-3 rounded-xl border border-white/20 transition-colors"
@@ -184,13 +300,15 @@ export default async function HomePage() {
         <div>
           <div className="text-center max-w-2xl mx-auto mb-10">
             <span className="text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-              Registro en el Portal
+              {usuario ? 'Accesos y Roles' : 'Registro en el Portal'}
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mt-3 tracking-tight">
-              Elegí cómo querés participar
+              {usuario ? 'Tu participación en el portal' : 'Elegí cómo querés participar'}
             </h2>
             <p className="text-sm sm:text-base text-gray-600 mt-2">
-              Seleccioná tu perfil para registrarte y acceder a las herramientas correspondientes.
+              {usuario
+                ? 'Accedé directamente a tus herramientas o conocé más sobre los perfiles disponibles.'
+                : 'Seleccioná tu perfil para registrarte y acceder a las herramientas correspondientes.'}
             </p>
           </div>
 
@@ -234,13 +352,23 @@ export default async function HomePage() {
               </div>
 
               <div className="pt-8 mt-6 border-t border-gray-100">
-                <Link
-                  href="/auth/registro/postulante"
-                  className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3.5 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg hover:scale-[1.01]"
-                >
-                  <span>Registrarme como postulante</span>
-                  <ArrowRight className="size-4" />
-                </Link>
+                {usuario?.rol === 'postulante' ? (
+                  <Link
+                    href="/inicio"
+                    className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3.5 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg hover:scale-[1.01]"
+                  >
+                    <span>Ir a mi panel de postulante</span>
+                    <ArrowRight className="size-4" />
+                  </Link>
+                ) : (
+                  <Link
+                    href="/auth/registro/postulante"
+                    className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3.5 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg hover:scale-[1.01]"
+                  >
+                    <span>{usuario ? 'Ver registro de postulante' : 'Registrarme como postulante'}</span>
+                    <ArrowRight className="size-4" />
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -282,13 +410,23 @@ export default async function HomePage() {
               </div>
 
               <div className="pt-8 mt-6 border-t border-gray-100">
-                <Link
-                  href="/auth/registro/empresa"
-                  className="w-full inline-flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm py-3.5 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg hover:scale-[1.01]"
-                >
-                  <span>Registrar mi empresa</span>
-                  <ArrowRight className="size-4" />
-                </Link>
+                {usuario?.rol === 'empresa' ? (
+                  <Link
+                    href="/empresa"
+                    className="w-full inline-flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm py-3.5 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg hover:scale-[1.01]"
+                  >
+                    <span>Ir a mi panel de empresa</span>
+                    <ArrowRight className="size-4" />
+                  </Link>
+                ) : (
+                  <Link
+                    href="/auth/registro/empresa"
+                    className="w-full inline-flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm py-3.5 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg hover:scale-[1.01]"
+                  >
+                    <span>{usuario ? 'Ver registro de empresa' : 'Registrar mi empresa'}</span>
+                    <ArrowRight className="size-4" />
+                  </Link>
+                )}
               </div>
             </div>
           </div>

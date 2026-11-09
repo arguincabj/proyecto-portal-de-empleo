@@ -8,6 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { NotificacionesPopover } from './notificaciones-popover'
 import { SidebarNavList } from './sidebar-nav-list'
+import { getHomeHref } from '@/lib/navigation'
 
 const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
@@ -52,17 +53,21 @@ export async function Sidebar({ usuario }: Props) {
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col bg-sidebar lg:flex h-dvh sticky top-0">
-      <div className="flex shrink-0 items-center gap-3 px-5 py-6">
-        <Image src={escudo} alt="" width={32} height={32} className="shrink-0" />
+      <Link
+        href={getHomeHref(usuario?.rol)}
+        className="flex shrink-0 items-center gap-3 px-5 py-6 transition-opacity hover:opacity-90 group cursor-pointer"
+        title="Ir al inicio"
+      >
+        <Image src={escudo} alt="Escudo Municipalidad de Funes" width={32} height={32} className="shrink-0 transition-transform group-hover:scale-105" />
         <div className="flex min-w-0 flex-col">
           <span className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted">
             Portal de Empleo
           </span>
-          <span className="truncate text-sm font-bold leading-tight text-sidebar-foreground">
+          <span className="truncate text-sm font-bold leading-tight text-sidebar-foreground group-hover:text-white transition-colors">
             Municipalidad de Funes
           </span>
         </div>
-      </div>
+      </Link>
 
       <div className="mx-5 h-px bg-white/10 shrink-0" />
 

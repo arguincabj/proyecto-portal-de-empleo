@@ -76,7 +76,12 @@ export function OfertasCarousel({ ofertas }: { ofertas: OfertaSlide[] }) {
                 className="text-lg sm:text-xl font-bold text-gray-900 leading-snug line-clamp-1"
                 title={oferta.titulo}
               >
-                {oferta.titulo}
+                <Link
+                  href={`/ofertas/${oferta.id}`}
+                  className="hover:text-teal-700 transition-colors hover:underline cursor-pointer"
+                >
+                  {oferta.titulo}
+                </Link>
               </h3>
 
               <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mt-1 min-w-0">

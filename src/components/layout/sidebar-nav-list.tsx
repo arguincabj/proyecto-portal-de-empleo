@@ -44,6 +44,8 @@ const ICON_MAP: Record<NavItemConfig['iconName'], React.ComponentType<{ classNam
   send: Send,
 }
 
+export { getHomeHref } from '@/lib/navigation'
+
 export function getNavItemsByRole(rol?: string): NavItemConfig[] {
   if (rol === 'superadmin') {
     return [

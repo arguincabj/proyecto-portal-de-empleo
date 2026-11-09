@@ -230,7 +230,7 @@ export function AdminRechazadosClient({ rechazados }: Props) {
           }`}
         >
           <GraduationCap className="size-4" />
-          <span>Apartado: Con 3 rechazos / Derivados a Cursos ({personasConTresRechazosCount})</span>
+          <span>Apartado: Con 3 rechazos / Derivados a CIT ({personasConTresRechazosCount})</span>
         </button>
       </div>
 
@@ -360,7 +360,7 @@ export function AdminRechazadosClient({ rechazados }: Props) {
                           </span>
                           <span className="text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                             <GraduationCap className="size-3" />
-                            <span>Derivado a Cursos y Videos</span>
+                            <span>Derivado a CIT</span>
                           </span>
                         </div>
 

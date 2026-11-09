@@ -53,7 +53,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Con sesión confirmada en la raíz, login o registro → ir al inicio
-  if (user && user.email_confirmed_at && !isServerAction && (pathname === '/' || pathname === '/auth/login' || pathname === '/auth/registro')) {
+  if (user && user.email_confirmed_at && !isServerAction && (pathname === '/auth/login' || pathname === '/auth/registro')) {
     const url = request.nextUrl.clone()
     url.pathname = '/inicio'
     return NextResponse.redirect(url)

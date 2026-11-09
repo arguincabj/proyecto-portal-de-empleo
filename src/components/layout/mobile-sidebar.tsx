@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
 import { logout } from '@/app/auth/actions'
 import { SidebarNavList } from './sidebar-nav-list'
+import { getHomeHref } from '@/lib/navigation'
 
 const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
@@ -36,10 +37,14 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
   return (
     <>
       <header className="flex shrink-0 items-center justify-between border-b border-white/10 bg-sidebar px-4 py-3 lg:hidden">
-        <div className="flex items-center gap-2.5">
-          <Image src={escudo} alt="" width={28} height={28} className="shrink-0" />
+        <Link
+          href={getHomeHref(usuario?.rol)}
+          className="flex items-center gap-2.5 transition-opacity hover:opacity-90 cursor-pointer"
+          title="Ir al inicio"
+        >
+          <Image src={escudo} alt="Escudo Municipalidad de Funes" width={28} height={28} className="shrink-0" />
           <span className="text-sm font-bold text-sidebar-foreground">Portal de Empleo</span>
-        </div>
+        </Link>
         <button
           onClick={() => setOpen(true)}
           className="flex size-9 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
@@ -70,17 +75,22 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
         )}
       >
         <div className="flex shrink-0 items-center justify-between px-5 py-5">
-          <div className="flex items-center gap-3">
-            <Image src={escudo} alt="" width={32} height={32} className="shrink-0" />
+          <Link
+            href={getHomeHref(usuario?.rol)}
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 transition-opacity hover:opacity-90 group cursor-pointer"
+            title="Ir al inicio"
+          >
+            <Image src={escudo} alt="Escudo Municipalidad de Funes" width={32} height={32} className="shrink-0 transition-transform group-hover:scale-105" />
             <div className="flex flex-col">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted">
                 Portal de Empleo
               </span>
-              <span className="truncate text-sm font-bold leading-tight text-sidebar-foreground">
+              <span className="truncate text-sm font-bold leading-tight text-sidebar-foreground group-hover:text-white transition-colors">
                 Municipalidad de Funes
               </span>
             </div>
-          </div>
+          </Link>
           <button
             onClick={() => setOpen(false)}
             className="flex size-8 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"

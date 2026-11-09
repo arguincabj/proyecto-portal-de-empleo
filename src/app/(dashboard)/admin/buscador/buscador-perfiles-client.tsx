@@ -436,7 +436,7 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
                       {postulante.tieneTresRechazos && (
                         <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300">
                           <GraduationCap className="size-3 text-amber-700" />
-                          Derivado a Cursos (3 rechazos)
+                          Derivado a CIT (3 rechazos)
                         </span>
                       )}
                     </div>
@@ -569,7 +569,7 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
                   {perfilModal.tieneTresRechazos && (
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
                       <GraduationCap className="size-3.5 text-amber-700" />
-                      <span>Derivado a Cursos y Videos (3 rechazos)</span>
+                      <span>Derivado a CIT (3 rechazos)</span>
                     </span>
                   )}
                 </div>

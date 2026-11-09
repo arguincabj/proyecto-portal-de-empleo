@@ -1,3 +1,4 @@
+import { FunesInstitucionalBanner } from '@/components/dashboard/funes-institucional-banner'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
@@ -77,7 +78,8 @@ export default async function InicioPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex min-h-full flex-col justify-between gap-12">
+      <div className="space-y-6">
       <div className="rounded-xl bg-surface p-6 shadow-card">
         <h1 className="text-2xl font-semibold text-foreground">
           Bienvenido, {nombreCompleto}
@@ -197,6 +199,13 @@ export default async function InicioPage() {
             Ver postulaciones <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
           </span>
         </Link>
+      </div>
+
+      </div>
+
+      {/* Banner Institucional con información de la Municipalidad de Funes */}
+      <div className="pt-6">
+        <FunesInstitucionalBanner />
       </div>
     </div>
   )
