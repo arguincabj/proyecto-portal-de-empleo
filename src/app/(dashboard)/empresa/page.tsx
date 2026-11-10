@@ -6,6 +6,7 @@ import { CambiarEstadoBoton } from './cambiar-estado-boton'
 import { DerivacionesEmpresaClient } from './derivaciones-empresa-client'
 import type { DerivacionPostulante } from './derivaciones-empresa-client'
 import { formatearSalario } from '@/lib/utils'
+import { Briefcase, CheckCircle2, Users, ExternalLink } from 'lucide-react'
 import { EmpresaEnEspera } from './empresa-en-espera'
 import { EmpresaRechazadaForm } from './empresa-rechazada'
 
@@ -489,30 +490,33 @@ export default async function EmpresaDashboardPage() {
         </Link>
       </div>
 
-      {/* Tarjetas de Métricas */}
+      {/* Tarjetas de Métricas (Exclusivamente informativas) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ofertas Activas</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-emerald-600">{ofertasPublicadas}</span>
-            <span className="text-xs text-gray-400">visibles en el portal</span>
+        <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-5 shadow-xs select-none">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Ofertas Activas</p>
+            <CheckCircle2 className="size-4 text-emerald-600" />
           </div>
+          <p className="text-3xl font-black text-emerald-950 mt-3">{ofertasPublicadas}</p>
+          <p className="text-xs text-emerald-700 mt-1">Visibles en el portal público</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total de Ofertas</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-gray-900">{totalOfertas}</span>
-            <span className="text-xs text-gray-400">publicadas</span>
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs select-none">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total de Ofertas</p>
+            <Briefcase className="size-4 text-teal-600" />
           </div>
+          <p className="text-3xl font-black text-gray-900 mt-3">{totalOfertas}</p>
+          <p className="text-xs text-gray-500 mt-1">Cargadas en la plataforma</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Postulantes Derivados</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-teal-700">{derivacionesProcesadas.length}</span>
-            <span className="text-xs text-gray-400">por el municipio</span>
+        <div className="bg-teal-50/70 rounded-2xl border border-teal-200 p-5 shadow-xs select-none">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-teal-800 uppercase tracking-wider">Postulantes Derivados</p>
+            <Users className="size-4 text-teal-700" />
           </div>
+          <p className="text-3xl font-black text-teal-950 mt-3">{derivacionesProcesadas.length}</p>
+          <p className="text-xs text-teal-700 mt-1">Recomendados por el municipio</p>
         </div>
       </div>
 
@@ -557,16 +561,20 @@ export default async function EmpresaDashboardPage() {
               return (
                 <div
                   key={oferta.id}
-                  className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors"
+                  className="group relative p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-teal-50/20 transition-all cursor-pointer"
                 >
-                  <div className="space-y-1.5 flex-1">
+                  {/* Enlace que hace que toda la barra sea interactiva y clickeable para abrir la oferta */}
+                  <Link
+                    href={`/ofertas/${oferta.id}`}
+                    className="absolute inset-0 z-0"
+                    aria-label={`Ver oferta ${oferta.titulo}`}
+                  />
+
+                  <div className="space-y-1.5 flex-1 relative z-10 pointer-events-none">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <Link
-                        href={`/ofertas/${oferta.id}`}
-                        className="font-bold text-base text-gray-900 hover:text-teal-700 transition-colors"
-                      >
+                      <span className="font-bold text-base text-gray-900 group-hover:text-teal-700 transition-colors">
                         {oferta.titulo}
-                      </Link>
+                      </span>
                       <span
                         className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${
                           oferta.estado === 'publicada'
@@ -591,7 +599,7 @@ export default async function EmpresaDashboardPage() {
                     </div>
 
                     {'motivo_rechazo' in oferta && (oferta as { motivo_rechazo?: string }).motivo_rechazo && oferta.estado === 'borrador' && (
-                      <div className="mt-2 p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900">
+                      <div className="mt-2 p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900 pointer-events-auto">
                         <p className="font-bold flex items-center gap-1.5 text-amber-800">
                           <span>⚠️ Observación de la Municipalidad:</span>
                         </p>
@@ -625,7 +633,7 @@ export default async function EmpresaDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap relative z-10">
                     {oferta.estado === 'borrador' && (
                       <Link
                         href={`/ofertas/${oferta.id}/editar`}
@@ -642,9 +650,10 @@ export default async function EmpresaDashboardPage() {
                     </Link>
                     <Link
                       href={`/ofertas/${oferta.id}`}
-                      className="text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+                      className="text-xs font-semibold text-teal-700 bg-white hover:bg-teal-50 border border-teal-200 hover:border-teal-300 px-3 py-1.5 rounded-lg transition-all shadow-2xs flex items-center gap-1.5"
                     >
-                      Ver en portal
+                      <span>Ver oferta</span>
+                      <ExternalLink className="size-3.5 text-teal-600" />
                     </Link>
                     <CambiarEstadoBoton ofertaId={oferta.id} estadoActual={oferta.estado} />
                   </div>

@@ -41,7 +41,7 @@ export default async function OfertasLayout({
   // Si el usuario está autenticado, mostramos el layout completo del dashboard con la barra lateral
   if (usuario) {
     return (
-      <div className="flex h-dvh flex-col bg-page lg:flex-row">
+      <div className="flex h-dvh flex-col bg-page lg:flex-row overflow-hidden">
         <MobileSidebar usuario={usuario} />
         <Sidebar usuario={usuario} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">

@@ -31,6 +31,8 @@ interface PerfilPageProps {
   searchParams: Promise<{ retorno?: string }>
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function PerfilPage({ searchParams }: PerfilPageProps) {
   const { retorno } = await searchParams
   const supabase = await createSupabaseServerClient()
@@ -83,21 +85,32 @@ export default async function PerfilPage({ searchParams }: PerfilPageProps) {
   if (!postErr && postData) {
     postulante = postData
   } else {
-    // Si la migración aún no se corrió, se consulta lo básico sin fallar
-    const { data: secondAttempt } = await supabaseAdmin
+    // Si aún no existen columnas de domicilio (localidad, direccion, codigo_postal), consultar perfil laboral completo
+    const { data: postLaboral } = await supabaseAdmin
       .from('postulantes')
-      .select('id, dni, cv_url, localidad, direccion, codigo_postal, estudios, cursos, experiencia, idiomas, habilidades, horarios, estado_laboral')
+      .select('id, dni, cv_url, estudios, cursos, experiencia, idiomas, habilidades, horarios, estado_laboral, categorias_laborales')
       .eq('usuario_id', user.id)
       .single()
-    if (secondAttempt) {
-      postulante = secondAttempt
+
+    if (postLaboral) {
+      postulante = postLaboral
     } else {
-      const { data: basicPost } = await supabaseAdmin
+      const { data: postLaboralBasico } = await supabaseAdmin
         .from('postulantes')
-        .select('id, dni, cv_url')
+        .select('id, dni, cv_url, estudios, cursos, experiencia, idiomas, habilidades, horarios, estado_laboral')
         .eq('usuario_id', user.id)
         .single()
-      postulante = basicPost ?? null
+
+      if (postLaboralBasico) {
+        postulante = postLaboralBasico
+      } else {
+        const { data: basicPost } = await supabaseAdmin
+          .from('postulantes')
+          .select('id, dni, cv_url')
+          .eq('usuario_id', user.id)
+          .single()
+        postulante = basicPost ?? null
+      }
     }
   }
 

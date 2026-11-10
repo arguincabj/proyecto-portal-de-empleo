@@ -25,7 +25,7 @@ export default async function AdminEmpresasPage() {
     .eq('id', user.id)
     .single()
 
-  if (!usuario || usuario.rol !== 'municipalidad') {
+  if (!usuario || (usuario.rol !== 'municipalidad' && usuario.rol !== 'superadmin')) {
     return (
       <div className="max-w-xl mx-auto my-12 p-8 bg-white rounded-2xl border border-red-100 shadow-sm text-center">
         <div className="size-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
@@ -152,7 +152,7 @@ export default async function AdminEmpresasPage() {
 
       {/* Tarjetas de Métricas de Empresas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5 shadow-sm">
+        <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5 shadow-xs select-none">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">Pendientes de Revisión</p>
             <Clock className="size-4 text-amber-600" />
@@ -161,7 +161,7 @@ export default async function AdminEmpresasPage() {
           <p className="text-xs text-amber-700 mt-1">Requieren aprobación</p>
         </div>
 
-        <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-5 shadow-sm">
+        <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-5 shadow-xs select-none">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Empresas Aprobadas</p>
             <CheckCircle2 className="size-4 text-emerald-600" />
@@ -170,7 +170,7 @@ export default async function AdminEmpresasPage() {
           <p className="text-xs text-emerald-700 mt-1">Habilitadas para publicar</p>
         </div>
 
-        <div className="bg-red-50 rounded-2xl border border-red-200 p-5 shadow-sm">
+        <div className="bg-red-50 rounded-2xl border border-red-200 p-5 shadow-xs select-none">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-red-800 uppercase tracking-wider">Empresas Rechazadas</p>
             <XCircle className="size-4 text-red-600" />
@@ -179,7 +179,7 @@ export default async function AdminEmpresasPage() {
           <p className="text-xs text-red-700 mt-1">Con observaciones pendientes</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs select-none">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total de Empresas</p>
             <Building2 className="size-4 text-teal-600" />

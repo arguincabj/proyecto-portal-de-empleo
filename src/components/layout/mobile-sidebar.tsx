@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Menu, X, LogOut, UserRound, Building2, PlusCircle, Briefcase, LayoutDashboard, Shield, Send, Settings, Bell, UserSearch } from 'lucide-react'
+import { Menu, X, LogOut, UserRound, Bell } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import escudo from '@/assets/brand/escudo-funes-blanco.png'
 import { logout } from '@/app/auth/actions'
+import { SidebarNavList } from './sidebar-nav-list'
 
 const ROL_LABEL: Record<string, string> = {
   postulante: 'Postulante',
@@ -23,34 +24,7 @@ type Props = {
 export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
   const [open, setOpen] = useState(false)
 
-  const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number }[] =
-    usuario?.rol === 'superadmin'
-      ? [
-          { href: '/superadmin', label: 'Gestión de Administradores', icon: Shield },
-        ]
-      : usuario?.rol === 'empresa'
-      ? [
-          { href: '/empresa', label: 'Panel de Empresa', icon: Building2 },
-          { href: '/empresa/perfil', label: 'Perfil de Empresa', icon: Settings },
-          { href: '/empresa/nueva-oferta', label: 'Publicar Oferta', icon: PlusCircle },
-          { href: '/ofertas', label: 'Portal de Ofertas', icon: Briefcase },
-        ]
-      : usuario?.rol === 'municipalidad'
-      ? [
-          { href: '/admin', label: 'Gestión Municipal', icon: Shield },
-          { href: '/admin/empresas', label: 'Aprobación de Empresas', icon: Building2 },
-          { href: '/admin/buscador', label: 'Buscador de Perfiles', icon: UserSearch },
-          { href: '/admin/perfil', label: 'Mis Datos', icon: UserRound },
-          { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
-          { href: '/ofertas', label: 'Ofertas Laborales', icon: Briefcase },
-        ]
-      : [
-          { href: '/inicio', label: 'Inicio', icon: LayoutDashboard },
-          { href: '/perfil', label: 'Mi Perfil', icon: UserRound },
-          { href: '/ofertas', label: 'Ofertas', icon: Briefcase },
-          { href: '/postulaciones', label: 'Mis Postulaciones', icon: Send },
-          { href: '/notificaciones', label: 'Notificaciones', icon: Bell, badge: noLeidas },
-        ]
+  const tieneNotificaciones = usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad' || usuario?.rol === 'superadmin'
 
   useEffect(() => {
     if (!open) return
@@ -95,7 +69,7 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex items-center justify-between px-5 py-5">
+        <div className="flex shrink-0 items-center justify-between px-5 py-5">
           <div className="flex items-center gap-3">
             <Image src={escudo} alt="" width={32} height={32} className="shrink-0" />
             <div className="flex flex-col">
@@ -116,26 +90,33 @@ export function MobileSidebar({ usuario, noLeidas = 0 }: Props) {
           </button>
         </div>
 
-        <div className="mx-5 h-px bg-white/10" />
+        <div className="mx-5 h-px bg-white/10 shrink-0" />
 
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
-              >
-                <Icon className="size-4 shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-1">
+          <SidebarNavList
+            rol={usuario?.rol}
+            onNavigate={() => setOpen(false)}
+          />
         </nav>
 
-        <div className="border-t border-white/10 p-4">
+        <div className="shrink-0 border-t border-white/10 p-4 bg-sidebar">
+          {/* Notificaciones — solo para roles que las tienen */}
+          {tieneNotificaciones && (
+            <Link
+              href="/notificaciones"
+              onClick={() => setOpen(false)}
+              className="mb-2 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
+            >
+              <Bell className="size-4 shrink-0" />
+              <span className="flex-1">Notificaciones</span>
+              {noLeidas > 0 && (
+                <span className="inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                  {noLeidas}
+                </span>
+              )}
+            </Link>
+          )}
+
           {usuario && (
             <Link
               href={

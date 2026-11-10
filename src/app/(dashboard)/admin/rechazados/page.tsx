@@ -6,7 +6,6 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { AdminNavTabs } from '../admin-nav-tabs'
 import { AdminRechazadosClient } from './admin-rechazados-client'
 import type { PostulanteRechazadoItem } from './admin-rechazados-client'
-import { obtenerIdsPostulantesConTresRechazos } from '@/lib/verificar-cit'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,7 +29,7 @@ export default async function AdminRechazadosPage({ searchParams }: PageProps) {
     .eq('id', user.id)
     .single()
 
-  if (usuario?.rol !== 'municipalidad') {
+  if (usuario?.rol !== 'municipalidad' && usuario?.rol !== 'superadmin') {
     redirect('/inicio')
   }
 
@@ -47,9 +46,6 @@ export default async function AdminRechazadosPage({ searchParams }: PageProps) {
     supabaseAdmin.from('derivaciones').select('id', { count: 'exact', head: true }).eq('estado_empresa', 'rechazado'),
   ])
 
-  // Obtener IDs de postulantes que hayan alcanzado estrictamente la condición de 3 o más rechazos
-  const postulantesConTresRechazosIds = await obtenerIdsPostulantesConTresRechazos()
-  const idsConTresRechazosSet = new Set<string>(postulantesConTresRechazosIds)
 
   // Paginación server-side
   const resolvedSearchParams = await searchParams

@@ -18,7 +18,7 @@ export default async function NotificacionesPage() {
     .eq('id', user.id)
     .single()
 
-  if (usuario?.rol !== 'postulante' && usuario?.rol !== 'municipalidad') {
+  if (usuario?.rol !== 'postulante' && usuario?.rol !== 'municipalidad' && usuario?.rol !== 'superadmin') {
     redirect('/inicio')
   }
 

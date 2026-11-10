@@ -35,6 +35,10 @@ export default async function InicioPage() {
     redirect('/empresa')
   }
 
+  if (usuario?.rol === 'superadmin') {
+    redirect('/superadmin')
+  }
+
   if (usuario?.rol === 'municipalidad') {
     redirect('/admin')
   }

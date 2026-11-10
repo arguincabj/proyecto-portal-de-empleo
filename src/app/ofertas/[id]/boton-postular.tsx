@@ -3,8 +3,9 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { postularAOferta } from '../actions'
-import { CheckCircle2, LoaderCircle, FileText, UserCheck, AlertTriangle, ArrowRight, X, Send } from 'lucide-react'
+import { postularAOferta, actualizarCategoriasPostulante } from '../actions'
+import { CATEGORIAS_LABORALES } from '@/constants/categorias-laborales'
+import { CheckCircle2, LoaderCircle, FileText, UserCheck, AlertTriangle, ArrowRight, X, Send, Tag, Search, Check } from 'lucide-react'
 
 interface BotonPostularProps {
   ofertaId: string
@@ -15,7 +16,9 @@ interface BotonPostularProps {
   estadoPostulacion?: string | null
   estadoLaboral?: string | null
   cvsDisponibles?: Array<{ id: string; nombre: string }>
-  perfilIncompleto?: boolean
+  datosPersonalesCompletos?: boolean
+  tieneCategorias?: boolean
+  perfilLaboralCompleto?: boolean
 }
 
 const ESTADOS_MAP: Record<string, { label: string; class: string }> = {
@@ -34,11 +37,18 @@ export function BotonPostular({
   estadoPostulacion,
   estadoLaboral,
   cvsDisponibles = [],
-  perfilIncompleto = false,
+  datosPersonalesCompletos = true,
+  tieneCategorias: initialTieneCategorias = true,
+  perfilLaboralCompleto = true,
 }: BotonPostularProps) {
   const [yaPostulado, setYaPostulado] = useState(initialYaPostulado)
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false)
+  const [mostrarModalCategorias, setMostrarModalCategorias] = useState(false)
+  const [tieneCategorias, setTieneCategorias] = useState(initialTieneCategorias)
+  const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<string[]>([])
+  const [busquedaCategoria, setBusquedaCategoria] = useState('')
   const [isPending, startTransition] = useTransition()
+  const [isSavingCategorias, startSavingCategorias] = useTransition()
 
   // Selección de CV: por defecto el primer CV disponible o "perfil_solamente"
   const [cvSeleccionado, setCvSeleccionado] = useState<string>(
@@ -114,7 +124,8 @@ export function BotonPostular({
     )
   }
 
-  if (perfilIncompleto) {
+  // 1. Si faltan datos personales (obligatorios en todos los casos)
+  if (!datosPersonalesCompletos) {
     return (
       <div className="rounded-xl bg-amber-50/90 border border-amber-300 p-6 shadow-card space-y-4">
         <div className="flex items-start gap-3.5">
@@ -123,23 +134,23 @@ export function BotonPostular({
           </div>
           <div className="space-y-1">
             <h4 className="font-bold text-amber-950 text-base">
-              Te faltan datos en tu perfil para poder postularte
+              Te faltan datos obligatorios en tu perfil para poder postularte
             </h4>
             <p className="text-xs sm:text-sm text-amber-900 leading-relaxed">
-              Para que la empresa y la Oficina de Empleo puedan evaluar tu candidatura, necesitás completar tus datos personales (DNI, teléfono) y tu perfil laboral (estudios, experiencia o habilidades).
+              Necesitás completar tus datos personales y de contacto (nombre, apellido, teléfono, DNI y localidad) en tu perfil.
             </p>
           </div>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-amber-200/80">
           <span className="text-xs text-amber-800">
-            Al guardar tus cambios, volverás automáticamente a esta oferta laboral.
+            Al guardar tus cambios en tu perfil, volverás automáticamente a esta oferta laboral.
           </span>
           <Link
             href={`/perfil?retorno=/ofertas/${ofertaId}`}
             className="inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition-colors shadow-sm shrink-0"
           >
-            <span>Editar mis datos personales y de trabajo</span>
+            <span>Completar mi perfil</span>
             <ArrowRight className="size-3.5" />
           </Link>
         </div>
@@ -161,6 +172,27 @@ export function BotonPostular({
         toast.success('¡Postulación enviada con éxito!')
       } else {
         toast.error(result.error ?? 'No se pudo enviar la postulación.')
+      }
+    })
+  }
+
+  const guardarCategorias = () => {
+    if (categoriasSeleccionadas.length === 0) {
+      toast.error('Seleccioná al menos una categoría antes de guardar.')
+      return
+    }
+    startSavingCategorias(async () => {
+      const result = await actualizarCategoriasPostulante(categoriasSeleccionadas)
+      if (result.ok) {
+        setTieneCategorias(true)
+        setMostrarModalCategorias(false)
+        toast.success('Categorías guardadas correctamente.')
+        // Abrir confirmación de postulación si el perfil ya es completo o si usa CV
+        if (cvSeleccionado !== 'perfil_solamente' || perfilLaboralCompleto) {
+          setMostrarConfirmacion(true)
+        }
+      } else {
+        toast.error(result.error ?? 'No se pudieron guardar las categorías.')
       }
     })
   }
@@ -216,9 +248,14 @@ export function BotonPostular({
                 <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground">
                   <UserCheck className="size-4 text-primary-600 shrink-0" />
                   <span>Solo datos de mi perfil</span>
+                  {!perfilLaboralCompleto && (
+                    <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-md border border-amber-200">
+                      Incompleto
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-foreground-secondary mt-1">
-                  Usar mi experiencia, estudios, habilidades y datos cargados en el perfil.
+                  Usar mi experiencia, estudios, cursos, habilidades, idiomas y horarios cargados en mi perfil.
                 </p>
               </div>
             </label>
@@ -265,6 +302,20 @@ export function BotonPostular({
           )}
         </div>
 
+        {cvSeleccionado === 'perfil_solamente' && !perfilLaboralCompleto && (
+          <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+            <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold text-amber-950">
+                Para postularte solo con los datos de tu perfil sin adjuntar un CV, debés completar todos los campos laborales:
+              </p>
+              <p className="text-amber-800">
+                Se requiere tener cargados tus <strong>estudios, cursos, experiencia laboral, habilidades, idiomas y disponibilidad horaria</strong>. Si preferís no completar todos estos campos, podés subir o seleccionar un archivo de currículum vitae en PDF.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
           <p className="text-xs text-foreground-muted">
             Al hacer clic, podrás confirmar tu postulación antes de enviarla.
@@ -272,7 +323,26 @@ export function BotonPostular({
 
           <button
             type="button"
-            onClick={() => setMostrarConfirmacion(true)}
+            onClick={() => {
+              if (cvSeleccionado === 'perfil_solamente') {
+                if (!tieneCategorias) {
+                  setCategoriasSeleccionadas([])
+                  setMostrarModalCategorias(true)
+                  return
+                }
+                if (!perfilLaboralCompleto) {
+                  toast.error('Para postularte solo con los datos de tu perfil, debés completar todos los campos del perfil laboral: estudios, cursos, experiencia, habilidades, idiomas y disponibilidad horaria.')
+                  return
+                }
+              } else {
+                if (!tieneCategorias) {
+                  setCategoriasSeleccionadas([])
+                  setMostrarModalCategorias(true)
+                  return
+                }
+              }
+              setMostrarConfirmacion(true)
+            }}
             disabled={isPending}
             className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white font-semibold text-xs px-7 py-3 rounded-xl transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
@@ -281,7 +351,155 @@ export function BotonPostular({
         </div>
       </div>
 
-      {/* Cartel Modal de Confirmación de Postulación */}
+      {/* Modal: Selección de categorías obligatorias */}
+      {mostrarModalCategorias && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => !isSavingCategorias && setMostrarModalCategorias(false)}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Cabecera fija */}
+            <div className="flex items-center justify-between gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0 border border-primary-100">
+                  <Tag className="size-4.5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900">Categorías laborales de interés</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Seleccioná al menos una para continuar</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !isSavingCategorias && setMostrarModalCategorias(false)}
+                disabled={isSavingCategorias}
+                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 shrink-0"
+                aria-label="Cerrar"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Buscador fijo */}
+            <div className="px-6 py-3 border-b border-gray-100 bg-gray-50/60">
+              <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100 transition-all">
+                <Search className="size-3.5 text-gray-400 shrink-0" />
+                <input
+                  type="text"
+                  value={busquedaCategoria}
+                  onChange={(e) => setBusquedaCategoria(e.target.value)}
+                  placeholder="Buscar categoría..."
+                  className="w-full text-xs text-gray-800 placeholder:text-gray-400 bg-transparent focus:outline-none"
+                  disabled={isSavingCategorias}
+                />
+                {busquedaCategoria && (
+                  <button
+                    type="button"
+                    onClick={() => setBusquedaCategoria('')}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Lista de categorías scrollable */}
+            <div className="overflow-y-auto flex-1 px-3 py-2">
+              {(() => {
+                const filtradas = CATEGORIAS_LABORALES.filter((cat) =>
+                  cat.toLowerCase().includes(busquedaCategoria.toLowerCase().trim())
+                )
+                if (filtradas.length === 0) {
+                  return (
+                    <p className="text-center text-xs text-gray-400 py-8">
+                      No se encontraron categorías para &ldquo;{busquedaCategoria}&rdquo;
+                    </p>
+                  )
+                }
+                return filtradas.map((cat) => {
+                  const isSelected = categoriasSeleccionadas.includes(cat)
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      disabled={isSavingCategorias}
+                      onClick={() => {
+                        setCategoriasSeleccionadas((prev) =>
+                          isSelected ? prev.filter((c) => c !== cat) : [...prev, cat]
+                        )
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-colors mb-0.5 ${
+                        isSelected
+                          ? 'bg-primary-50 text-primary-900 font-medium'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      } disabled:opacity-50`}
+                    >
+                      <div
+                        className={`size-4 rounded flex items-center justify-center border shrink-0 transition-colors ${
+                          isSelected
+                            ? 'bg-primary-600 border-primary-600'
+                            : 'border-gray-300 bg-white'
+                        }`}
+                      >
+                        {isSelected && <Check className="size-3 text-white" strokeWidth={3} />}
+                      </div>
+                      <span>{cat}</span>
+                    </button>
+                  )
+                })
+              })()}
+            </div>
+
+            {/* Pie fijo con contador y botones */}
+            <div className="border-t border-gray-100 px-6 py-4 bg-gray-50/60 space-y-3">
+              {categoriasSeleccionadas.length === 0 && (
+                <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                  <AlertTriangle className="size-3.5 shrink-0 text-amber-500" />
+                  <span>Seleccioná al menos una categoría para poder continuar con la postulación.</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-gray-500">
+                  {categoriasSeleccionadas.length === 0
+                    ? 'Ninguna seleccionada'
+                    : `${categoriasSeleccionadas.length} seleccionada${categoriasSeleccionadas.length === 1 ? '' : 's'}`}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMostrarModalCategorias(false)}
+                    disabled={isSavingCategorias}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={guardarCategorias}
+                    disabled={isSavingCategorias || categoriasSeleccionadas.length === 0}
+                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSavingCategorias ? (
+                      <>
+                        <LoaderCircle className="size-3.5 motion-safe:animate-spin" />
+                        <span>Guardando...</span>
+                      </>
+                    ) : (
+                      <span>Guardar y continuar</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Postulación */}
       {mostrarConfirmacion && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
@@ -331,7 +549,7 @@ export function BotonPostular({
                 </div>
               </div>
 
-              {/* Botones de acción: Confirmar y Cancelar */}
+              {/* Botones de acción */}
               <div className="pt-2 grid grid-cols-2 gap-3">
                 <button
                   type="button"

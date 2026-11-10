@@ -57,7 +57,7 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
 
   // Contar notificaciones no leídas para postulante o municipalidad
   let noLeidas = 0
-  if (usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad') {
+  if (usuario?.rol === 'postulante' || usuario?.rol === 'municipalidad' || usuario?.rol === 'superadmin') {
     try {
       const { count } = await supabaseAdmin
         .from('notificaciones')
@@ -69,7 +69,7 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-page lg:flex-row">
+    <div className="flex h-dvh flex-col bg-page lg:flex-row overflow-hidden">
       <MobileSidebar usuario={usuarioConAvatar} noLeidas={noLeidas} />
       <Sidebar usuario={usuarioConAvatar} />
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">

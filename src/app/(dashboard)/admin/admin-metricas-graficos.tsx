@@ -64,7 +64,7 @@ export function AdminMetricasGraficos({ stats }: Props) {
       {/* 1. Tarjetas KPI de Resumen General */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* KPI Ofertas */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm ">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md">
               Ofertas Totales
@@ -84,7 +84,7 @@ export function AdminMetricasGraficos({ stats }: Props) {
         </div>
 
         {/* KPI Postulaciones */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm ">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-blue-800 bg-blue-50 px-2 py-0.5 rounded-md">
               Postulaciones
@@ -104,7 +104,7 @@ export function AdminMetricasGraficos({ stats }: Props) {
         </div>
 
         {/* KPI Empresas Registradas */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm ">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800 bg-purple-50 px-2 py-0.5 rounded-md">
               Empresas
@@ -124,7 +124,7 @@ export function AdminMetricasGraficos({ stats }: Props) {
         </div>
 
         {/* KPI Postulantes en el Padrón */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-sm ">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">
               Vecinos Postulantes
@@ -144,7 +144,7 @@ export function AdminMetricasGraficos({ stats }: Props) {
         </div>
 
         {/* KPI Postulantes Empleados / Aceptados por Empresas */}
-        <div className="bg-emerald-50/70 rounded-2xl p-4 sm:p-5 border border-emerald-200 shadow-sm hover:shadow-md transition-shadow col-span-2 sm:col-span-1 lg:col-span-1">
+        <div className="bg-emerald-50/70 rounded-2xl p-4 sm:p-5 border border-emerald-200 shadow-sm  col-span-2 sm:col-span-1 lg:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded-md">
               Empleados / Aceptados
@@ -290,9 +290,9 @@ export function AdminMetricasGraficos({ stats }: Props) {
         </div>
 
         {/* Gráfico B: Estado de las Ofertas y Aprobación de Empresas (5 Cols) */}
-        <div className="lg:col-span-5 space-y-5">
+        <div className="lg:col-span-5 flex flex-col gap-5">
           {/* Card: Estado del Catálogo de Ofertas */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-sm">
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-sm flex-1 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className="size-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
@@ -368,38 +368,46 @@ export function AdminMetricasGraficos({ stats }: Props) {
           </div>
 
           {/* Card: Registro y Verificación de Empresas Locales */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <div className="size-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
-                  <Building2 className="size-4" />
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-sm flex-1 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="size-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
+                    <Building2 className="size-4" />
+                  </div>
+                  <h3 className="text-base font-bold text-gray-900">Validación de Empresas</h3>
                 </div>
-                <h3 className="text-sm font-bold text-gray-900">Validación de Empresas</h3>
-              </div>
-              <span className="text-xs font-semibold text-purple-800 bg-purple-50 px-2 py-0.5 rounded-full">
-                {stats.totalEmpresas} locales
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100">
-                <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider block">
-                  Aprobadas
+                <span className="text-xs font-semibold text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded-full">
+                  {stats.totalEmpresas} locales
                 </span>
-                <span className="text-2xl font-black text-emerald-900 mt-1 block">
-                  {stats.empresasAprobadas}
-                </span>
-                <span className="text-[10px] text-emerald-700">Con permiso para publicar</span>
               </div>
 
-              <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-100">
-                <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider block">
-                  Por Validar
-                </span>
-                <span className="text-2xl font-black text-amber-900 mt-1 block">
-                  {stats.empresasPendientes}
-                </span>
-                <span className="text-[10px] text-amber-700">En cola de revisión CUIT</span>
+              <p className="text-xs text-gray-500 mb-4">
+                Estado de verificación y habilitación de cuentas comerciales.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-100 flex flex-col justify-between">
+                  <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-xs">
+                    <span className="size-2 rounded-full bg-emerald-600" />
+                    <span className="uppercase tracking-wider text-[11px]">Aprobadas</span>
+                  </div>
+                  <span className="text-3xl font-black text-emerald-950 my-2">
+                    {stats.empresasAprobadas}
+                  </span>
+                  <span className="text-[11px] text-emerald-700 font-medium">Con permiso para publicar</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-100 flex flex-col justify-between">
+                  <div className="flex items-center gap-1.5 text-amber-800 font-bold text-xs">
+                    <span className="size-2 rounded-full bg-amber-500" />
+                    <span className="uppercase tracking-wider text-[11px]">Por Validar</span>
+                  </div>
+                  <span className="text-3xl font-black text-amber-950 my-2">
+                    {stats.empresasPendientes}
+                  </span>
+                  <span className="text-[11px] text-amber-700 font-medium">En cola de revisión CUIT</span>
+                </div>
               </div>
             </div>
           </div>

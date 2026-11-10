@@ -91,7 +91,7 @@ export default async function AdminPostulantesPage({ searchParams }: Props) {
     .eq('id', user.id)
     .single()
 
-  if (!usuario || usuario.rol !== 'municipalidad') {
+  if (!usuario || (usuario.rol !== 'municipalidad' && usuario.rol !== 'superadmin')) {
     return (
       <div className="max-w-xl mx-auto my-12 p-8 bg-white rounded-2xl border border-red-100 shadow-sm text-center">
         <div className="size-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
