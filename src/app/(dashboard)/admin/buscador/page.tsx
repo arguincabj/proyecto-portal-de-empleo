@@ -9,8 +9,13 @@ import { obtenerIdsPostulantesConTresRechazos } from '@/lib/verificar-cit'
 export const dynamic = 'force-dynamic'
 
 const CV_BUCKET = 'curricula'
+const ITEMS_POR_PAGINA = 15
 
-export default async function BuscadorPerfilesPage() {
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function BuscadorPerfilesPage({ searchParams }: PageProps) {
   const supabase = await createSupabaseServerClient()
   const {
     data: { user },
@@ -31,52 +36,37 @@ export default async function BuscadorPerfilesPage() {
     redirect('/inicio')
   }
 
-  // 2. Contadores para los tabs de administración (idénticos a los de gestión de postulantes)
+  // 2. Leer params de búsqueda y paginación
+  const resolvedParams = await searchParams
+  const q = typeof resolvedParams.q === 'string' ? resolvedParams.q.trim() : ''
+  const filtroEstadoLaboral = typeof resolvedParams.estado === 'string' ? resolvedParams.estado : ''
+  const filtroConCv = typeof resolvedParams.cv === 'string' ? resolvedParams.cv : ''
+  const filtroLocalidad = typeof resolvedParams.localidad === 'string' ? resolvedParams.localidad : ''
+  const filtroCategoria = typeof resolvedParams.categoria === 'string' ? resolvedParams.categoria : ''
+  const paginaActual = Math.max(1, Number(resolvedParams.page) || 1)
+  const from = (paginaActual - 1) * ITEMS_POR_PAGINA
+  const to = from + ITEMS_POR_PAGINA - 1
+
+  // 3. Contadores para los tabs de administración
   const [
     { count: ofertasPendientesCount },
     { count: empresasPendientesCount },
     { count: postulantesPendientesCount },
     { count: totalRechazadosCount },
+    { count: totalPostulantesCount },
   ] = await Promise.all([
-    supabaseAdmin
-      .from('ofertas')
-      .select('id', { count: 'exact', head: true })
-      .eq('estado', 'pendiente'),
-    supabaseAdmin
-      .from('empresas')
-      .select('id', { count: 'exact', head: true })
-      .eq('estado_aprobacion', 'pendiente'),
-    supabaseAdmin
-      .from('postulaciones')
-      .select('id', { count: 'exact', head: true })
-      .in('estado', ['recibida', 'en_revision']),
-    supabaseAdmin
-      .from('derivaciones')
-      .select('id', { count: 'exact', head: true })
-      .eq('estado_empresa', 'rechazado'),
+    supabaseAdmin.from('ofertas').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
+    supabaseAdmin.from('empresas').select('id', { count: 'exact', head: true }).eq('estado_aprobacion', 'pendiente'),
+    supabaseAdmin.from('postulaciones').select('id', { count: 'exact', head: true }).in('estado', ['recibida', 'en_revision']),
+    supabaseAdmin.from('derivaciones').select('id', { count: 'exact', head: true }).eq('estado_empresa', 'rechazado'),
+    supabaseAdmin.from('postulantes').select('id', { count: 'exact', head: true }),
   ])
 
-  // 3. Consultar todos los postulantes con su información completa
-  let listaPostulantes: Array<{
-    id: string
-    usuario_id: string
-    dni: string | null
-    cv_url: string | null
-    localidad?: string | null
-    direccion?: string | null
-    codigo_postal?: string | null
-    estudios?: string | null
-    cursos?: string | null
-    experiencia?: string | null
-    idiomas?: string | null
-    habilidades?: string | null
-    horarios?: string | null
-    estado_laboral?: string | null
-    categorias_laborales?: string[] | null
-    created_at: string
-  }> = []
+  // 4. Consulta paginada de postulantes con filtros server-side
+  // Los filtros de texto libre (q) se aplican en el cliente porque requieren búsqueda cross-table
+  // Los filtros simples (estado_laboral, localidad, con_cv) se aplican server-side
 
-  const { data: postulantesFull, error: errFull } = await supabaseAdmin
+  let query = supabaseAdmin
     .from('postulantes')
     .select(`
       id,
@@ -93,48 +83,91 @@ export default async function BuscadorPerfilesPage() {
       habilidades,
       horarios,
       estado_laboral,
+      categorias_laborales,
       created_at
-    `)
+    `, { count: 'exact' })
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
 
-  if (!errFull && postulantesFull) {
-    listaPostulantes = postulantesFull
-  } else {
-    // Si la migración de domicilio aún no fue ejecutada, consultar sin esas columnas
-    const { data: postulantesCompat, error: errCompat } = await supabaseAdmin
-      .from('postulantes')
-      .select(`
-        id,
-        usuario_id,
-        dni,
-        cv_url,
-        estudios,
-        cursos,
-        experiencia,
-        idiomas,
-        habilidades,
-        horarios,
-        estado_laboral,
-        created_at
-      `)
-      .order('created_at', { ascending: false })
-
-    if (!errCompat && postulantesCompat) {
-      listaPostulantes = postulantesCompat
-    } else {
-      // Fallback base
-      const { data: postulantesMin } = await supabaseAdmin
-        .from('postulantes')
-        .select('id, usuario_id, dni, cv_url, created_at')
-        .order('created_at', { ascending: false })
-      listaPostulantes = postulantesMin ?? []
-    }
+  // Filtros server-side
+  if (filtroEstadoLaboral === 'en_busqueda') {
+    query = query.or('estado_laboral.eq.en_busqueda,estado_laboral.is.null')
+  } else if (filtroEstadoLaboral === 'trabajando') {
+    query = query.eq('estado_laboral', 'trabajando')
   }
+
+  if (filtroLocalidad) {
+    query = query.eq('localidad', filtroLocalidad)
+  }
+
+  if (filtroCategoria) {
+    query = query.contains('categorias_laborales', [filtroCategoria])
+  }
+
+  if (filtroConCv === 'con_cv') {
+    query = query.not('cv_url', 'is', null)
+  }
+
+  query = query.range(from, to)
+
+  const { data: postulantesPagina, count: totalPostulantes, error: errPostulantes } = await query
+
+  // Fallback si columnas no existen aún
+  type PostulanteRow = {
+    id: string
+    usuario_id: string
+    dni: string | null
+    cv_url: string | null
+    localidad?: string | null
+    direccion?: string | null
+    codigo_postal?: string | null
+    estudios?: string | null
+    cursos?: string | null
+    experiencia?: string | null
+    idiomas?: string | null
+    habilidades?: string | null
+    horarios?: string | null
+    estado_laboral?: string | null
+    categorias_laborales?: string[] | null
+    created_at: string
+  }
+
+  let listaPostulantes: PostulanteRow[] = []
+
+  let totalItems = totalPostulantes ?? 0
+
+  if (!errPostulantes && postulantesPagina) {
+    listaPostulantes = postulantesPagina as PostulanteRow[]
+  } else {
+    // Fallback sin columnas de domicilio ni categorias_laborales si la consulta original falló
+    let fallbackQuery = supabaseAdmin
+      .from('postulantes')
+      .select('id, usuario_id, dni, cv_url, estudios, cursos, experiencia, idiomas, habilidades, horarios, estado_laboral, created_at', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+
+    if (filtroEstadoLaboral === 'en_busqueda') {
+      fallbackQuery = fallbackQuery.or('estado_laboral.eq.en_busqueda,estado_laboral.is.null')
+    } else if (filtroEstadoLaboral === 'trabajando') {
+      fallbackQuery = fallbackQuery.eq('estado_laboral', 'trabajando')
+    }
+
+    if (filtroConCv === 'con_cv') {
+      fallbackQuery = fallbackQuery.not('cv_url', 'is', null)
+    }
+
+    fallbackQuery = fallbackQuery.range(from, to)
+
+    const { data: fallback, count: fallbackCount } = await fallbackQuery
+    listaPostulantes = (fallback ?? []) as PostulanteRow[]
+    totalItems = fallbackCount ?? (totalPostulantesCount ?? listaPostulantes.length)
+  }
+  const totalPaginas = Math.max(1, Math.ceil(totalItems / ITEMS_POR_PAGINA))
 
   const usuarioIds = Array.from(new Set(listaPostulantes.map((p) => p.usuario_id).filter(Boolean) as string[]))
   const postulanteIds = listaPostulantes.map((p) => p.id)
 
-  // 4. Consultar datos de usuario (nombre, apellido, email, telefono)
+  // 5. Consultar datos de usuario (nombre, apellido, email, telefono)
   const usuariosMap = new Map<string, { nombre: string; apellido: string; email: string | null; telefono: string | null; dni?: string | null }>()
   if (usuarioIds.length > 0) {
     const { data: usuariosData } = await supabaseAdmin
@@ -155,7 +188,7 @@ export default async function BuscadorPerfilesPage() {
     }
   }
 
-  // 4.1. Auth metadata y emails de respaldo mediante Auth Admin
+  // 5.1. Auth metadata y emails de respaldo
   const authEmailMap = new Map<string, string>()
   const authMetadataMap = new Map<string, Record<string, unknown>>()
 
@@ -173,7 +206,7 @@ export default async function BuscadorPerfilesPage() {
     })
   )
 
-  // 5. Consultar CVs de la tabla curricula
+  // 6. CVs de la tabla curricula (sólo para los postulantes de esta página)
   type CurriculaRow = {
     id: string
     postulante_id: string
@@ -202,7 +235,7 @@ export default async function BuscadorPerfilesPage() {
     }
   }
 
-  // 6. Generar Signed URLs para los CVs
+  // 7. Signed URLs sólo para los CVs de esta página
   const todosLosCvPaths = new Set<string>()
   curriculaMap.forEach((currs) => {
     currs.forEach((c) => {
@@ -230,7 +263,7 @@ export default async function BuscadorPerfilesPage() {
     })
   )
 
-  // 7. Cantidad de postulaciones por candidato
+  // 8. Cantidad de postulaciones por candidato (sólo esta página)
   const postulacionesCountMap = new Map<string, number>()
   if (postulanteIds.length > 0) {
     try {
@@ -250,7 +283,7 @@ export default async function BuscadorPerfilesPage() {
     }
   }
 
-  // 8. Modelar la lista consolidada de postulantes para el cliente
+  // 9. Modelar lista consolidada
   const idsConTresRechazos = await obtenerIdsPostulantesConTresRechazos()
   const idsConTresRechazosSet = new Set<string>(idsConTresRechazos)
 
@@ -284,7 +317,7 @@ export default async function BuscadorPerfilesPage() {
     const usuarioInfo = {
       nombre: resolvedNombre,
       apellido: resolvedApellido,
-      email: userEmailRaw,
+      email: userEmailRaw ?? null,
       telefono: resolvedTelefono,
     }
 
@@ -297,7 +330,6 @@ export default async function BuscadorPerfilesPage() {
       created_at: c.created_at,
     }))
 
-    // Si no tiene curricula en la tabla nueva pero sí en el campo legacy cv_url, agregarlo
     if (curriculaFormateadas.length === 0 && p.cv_url) {
       curriculaFormateadas.push({
         id: 'legacy',
@@ -321,6 +353,7 @@ export default async function BuscadorPerfilesPage() {
       habilidades: p.habilidades ?? null,
       horarios: p.horarios ?? null,
       estado_laboral: p.estado_laboral ?? null,
+      categorias_laborales: Array.isArray(p.categorias_laborales) ? p.categorias_laborales : [],
       created_at: p.created_at,
       usuario: usuarioInfo,
       curricula: curriculaFormateadas,
@@ -348,7 +381,7 @@ export default async function BuscadorPerfilesPage() {
         </div>
       </div>
 
-      {/* Navegación por pestañas de Administración con contadores correctos */}
+      {/* Navegación por pestañas */}
       <AdminNavTabs
         tabActivo="buscador"
         pendientesOfertas={ofertasPendientesCount ?? 0}
@@ -357,8 +390,14 @@ export default async function BuscadorPerfilesPage() {
         totalRechazados={totalRechazadosCount ?? 0}
       />
 
-      {/* Componente Cliente Interactivo con Buscador y Filtros */}
-      <BuscadorPerfilesClient postulantes={postulantesParaCliente} />
+      {/* Componente Cliente Interactivo */}
+      <BuscadorPerfilesClient
+        postulantes={postulantesParaCliente}
+        paginaActual={paginaActual}
+        totalPaginas={totalPaginas}
+        totalItems={totalItems}
+        filtrosActivos={{ q, estado: filtroEstadoLaboral, cv: filtroConCv, localidad: filtroLocalidad, categoria: filtroCategoria }}
+      />
     </div>
   )
 }

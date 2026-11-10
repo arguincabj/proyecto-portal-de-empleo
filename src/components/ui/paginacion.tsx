@@ -1,11 +1,13 @@
 'use client'
 
+import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 type PaginacionProps = {
   paginaActual: number
   totalPaginas: number
-  onCambiarPagina: (pagina: number) => void
+  onCambiarPagina?: (pagina: number) => void
+  crearHref?: (pagina: number) => string
   totalItems?: number
   itemsPorPagina?: number
   nombreItems?: string
@@ -16,6 +18,7 @@ export function Paginacion({
   paginaActual,
   totalPaginas,
   onCambiarPagina,
+  crearHref,
   totalItems,
   itemsPorPagina = 15,
   nombreItems = 'elementos',
@@ -24,11 +27,33 @@ export function Paginacion({
   if (totalPaginas <= 1 && (!totalItems || totalItems <= itemsPorPagina)) {
     if (totalItems !== undefined && totalItems > 0) {
       return (
-        <div className={`${className} flex items-center justify-between text-xs text-gray-500`}>
+        <div className={`${className} flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500`}>
           <p>
-            Mostrando <span className="font-semibold text-gray-800">{totalItems}</span> de{' '}
+            Mostrando <span className="font-semibold text-gray-800">1</span> a{' '}
+            <span className="font-semibold text-gray-800">{totalItems}</span> de{' '}
             <span className="font-semibold text-gray-800">{totalItems}</span> {nombreItems}
           </p>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              disabled
+              className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold rounded-lg text-gray-300 cursor-not-allowed"
+            >
+              <ChevronLeft className="size-4 mr-0.5" />
+              <span className="hidden sm:inline">Anterior</span>
+            </button>
+            <span className="inline-flex items-center justify-center min-w-8 h-8 px-2 text-xs font-semibold rounded-lg bg-teal-600 text-white shadow-xs">
+              1
+            </span>
+            <button
+              type="button"
+              disabled
+              className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold rounded-lg text-gray-300 cursor-not-allowed"
+            >
+              <span className="hidden sm:inline">Siguiente</span>
+              <ChevronRight className="size-4 ml-0.5" />
+            </button>
+          </div>
         </div>
       )
     }
@@ -50,7 +75,10 @@ export function Paginacion({
         (i >= paginaActual - delta && i <= paginaActual + delta)
       ) {
         paginas.push(i)
-      } else if (paginas[paginas.length - 1] !== '...') {
+      } else if (
+        paginas[paginas.length - 1] !== '...' &&
+        (i < paginaActual - delta || i > paginaActual + delta)
+      ) {
         paginas.push('...')
       }
     }
@@ -60,73 +88,113 @@ export function Paginacion({
 
   const paginas = generarPaginas()
 
-  return (
-    <div className={`${className} flex flex-col sm:flex-row items-center justify-between gap-4`}>
-      {totalItems !== undefined ? (
-        <p className="text-xs text-gray-500 order-2 sm:order-1">
-          Mostrando <span className="font-semibold text-gray-800">{inicio}</span> a{' '}
-          <span className="font-semibold text-gray-800">{fin}</span> de{' '}
-          <span className="font-semibold text-gray-800">{totalItems}</span> {nombreItems}
-        </p>
-      ) : (
-        <p className="text-xs text-gray-500 order-2 sm:order-1">
-          Página <span className="font-semibold text-gray-800">{paginaActual}</span> de{' '}
-          <span className="font-semibold text-gray-800">{totalPaginas}</span>
-        </p>
-      )}
+  const renderBoton = (
+    pagina: number,
+    contenido: React.ReactNode,
+    deshabilitado: boolean,
+    esActivo: boolean = false,
+    key?: string | number
+  ) => {
+    const baseClasses = `relative inline-flex items-center justify-center text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+      esActivo
+        ? 'bg-teal-600 text-white shadow-xs'
+        : deshabilitado
+        ? 'text-gray-300 cursor-not-allowed'
+        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+    }`
 
-      <div className="inline-flex items-center gap-1 order-1 sm:order-2">
-        <button
-          type="button"
-          onClick={() => onCambiarPagina(paginaActual - 1)}
-          disabled={paginaActual <= 1}
-          aria-label="Página anterior"
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-teal-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
+    if (crearHref && !deshabilitado && !esActivo) {
+      return (
+        <Link
+          key={key ?? pagina}
+          href={crearHref(pagina)}
+          className={`${baseClasses} min-w-8 h-8 px-2`}
         >
-          <ChevronLeft className="size-3.5" />
-          <span className="hidden sm:inline">Anterior</span>
-        </button>
+          {contenido}
+        </Link>
+      )
+    }
 
-        <div className="flex items-center gap-1 mx-1">
-          {paginas.map((p, idx) => {
+    return (
+      <button
+        key={key ?? pagina}
+        type="button"
+        disabled={deshabilitado}
+        onClick={() => !deshabilitado && onCambiarPagina?.(pagina)}
+        className={`${baseClasses} min-w-8 h-8 px-2`}
+      >
+        {contenido}
+      </button>
+    )
+  }
+
+  return (
+    <div className={`${className} flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500`}>
+      {/* Texto informativo */}
+      <div>
+        {totalItems !== undefined ? (
+          <p>
+            Mostrando <span className="font-semibold text-gray-800">{inicio}</span> a{' '}
+            <span className="font-semibold text-gray-800">{fin}</span> de{' '}
+            <span className="font-semibold text-gray-800">{totalItems}</span> {nombreItems}
+          </p>
+        ) : (
+          <p>
+            Página <span className="font-semibold text-gray-800">{paginaActual}</span> de{' '}
+            <span className="font-semibold text-gray-800">{totalPaginas}</span>
+          </p>
+        )}
+      </div>
+
+      {/* Controles de paginación */}
+      <div className="flex items-center gap-1">
+        {/* Botón Anterior */}
+        {renderBoton(
+          paginaActual - 1,
+          <>
+            <ChevronLeft className="size-4 mr-0.5" />
+            <span className="hidden sm:inline">Anterior</span>
+          </>,
+          paginaActual <= 1,
+          false,
+          'prev'
+        )}
+
+        {/* Números de página */}
+        <div className="flex items-center gap-1">
+          {paginas.map((p, index) => {
             if (p === '...') {
               return (
-                <span key={`ellipsis-${idx}`} className="px-2 py-1 text-xs text-gray-400 select-none">
+                <span key={`dots-${index}`} className="px-2 py-1 text-gray-400 select-none">
                   ...
                 </span>
               )
             }
 
             const numPagina = p as number
-            const esActual = numPagina === paginaActual
-            return (
-              <button
-                key={`page-${p}`}
-                type="button"
-                onClick={() => onCambiarPagina(numPagina)}
-                aria-current={esActual ? 'page' : undefined}
-                className={`min-w-8 h-8 px-2 rounded-lg text-xs font-medium transition-colors ${
-                  esActual
-                    ? 'bg-teal-600 text-white font-bold shadow-sm'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-teal-700'
-                }`}
-              >
-                {p}
-              </button>
+            const esActiva = numPagina === paginaActual
+
+            return renderBoton(
+              numPagina,
+              numPagina,
+              false,
+              esActiva,
+              `page-${numPagina}`
             )
           })}
         </div>
 
-        <button
-          type="button"
-          onClick={() => onCambiarPagina(paginaActual + 1)}
-          disabled={paginaActual >= totalPaginas}
-          aria-label="Página siguiente"
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-teal-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
-        >
-          <span className="hidden sm:inline">Siguiente</span>
-          <ChevronRight className="size-3.5" />
-        </button>
+        {/* Botón Siguiente */}
+        {renderBoton(
+          paginaActual + 1,
+          <>
+            <span className="hidden sm:inline">Siguiente</span>
+            <ChevronRight className="size-4 ml-0.5" />
+          </>,
+          paginaActual >= totalPaginas,
+          false,
+          'next'
+        )}
       </div>
     </div>
   )

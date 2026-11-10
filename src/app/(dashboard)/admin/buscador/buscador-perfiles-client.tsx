@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useTransition, useCallback } from 'react'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import {
   Search,
   Users,
@@ -56,35 +57,71 @@ export type PostulanteBuscadorItem = {
 
 type Props = {
   postulantes: PostulanteBuscadorItem[]
+  paginaActual: number
+  totalPaginas: number
+  totalItems: number
+  filtrosActivos: {
+    q: string
+    estado: string
+    cv: string
+    localidad: string
+    categoria: string
+  }
 }
 
-const ITEMS_POR_PAGINA = 20
+const ITEMS_POR_PAGINA = 15
 
-export function BuscadorPerfilesClient({ postulantes }: Props) {
-  // Filtros
-  const [textoBusqueda, setTextoBusqueda] = useState('')
+export function BuscadorPerfilesClient({ postulantes, paginaActual, totalPaginas, totalItems, filtrosActivos }: Props) {
+  // Filtros locales y estados
+  const [textoBusqueda, setTextoBusqueda] = useState(filtrosActivos.q)
   const [filtroHabilidad, setFiltroHabilidad] = useState('')
-  const [filtroCategoria, setFiltroCategoria] = useState('')
-  const [filtroEstadoLaboral, setFiltroEstadoLaboral] = useState<'todos' | 'en_busqueda' | 'trabajando'>('todos')
-  const [filtroConCv, setFiltroConCv] = useState<'todos' | 'con_cv' | 'sin_cv'>('todos')
-  const [filtroLocalidad, setFiltroLocalidad] = useState('')
   const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false)
 
   // Modal de Ficha Completa
   const [perfilModal, setPerfilModal] = useState<PostulanteBuscadorItem | null>(null)
 
-  // Paginación
-  const [paginaActual, setPaginaActual] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [, startTransition] = useTransition()
 
-  const manejarCambioPagina = (nuevaPagina: number) => {
-    setPaginaActual(nuevaPagina)
-    if (containerRef.current) {
-      containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
+  // Navegar con filtros en la URL
+  const navegarConFiltros = useCallback((overrides: Partial<{
+    q: string; estado: string; cv: string; localidad: string; categoria: string; page: number
+  }>) => {
+    const params = new URLSearchParams()
+    const q = overrides.q !== undefined ? overrides.q : filtrosActivos.q
+    const estado = overrides.estado !== undefined ? overrides.estado : filtrosActivos.estado
+    const cv = overrides.cv !== undefined ? overrides.cv : filtrosActivos.cv
+    const localidad = overrides.localidad !== undefined ? overrides.localidad : filtrosActivos.localidad
+    const categoria = overrides.categoria !== undefined ? overrides.categoria : filtrosActivos.categoria
+    const page = overrides.page !== undefined ? overrides.page : 1
+    if (q) params.set('q', q)
+    if (estado) params.set('estado', estado)
+    if (cv) params.set('cv', cv)
+    if (localidad) params.set('localidad', localidad)
+    if (categoria) params.set('categoria', categoria)
+    if (page > 1) params.set('page', String(page))
+    const qs = params.toString()
+    startTransition(() => {
+      router.push(qs ? `${pathname}?${qs}` : pathname)
+    })
+  }, [filtrosActivos, router, pathname])
+
+  const crearHrefPagina = (p: number) => {
+    const params = new URLSearchParams()
+    if (filtrosActivos.q) params.set('q', filtrosActivos.q)
+    if (filtrosActivos.estado) params.set('estado', filtrosActivos.estado)
+    if (filtrosActivos.cv) params.set('cv', filtrosActivos.cv)
+    if (filtrosActivos.localidad) params.set('localidad', filtrosActivos.localidad)
+    if (filtrosActivos.categoria) params.set('categoria', filtrosActivos.categoria)
+    if (p > 1) params.set('page', String(p))
+    const qs = params.toString()
+    return qs ? `${pathname}?${qs}` : pathname
   }
 
-  // Obtener lista única de localidades existentes para el selector
+  // Lista única de localidades
   const listaLocalidades = useMemo(() => {
     const locs = new Set<string>()
     postulantes.forEach((p) => {
@@ -93,12 +130,11 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
     return Array.from(locs).sort((a, b) => a.localeCompare(b))
   }, [postulantes])
 
-  
-  // Filtrado de postulantes (se muestran todos por defecto)
+  // Filtrado local complementario (habilidad o texto inmediato)
   const postulantesFiltrados = useMemo(() => {
     return postulantes.filter((p) => {
       const q = textoBusqueda.trim().toLowerCase()
-      if (q) {
+      if (q && q !== filtrosActivos.q.toLowerCase()) {
         const nombreCompleto = `${p.usuario?.nombre ?? ''} ${p.usuario?.apellido ?? ''}`.toLowerCase()
         const dni = (p.dni ?? '').toLowerCase()
         const email = (p.usuario?.email ?? '').toLowerCase()
@@ -121,74 +157,30 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
         if (!coincide) return false
       }
 
-      // Filtro por Rubro / Categoría Laboral
-      if (filtroCategoria.trim()) {
-        const cats = p.categorias_laborales ?? []
-        if (!cats.includes(filtroCategoria.trim())) return false
-      }
-
-      // Filtro específico por habilidad
       if (filtroHabilidad.trim()) {
         const habQuery = filtroHabilidad.trim().toLowerCase()
         const habs = (p.habilidades ?? '').toLowerCase()
         if (!habs.includes(habQuery)) return false
       }
 
-      // Filtro por Estado Laboral
-      if (filtroEstadoLaboral !== 'todos') {
-        const est = p.estado_laboral || 'en_busqueda'
-        if (est !== filtroEstadoLaboral) return false
-      }
-
-      // Filtro por CV
-      if (filtroConCv === 'con_cv') {
-        const tieneCv = (p.curricula && p.curricula.length > 0) || !!p.cv_url
-        if (!tieneCv) return false
-      } else if (filtroConCv === 'sin_cv') {
-        const tieneCv = (p.curricula && p.curricula.length > 0) || !!p.cv_url
-        if (tieneCv) return false
-      }
-
-      // Filtro por Localidad
-      if (filtroLocalidad.trim()) {
-        if ((p.localidad ?? '').trim().toLowerCase() !== filtroLocalidad.trim().toLowerCase()) {
-          return false
-        }
-      }
-
       return true
     })
-  }, [
-    postulantes,
-        textoBusqueda,
-    filtroHabilidad,
-    filtroCategoria,
-    filtroEstadoLaboral,
-    filtroConCv,
-    filtroLocalidad,
-  ])
+  }, [postulantes, textoBusqueda, filtrosActivos.q, filtroHabilidad])
 
-  // Reset de página cuando cambian los filtros
-  const totalPaginas = Math.ceil(postulantesFiltrados.length / ITEMS_POR_PAGINA) || 1
-  const indiceInicio = (paginaActual - 1) * ITEMS_POR_PAGINA
-  const postulantesPaginados = postulantesFiltrados.slice(indiceInicio, indiceInicio + ITEMS_POR_PAGINA)
+  const postulantesPaginados = postulantesFiltrados
 
   const hayFiltrosActivos =
     textoBusqueda.trim() !== '' ||
     filtroHabilidad.trim() !== '' ||
-    filtroCategoria.trim() !== '' ||
-    filtroEstadoLaboral !== 'todos' ||
-    filtroConCv !== 'todos' ||
-    filtroLocalidad.trim() !== ''
+    filtrosActivos.categoria.trim() !== '' ||
+    filtrosActivos.estado.trim() !== '' ||
+    filtrosActivos.cv.trim() !== '' ||
+    filtrosActivos.localidad.trim() !== ''
 
   const limpiarFiltros = () => {
     setTextoBusqueda('')
     setFiltroHabilidad('')
-    setFiltroCategoria('')
-    setFiltroEstadoLaboral('todos')
-    setFiltroConCv('todos')
-    setFiltroLocalidad('')
-    setPaginaActual(1)
+    navegarConFiltros({ q: '', estado: '', cv: '', localidad: '', categoria: '', page: 1 })
   }
 
   return (
@@ -201,9 +193,11 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
             <input
               type="text"
               value={textoBusqueda}
-              onChange={(e) => {
-                setTextoBusqueda(e.target.value)
-                setPaginaActual(1)
+              onChange={(e) => setTextoBusqueda(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  navegarConFiltros({ q: textoBusqueda, page: 1 })
+                }
               }}
               placeholder="Buscar por nombre, apellido, DNI, email, experiencia, estudios..."
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 transition-all placeholder:text-gray-400"
@@ -213,7 +207,7 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
                 type="button"
                 onClick={() => {
                   setTextoBusqueda('')
-                  setPaginaActual(1)
+                  navegarConFiltros({ q: '', page: 1 })
                 }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
               >
@@ -257,10 +251,9 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
                 Rubro o Categoría Laboral
               </label>
               <select
-                value={filtroCategoria}
+                value={filtrosActivos.categoria}
                 onChange={(e) => {
-                  setFiltroCategoria(e.target.value)
-                  setPaginaActual(1)
+                  navegarConFiltros({ categoria: e.target.value, page: 1 })
                 }}
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-teal-600 bg-white"
               >
@@ -281,10 +274,7 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
               <input
                 type="text"
                 value={filtroHabilidad}
-                onChange={(e) => {
-                  setFiltroHabilidad(e.target.value)
-                  setPaginaActual(1)
-                }}
+                onChange={(e) => setFiltroHabilidad(e.target.value)}
                 placeholder="Ej: Excel, Ventas, Chofer..."
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-teal-600"
               />
@@ -296,10 +286,9 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
                 Situación Laboral
               </label>
               <select
-                value={filtroEstadoLaboral}
+                value={filtrosActivos.estado || 'todos'}
                 onChange={(e) => {
-                  setFiltroEstadoLaboral(e.target.value as 'todos' | 'en_busqueda' | 'trabajando')
-                  setPaginaActual(1)
+                  navegarConFiltros({ estado: e.target.value === 'todos' ? '' : e.target.value, page: 1 })
                 }}
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-teal-600 bg-white"
               >
@@ -315,10 +304,9 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
                 Currículum Vitae (CV)
               </label>
               <select
-                value={filtroConCv}
+                value={filtrosActivos.cv || 'todos'}
                 onChange={(e) => {
-                  setFiltroConCv(e.target.value as 'todos' | 'con_cv' | 'sin_cv')
-                  setPaginaActual(1)
+                  navegarConFiltros({ cv: e.target.value === 'todos' ? '' : e.target.value, page: 1 })
                 }}
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-teal-600 bg-white"
               >
@@ -334,10 +322,9 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
                 Localidad
               </label>
               <select
-                value={filtroLocalidad}
+                value={filtrosActivos.localidad}
                 onChange={(e) => {
-                  setFiltroLocalidad(e.target.value)
-                  setPaginaActual(1)
+                  navegarConFiltros({ localidad: e.target.value, page: 1 })
                 }}
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-teal-600 bg-white"
               >
@@ -356,12 +343,12 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
         <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
           {hayFiltrosActivos ? (
             <span>
-              Mostrando <strong className="text-gray-900">{postulantesFiltrados.length}</strong> postulantes encontrados
-              {' (de un total de ' + postulantes.length + ')'}
+              Mostrando <strong className="text-gray-900">{totalItems}</strong> postulantes encontrados
+              {' (de un total de ' + totalItems + ')'}
             </span>
           ) : (
             <span>
-              Mostrando todos los perfiles (<strong className="text-gray-900">{postulantes.length}</strong> postulantes registrados)
+              Mostrando todos los perfiles (<strong className="text-gray-900">{totalItems}</strong> postulantes registrados)
             </span>
           )}
           {hayFiltrosActivos && (
@@ -371,7 +358,7 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
       </div>
 
       {/* Listado de Tarjetas de Postulantes */}
-      {postulantesFiltrados.length === 0 ? (
+      {postulantesPaginados.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-xs">
           <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-4">
             <Users className="size-7" />
@@ -590,15 +577,15 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
       )}
 
       {/* Paginación */}
-      {postulantesFiltrados.length > 0 && (
+      {totalItems > 0 && (
         <div className="pt-2">
           <Paginacion
             paginaActual={paginaActual}
             totalPaginas={totalPaginas}
-            totalItems={postulantesFiltrados.length}
+            totalItems={totalItems}
             itemsPorPagina={ITEMS_POR_PAGINA}
             nombreItems="postulantes"
-            onCambiarPagina={manejarCambioPagina}
+            crearHref={crearHrefPagina}
             className="p-4 bg-white rounded-2xl border border-gray-200 shadow-xs"
           />
         </div>
