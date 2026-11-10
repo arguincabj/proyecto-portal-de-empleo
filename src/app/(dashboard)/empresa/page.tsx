@@ -6,7 +6,7 @@ import { CambiarEstadoBoton } from './cambiar-estado-boton'
 import { DerivacionesEmpresaClient } from './derivaciones-empresa-client'
 import type { DerivacionPostulante } from './derivaciones-empresa-client'
 import { formatearSalario } from '@/lib/utils'
-import { Briefcase, CheckCircle2, Users, ExternalLink } from 'lucide-react'
+import { Briefcase, CheckCircle2, Users } from 'lucide-react'
 import { EmpresaEnEspera } from './empresa-en-espera'
 import { EmpresaRechazadaForm } from './empresa-rechazada'
 

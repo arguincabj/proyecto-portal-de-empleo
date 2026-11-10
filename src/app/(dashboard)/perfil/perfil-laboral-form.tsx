@@ -52,7 +52,6 @@ export function PerfilLaboralForm({
 
   useEffect(() => {
     if (initialEditando) {
-      setEditando(true)
       const el = document.getElementById('perfil-laboral')
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' })

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useTransition, useCallback } from 'react'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import {
   Search,
   Users,
@@ -83,7 +83,6 @@ export function BuscadorPerfilesClient({ postulantes, paginaActual, totalPaginas
   const containerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
 
   // Navegar con filtros en la URL
