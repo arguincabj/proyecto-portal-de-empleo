@@ -52,7 +52,7 @@ export async function Sidebar({ usuario }: Props) {
   }
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col bg-sidebar lg:flex h-dvh sticky top-0">
+    <aside className="hidden w-64 shrink-0 flex-col bg-sidebar lg:flex h-dvh sticky top-0 z-30">
       <Link
         href={getHomeHref(usuario?.rol)}
         className="flex shrink-0 items-center gap-3 px-5 py-6 transition-opacity hover:opacity-90 group cursor-pointer"
@@ -75,7 +75,7 @@ export async function Sidebar({ usuario }: Props) {
         <SidebarNavList rol={usuario?.rol} />
       </nav>
 
-      <div className="shrink-0 border-t border-white/10 p-4 bg-sidebar">
+      <div className="shrink-0 border-t border-white/10 p-4 bg-sidebar relative z-30">
         {/* Notificaciones con popover — solo para roles que las tienen */}
         {tieneNotificaciones && (
           <div className="mb-2 px-1">

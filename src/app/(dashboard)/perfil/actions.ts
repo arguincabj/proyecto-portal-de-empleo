@@ -108,6 +108,7 @@ export async function actualizarPerfil(formData: FormData): Promise<ActionResult
     }
 
     revalidatePath('/perfil')
+    revalidatePath('/ofertas', 'layout')
     return { ok: true }
   } catch {
     return { ok: false, error: 'Error inesperado al actualizar el perfil' }
@@ -185,6 +186,7 @@ export async function actualizarPerfilLaboral(formData: FormData): Promise<Actio
     }
 
     revalidatePath('/perfil')
+    revalidatePath('/ofertas', 'layout')
     return { ok: true }
   } catch {
     return { ok: false, error: 'Error inesperado al actualizar el perfil laboral' }
@@ -274,6 +276,7 @@ export async function subirCv(formData: FormData): Promise<ActionResult> {
     }
 
     revalidatePath('/perfil')
+    revalidatePath('/ofertas', 'layout')
     return { ok: true }
   } catch {
     return { ok: false, error: 'Error inesperado al subir el CV' }
@@ -404,6 +407,7 @@ export async function eliminarCv(): Promise<ActionResult> {
     }
 
     revalidatePath('/perfil')
+    revalidatePath('/ofertas', 'layout')
     return { ok: true }
   } catch {
     return { ok: false, error: 'Error inesperado al eliminar el CV' }

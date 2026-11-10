@@ -28,13 +28,14 @@ function datosCv(path: string) {
 }
 
 interface PerfilPageProps {
-  searchParams: Promise<{ retorno?: string }>
+  searchParams: Promise<{ retorno?: string; seccion?: string; editar?: string }>
 }
 
 export const dynamic = 'force-dynamic'
 
 export default async function PerfilPage({ searchParams }: PerfilPageProps) {
-  const { retorno } = await searchParams
+  const { retorno, seccion, editar } = await searchParams
+  const autoEditarLaboral = seccion === 'laboral' || editar === 'laboral'
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
@@ -264,7 +265,7 @@ export default async function PerfilPage({ searchParams }: PerfilPageProps) {
       </section>
 
       {/* Perfil laboral */}
-      <section className="rounded-xl bg-surface p-4 shadow-card sm:p-6">
+      <section id="perfil-laboral" className="rounded-xl bg-surface p-4 shadow-card sm:p-6 scroll-mt-6">
         <div className="mb-4">
           <h2 className="text-base font-semibold text-foreground">Perfil laboral</h2>
           <p className="text-xs text-foreground-secondary">
@@ -273,6 +274,7 @@ export default async function PerfilPage({ searchParams }: PerfilPageProps) {
         </div>
         <PerfilLaboralForm
           retorno={retorno}
+          initialEditando={autoEditarLaboral}
           defaultValues={{
             estudios: postulante?.estudios ?? '',
             cursos: postulante?.cursos ?? '',

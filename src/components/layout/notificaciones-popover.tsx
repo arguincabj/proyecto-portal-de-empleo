@@ -72,8 +72,7 @@ export function NotificacionesPopover({ noLeidas, notificaciones }: Props) {
       {/* Panel flotante al hacer hover */}
       {open && (
         <div
-          className="absolute bottom-full left-full mb-0 ml-2 z-50 w-80 rounded-xl border border-white/10 bg-[#1a3a2a] shadow-2xl overflow-hidden"
-          style={{ bottom: 0, left: '100%', marginLeft: '8px' }}
+          className="absolute bottom-0 left-full ml-2 z-50 w-80 rounded-xl border border-white/10 bg-[#1a3a2a] shadow-2xl overflow-hidden before:absolute before:-left-3 before:top-0 before:bottom-0 before:w-3 before:content-['']"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >

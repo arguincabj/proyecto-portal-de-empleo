@@ -87,6 +87,7 @@ export function PerfilForm({ defaultValues, retorno }: Props) {
           window.dispatchEvent(new CustomEvent('perfil-actualizado', { detail: values }))
           if (retorno) {
             router.push(retorno)
+            router.refresh()
           } else {
             router.refresh()
           }

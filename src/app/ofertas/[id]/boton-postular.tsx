@@ -245,13 +245,24 @@ export function BotonPostular({
                 className="mt-1 text-primary-600 focus:ring-primary-500"
               />
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground">
+                <div className="flex flex-wrap items-center gap-1.5 font-semibold text-xs text-foreground">
                   <UserCheck className="size-4 text-primary-600 shrink-0" />
                   <span>Solo datos de mi perfil</span>
                   {!perfilLaboralCompleto && (
-                    <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-md border border-amber-200">
-                      Incompleto
-                    </span>
+                    <>
+                      <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-md border border-amber-200">
+                        Incompleto
+                      </span>
+                      <Link
+                        href={`/perfil?retorno=/ofertas/${ofertaId}&seccion=laboral#perfil-laboral`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-700 hover:text-primary-800 bg-primary-100/80 hover:bg-primary-200/80 px-2 py-0.5 rounded-md border border-primary-300 transition-colors"
+                        title="Ir a completar tu perfil laboral"
+                      >
+                        <span>Completar perfil laboral</span>
+                        <ArrowRight className="size-3" />
+                      </Link>
+                    </>
                   )}
                 </div>
                 <p className="text-xs text-foreground-secondary mt-1">
@@ -305,13 +316,22 @@ export function BotonPostular({
         {cvSeleccionado === 'perfil_solamente' && !perfilLaboralCompleto && (
           <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
             <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
-            <div className="space-y-1">
+            <div className="space-y-1.5 flex-1">
               <p className="font-semibold text-amber-950">
                 Para postularte solo con los datos de tu perfil sin adjuntar un CV, debés completar todos los campos laborales:
               </p>
               <p className="text-amber-800">
                 Se requiere tener cargados tus <strong>estudios, cursos, experiencia laboral, habilidades, idiomas y disponibilidad horaria</strong>. Si preferís no completar todos estos campos, podés subir o seleccionar un archivo de currículum vitae en PDF.
               </p>
+              <div className="pt-1">
+                <Link
+                  href={`/perfil?retorno=/ofertas/${ofertaId}&seccion=laboral#perfil-laboral`}
+                  className="inline-flex items-center gap-1.5 font-semibold text-amber-900 hover:text-amber-950 underline underline-offset-2"
+                >
+                  <span>Completar perfil laboral ahora</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
             </div>
           </div>
         )}

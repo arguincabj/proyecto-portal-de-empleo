@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   GraduationCap,
   Award,
@@ -13,6 +14,7 @@ import {
   Save,
   LoaderCircle,
   Tag,
+  ArrowLeft,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -32,16 +34,31 @@ export type PerfilLaboralValues = {
 type Props = {
   defaultValues: PerfilLaboralValues
   retorno?: string
+  initialEditando?: boolean
 }
 
-export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
+export function PerfilLaboralForm({
+  defaultValues,
+  retorno,
+  initialEditando = false,
+}: Props) {
   const router = useRouter()
-  const [editando, setEditando] = useState(false)
+  const [editando, setEditando] = useState(initialEditando)
   const [isPending, startTransition] = useTransition()
   const [valores, setValores] = useState<PerfilLaboralValues>({
     ...defaultValues,
     categorias: defaultValues.categorias ?? [],
   })
+
+  useEffect(() => {
+    if (initialEditando) {
+      setEditando(true)
+      const el = document.getElementById('perfil-laboral')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }
+  }, [initialEditando])
 
   function handleChange(
     campo: keyof PerfilLaboralValues,
@@ -77,6 +94,7 @@ export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
           toast.success('Perfil laboral actualizado correctamente')
           if (retorno) {
             router.push(retorno)
+            router.refresh()
           } else {
             router.refresh()
           }
@@ -160,7 +178,7 @@ export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
           />
         </div>
 
-        <div>
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             type="button"
             variant="outline"
@@ -170,6 +188,15 @@ export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
             <Pencil className="size-4" aria-hidden />
             Editar perfil laboral
           </Button>
+          {retorno && (
+            <Link
+              href={retorno}
+              className="inline-flex items-center gap-2 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-4 py-2.5 rounded-xl transition-colors"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span>Volver a la oferta laboral</span>
+            </Link>
+          )}
         </div>
       </div>
     )
@@ -310,7 +337,7 @@ export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
+      <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center">
         <Button
           type="button"
           variant="outline"
@@ -333,10 +360,19 @@ export function PerfilLaboralForm({ defaultValues, retorno }: Props) {
           ) : (
             <>
               <Save className="size-4" aria-hidden />
-              Guardar perfil laboral
+              {retorno ? 'Guardar y volver a la oferta' : 'Guardar perfil laboral'}
             </>
           )}
         </Button>
+        {retorno && (
+          <Link
+            href={retorno}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground px-2 py-1 transition-colors self-start sm:self-auto sm:ml-auto"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Volver a la oferta sin guardar</span>
+          </Link>
+        )}
       </div>
     </form>
   )

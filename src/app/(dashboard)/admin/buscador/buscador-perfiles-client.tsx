@@ -400,17 +400,25 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
             const estadoLaboral = postulante.estado_laboral || 'en_busqueda'
             const tieneCurricula = postulante.curricula && postulante.curricula.length > 0
             const cvPrincipal = tieneCurricula ? postulante.curricula[0] : null
+            const tieneDatosLaborales = Boolean(
+              (postulante.habilidades && postulante.habilidades.trim()) ||
+              (postulante.experiencia && postulante.experiencia.trim()) ||
+              (postulante.estudios && postulante.estudios.trim())
+            )
 
             return (
               <div
                 key={postulante.id}
-                className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs hover:shadow-md hover:border-teal-200 transition-all flex flex-col justify-between group"
+                className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs hover:shadow-md hover:border-teal-200 transition-all flex flex-col justify-between h-[360px] group"
               >
-                <div className="space-y-3.5">
+                <div className="space-y-3">
                   {/* Encabezado de la tarjeta */}
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-2 min-h-[42px]">
                     <div className="min-w-0">
-                      <h3 className="font-bold text-gray-900 truncate group-hover:text-teal-700 transition-colors">
+                      <h3
+                        className="font-bold text-gray-900 truncate group-hover:text-teal-700 transition-colors"
+                        title={nombreCompleto}
+                      >
                         {nombreCompleto}
                       </h3>
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
@@ -434,65 +442,121 @@ export function BuscadorPerfilesClient({ postulantes }: Props) {
                       )}
 
                       {postulante.tieneTresRechazos && (
-                        <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300">
+                        <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300">
                           <GraduationCap className="size-3 text-amber-700" />
-                          Derivado a CIT (3 rechazos)
+                          CIT (3 rechazos)
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Datos de contacto y ubicación */}
-                  <div className="space-y-1.5 text-xs text-gray-600 bg-gray-50/70 p-3 rounded-xl border border-gray-100">
-                    {postulante.localidad && (
-                      <div className="flex items-center gap-2 truncate">
-                        <MapPin className="size-3.5 text-teal-600 shrink-0" />
-                        <span className="truncate">{postulante.localidad}</span>
+                  {/* Datos de contacto y ubicación con altura uniforme */}
+                  <div className="h-[64px] flex flex-col justify-center space-y-1 text-xs text-gray-600 bg-gray-50/70 px-3 py-2 rounded-xl border border-gray-100 overflow-hidden">
+                    <div className="flex items-center gap-2 truncate">
+                      <Mail className="size-3.5 text-gray-400 shrink-0" />
+                      <span className="truncate" title={postulante.usuario?.email || 'Sin email registrado'}>
+                        {postulante.usuario?.email || 'Sin email registrado'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 truncate">
+                      {postulante.localidad ? (
+                        <>
+                          <MapPin className="size-3.5 text-teal-600 shrink-0" />
+                          <span className="truncate">{postulante.localidad}</span>
+                        </>
+                      ) : postulante.usuario?.telefono ? (
+                        <>
+                          <Phone className="size-3.5 text-gray-400 shrink-0" />
+                          <span className="truncate">{postulante.usuario.telefono}</span>
+                        </>
+                      ) : (
+                        <>
+                          <MapPin className="size-3.5 text-gray-300 shrink-0" />
+                          <span className="text-gray-400 italic">Localidad no registrada</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Perfil laboral / Habilidades / Experiencia con altura fija para todas las tarjetas */}
+                  <div className="h-[108px] overflow-hidden text-xs">
+                    {tieneDatosLaborales ? (
+                      <div className="h-full flex flex-col justify-between">
+                        {postulante.habilidades && postulante.experiencia ? (
+                          <>
+                            <div className="overflow-hidden">
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">
+                                Habilidades
+                              </span>
+                              <p
+                                className="text-xs text-gray-700 truncate font-medium bg-amber-50/70 border border-amber-100 px-2 py-0.5 rounded-md"
+                                title={postulante.habilidades}
+                              >
+                                {postulante.habilidades}
+                              </p>
+                            </div>
+                            <div className="overflow-hidden">
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">
+                                Experiencia
+                              </span>
+                              <p
+                                className="text-xs text-gray-600 line-clamp-2 leading-relaxed"
+                                title={postulante.experiencia}
+                              >
+                                {postulante.experiencia}
+                              </p>
+                            </div>
+                          </>
+                        ) : postulante.habilidades ? (
+                          <div className="overflow-hidden">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                              Habilidades
+                            </span>
+                            <p
+                              className="text-xs text-gray-700 line-clamp-3 font-medium bg-amber-50/70 border border-amber-100 p-2 rounded-lg leading-relaxed"
+                              title={postulante.habilidades}
+                            >
+                              {postulante.habilidades}
+                            </p>
+                          </div>
+                        ) : postulante.experiencia ? (
+                          <div className="overflow-hidden">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                              Experiencia
+                            </span>
+                            <p
+                              className="text-xs text-gray-600 line-clamp-3 leading-relaxed bg-gray-50/80 border border-gray-100 p-2 rounded-lg"
+                              title={postulante.experiencia}
+                            >
+                              {postulante.experiencia}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="overflow-hidden">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                              Estudios
+                            </span>
+                            <p
+                              className="text-xs text-gray-700 line-clamp-3 leading-relaxed bg-blue-50/50 border border-blue-100 p-2 rounded-lg"
+                              title={postulante.estudios || ''}
+                            >
+                              {postulante.estudios}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {postulante.usuario?.email && (
-                      <div className="flex items-center gap-2 truncate">
-                        <Mail className="size-3.5 text-gray-400 shrink-0" />
-                        <span className="truncate" title={postulante.usuario.email}>
-                          {postulante.usuario.email}
-                        </span>
-                      </div>
-                    )}
-                    {postulante.usuario?.telefono && (
-                      <div className="flex items-center gap-2 truncate">
-                        <Phone className="size-3.5 text-gray-400 shrink-0" />
-                        <span>{postulante.usuario.telefono}</span>
+                    ) : (
+                      <div className="h-full rounded-xl border border-dashed border-gray-200/90 bg-gray-50/40 flex flex-col items-center justify-center p-3 text-center">
+                        <Briefcase className="size-4 text-gray-300 mb-1" />
+                        <p className="text-xs font-medium text-gray-400">Sin datos laborales cargados</p>
+                        <p className="text-[10px] text-gray-400/80 mt-0.5">Podés consultar su ficha completa</p>
                       </div>
                     )}
                   </div>
-
-                  {/* Habilidades destacadas */}
-                  {postulante.habilidades ? (
-                    <div>
-                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                        Habilidades
-                      </span>
-                      <p className="text-xs text-gray-700 line-clamp-2 bg-amber-50/50 border border-amber-100/70 p-2 rounded-lg">
-                        {postulante.habilidades}
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {/* Experiencia o Estudios breves */}
-                  {postulante.experiencia && (
-                    <div>
-                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                        Experiencia
-                      </span>
-                      <p className="text-xs text-gray-600 line-clamp-2">
-                        {postulante.experiencia}
-                      </p>
-                    </div>
-                  )}
                 </div>
 
-                {/* Pie de tarjeta con acciones */}
-                <div className="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between gap-2">
+                {/* Pie de tarjeta con acciones alineado uniformemente al fondo */}
+                <div className="pt-3.5 mt-auto border-t border-gray-100 flex items-center justify-between gap-2 shrink-0">
                   {/* Botón Ver CV */}
                   {cvPrincipal && cvPrincipal.signedUrl ? (
                     <a
